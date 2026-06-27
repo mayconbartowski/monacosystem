@@ -1,6 +1,6 @@
 import {
-  EXTRAS, ExtraKey, LOYALTY_DISCOUNT, LoyaltyInfo, Order, PriceTable,
-  ServiceKey, SERVICES, VehicleCategory,
+  EXTRAS, ExtraKey, LOYALTY_CYCLE_SIZE, LOYALTY_DISCOUNT,
+  LoyaltyInfo, Order, PriceTable, ServiceKey, SERVICES, Vehicle, VehicleCategory,
 } from "./domain";
 
 export function getServiceDef(key: ServiceKey) {
