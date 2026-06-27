@@ -1,8 +1,8 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Car, ListOrdered, Trash2, CheckCircle2 } from "lucide-react";
-import { Order } from "@/lib/domain";
+import { Clock, Car, ListOrdered, Trash2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
+import { LOYALTY_QUALIFYING_SERVICES, Order } from "@/lib/domain";
 import { activeQueue } from "@/lib/pricing";
 import { brl, formatDuration, db } from "@/lib/storage";
 import { toast } from "sonner";
@@ -16,15 +16,28 @@ export function QueueDrawer({ orders, onChanged }: Props) {
   const queue = activeQueue(orders);
 
   const complete = (o: Order) => {
-    db.updateOrder(o.id, { status: "completed", completedAt: new Date().toISOString() });
-    // increment customer totalOrders
+    const completedAt = new Date().toISOString();
+    db.updateOrder(o.id, { status: "completed", completedAt });
+    // mantém contador genérico do cliente (histórico)
     const customers = db.listCustomers();
     const idx = customers.findIndex((c) => c.id === o.customerId);
     if (idx >= 0) {
       customers[idx].totalOrders += 1;
       db.saveCustomers(customers);
     }
-    toast.success(`Serviço concluído — ${o.vehiclePlate}`);
+    // aplica fidelidade na PLACA (apenas se foi uma lavagem qualificante)
+    if (LOYALTY_QUALIFYING_SERVICES.includes(o.service)) {
+      const veh = db.applyLoyaltyOnCompletion({ ...o, completedAt });
+      if (veh?.rewardAvailable && !o.loyaltyRewardUsed) {
+        toast.success(`Placa ${o.vehiclePlate} desbloqueou um benefício de fidelidade!`, {
+          description: "Disponível na próxima venda desta placa.",
+        });
+      } else {
+        toast.success(`Serviço concluído — ${o.vehiclePlate}`);
+      }
+    } else {
+      toast.success(`Serviço concluído — ${o.vehiclePlate}`);
+    }
     onChanged();
   };
 
