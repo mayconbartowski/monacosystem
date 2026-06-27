@@ -98,6 +98,33 @@ export const db = {
   // prices
   getPrices: (): PriceTable => read(K.prices, DEFAULT_PRICES),
   savePrices: (p: PriceTable) => write(K.prices, p),
+
+  /**
+   * Aplica as regras de fidelidade quando uma ordem é concluída.
+   * - Se a ordem consumiu o benefício (reward), zera o contador da placa.
+   * - Caso contrário, incrementa wash_count e libera benefício ao atingir 10.
+   * Considera apenas as 4 lavagens principais (LOYALTY_QUALIFYING_SERVICES).
+   */
+  applyLoyaltyOnCompletion: (order: Order): Vehicle | undefined => {
+    const vehicles = db.listVehicles();
+    const idx = vehicles.findIndex((v) => v.id === order.vehicleId);
+    if (idx < 0) return undefined;
+    const v = { ...vehicles[idx] };
+    if (order.loyaltyRewardUsed) {
+      v.washCount = 0;
+      v.rewardAvailable = false;
+      v.lastRewardDate = order.completedAt || new Date().toISOString();
+    } else {
+      v.washCount = (v.washCount ?? 0) + 1;
+      if (v.washCount >= LOYALTY_CYCLE_SIZE) {
+        v.washCount = LOYALTY_CYCLE_SIZE;
+        v.rewardAvailable = true;
+      }
+    }
+    vehicles[idx] = v;
+    db.saveVehicles(vehicles);
+    return v;
+  },
 };
 
 export function normalizeCpf(cpf: string): string {
