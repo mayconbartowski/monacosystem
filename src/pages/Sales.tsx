@@ -25,7 +25,7 @@ import {
   normalizeCpf, normalizePlate, uid,
 } from "@/lib/storage";
 import {
-  calcDuration, calcTotals, estimatedNewWait, getLoyalty, getServiceDef,
+  calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getServiceDef,
 } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -51,6 +51,7 @@ export default function Sales() {
   const [model, setModel] = useState("");
   const [color, setColor] = useState("");
   const [year, setYear] = useState("");
+  const [existingVehicle, setExistingVehicle] = useState<Vehicle | null>(null);
 
   const [notes, setNotes] = useState("");
   const [discount, setDiscount] = useState<number>(0);
@@ -76,29 +77,31 @@ export default function Sales() {
     }
   }, [cpf]);
 
-  // auto-fill vehicle by plate
+  // auto-fill vehicle by plate (placa = identificador da fidelidade)
   useEffect(() => {
     if (normalizePlate(plate).length >= 7) {
       const v = db.findVehicleByPlate(plate);
       if (v) {
+        setExistingVehicle(v);
         setBrand(v.brand);
         setModel(v.model);
         setColor(v.color);
         setYear(v.year);
         setCategory(v.category);
         toast.success(`Veículo reconhecido: ${v.brand} ${v.model}`);
+      } else {
+        setExistingVehicle(null);
       }
+    } else {
+      setExistingVehicle(null);
     }
   }, [plate]);
 
-  const loyalty = useMemo(
-    () => (existingCustomer ? getLoyalty(existingCustomer.totalOrders) : getLoyalty(0)),
-    [existingCustomer]
-  );
+  const loyalty = useMemo(() => getLoyaltyForVehicle(existingVehicle), [existingVehicle]);
 
   const totals = useMemo(
-    () => calcTotals(prices, category, service, extras, discount, existingCustomer ? loyalty : null),
-    [prices, category, service, extras, discount, loyalty, existingCustomer]
+    () => calcTotals(prices, category, service, extras, discount, loyalty),
+    [prices, category, service, extras, discount, loyalty]
   );
 
   const duration = useMemo(() => calcDuration(service, extras), [service, extras]);
@@ -113,7 +116,7 @@ export default function Sales() {
   const clearAll = () => {
     setCategory(null); setService(null); setExtras([]);
     setCpf(""); setName(""); setPhone(""); setEmail(""); setExistingCustomer(null);
-    setPlate(""); setBrand(""); setModel(""); setColor(""); setYear("");
+    setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setDiscount(0); setPayment(null);
   };
 
@@ -144,7 +147,7 @@ export default function Sales() {
     }
     db.upsertCustomer(cust);
 
-    // upsert vehicle
+    // upsert vehicle (placa = identificador da fidelidade; cadastra auto na venda)
     let veh = db.findVehicleByPlate(plate);
     if (!veh) {
       veh = {
@@ -156,6 +159,8 @@ export default function Sales() {
         color: color.trim(),
         year: year.trim(),
         category,
+        washCount: 0,
+        rewardAvailable: false,
       };
     } else {
       veh = { ...veh, customerId: cust.id, brand, model, color, year, category };
@@ -178,6 +183,7 @@ export default function Sales() {
       subtotal: totals.subtotal,
       discount: totals.manualDiscount,
       loyaltyDiscount: totals.loyaltyDiscount,
+      loyaltyRewardUsed: totals.loyaltyDiscount > 0,
       total: totals.total,
       paymentMethod: payment,
       notes,
@@ -373,42 +379,11 @@ export default function Sales() {
                 </Field>
               </div>
 
-              {/* Loyalty */}
-              <div className={cn(
-                "mt-3 p-3 rounded-lg border",
-                existingCustomer ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
-              )}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Trophy className={cn("h-4 w-4", existingCustomer ? "text-primary" : "text-muted-foreground")} />
-                    Programa Monaco Fidelidade
-                  </div>
-                  {existingCustomer && (
-                    <Badge variant="outline" className="border-primary/40 text-primary">
-                      {loyalty.completed} compras
-                    </Badge>
-                  )}
+              {existingCustomer && (
+                <div className="mt-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs text-muted-foreground">
+                  Cliente já cadastrado. A fidelidade agora é vinculada à <span className="text-primary font-medium">placa do veículo</span>.
                 </div>
-                {existingCustomer ? (
-                  <>
-                    <Progress value={(loyalty.inCycle / 10) * 100} className="h-2" />
-                    <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
-                      <span>{loyalty.inCycle}/10 nesta etapa</span>
-                      {loyalty.isRewardPurchase ? (
-                        <span className="text-primary font-semibold flex items-center gap-1">
-                          <Sparkles className="h-3 w-3" /> Esta compra é a premiada!
-                        </span>
-                      ) : (
-                        <span>{loyalty.untilReward} {loyalty.untilReward === 1 ? "compra restante" : "compras restantes"}</span>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-xs text-muted-foreground">
-                    Informe o CPF para verificar o status de fidelidade.
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </Panel>
         </section>
@@ -444,6 +419,69 @@ export default function Sales() {
                   {category ?? <span className="text-muted-foreground">Selecione no painel à esquerda</span>}
                 </div>
               </Field>
+
+              {/* Loyalty — vinculado à PLACA */}
+              <div className={cn(
+                "mt-2 p-3 rounded-lg border",
+                loyalty.rewardAvailable
+                  ? "border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-glow"
+                  : existingVehicle
+                  ? "border-primary/30 bg-primary/5"
+                  : "border-border bg-muted/20"
+              )}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Trophy className={cn("h-4 w-4", existingVehicle || loyalty.rewardAvailable ? "text-primary" : "text-muted-foreground")} />
+                    Fidelidade da placa
+                  </div>
+                  {existingVehicle && (
+                    <Badge variant="outline" className="border-primary/40 text-primary font-mono">
+                      {formatPlate(existingVehicle.plate)}
+                    </Badge>
+                  )}
+                </div>
+
+                {!existingVehicle && normalizePlate(plate).length < 7 && (
+                  <div className="text-xs text-muted-foreground">
+                    Informe a placa para ver o status de fidelidade.
+                  </div>
+                )}
+
+                {!existingVehicle && normalizePlate(plate).length >= 7 && (
+                  <div className="text-xs text-muted-foreground">
+                    Placa nova — esta será a 1ª lavagem do ciclo após confirmação.
+                  </div>
+                )}
+
+                {existingVehicle && loyalty.rewardAvailable && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                      <Sparkles className="h-4 w-4" /> Benefício disponível para esta placa
+                    </div>
+                    {service ? (
+                      <div className="text-xs text-muted-foreground">
+                        {service === "Platinum"
+                          ? "Platinum não recebe desconto de fidelidade — escolha outra lavagem para usar o benefício."
+                          : `Desconto de ${Math.round((totals.loyaltyDiscount / (totals.servicePrice || 1)) * 100)}% sobre a lavagem ${service} (apenas a lavagem; extras à parte).`}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">Selecione uma lavagem para aplicar o desconto.</div>
+                    )}
+                  </div>
+                )}
+
+                {existingVehicle && !loyalty.rewardAvailable && (
+                  <>
+                    <Progress value={(loyalty.washCount / 10) * 100} className="h-2" />
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
+                      <span>Lavagens acumuladas: <span className="text-foreground font-medium">{loyalty.washCount}/10</span></span>
+                      <span>
+                        Faltam {loyalty.untilReward} {loyalty.untilReward === 1 ? "lavagem" : "lavagens"}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </Panel>
 

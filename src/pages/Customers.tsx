@@ -3,9 +3,9 @@ import { AppShell } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Trophy, Car } from "lucide-react";
-import { db, brl, formatCpf, formatPhone } from "@/lib/storage";
-import { getLoyalty } from "@/lib/pricing";
+import { Progress } from "@/components/ui/progress";
+import { Search, User, Trophy, Car, Sparkles } from "lucide-react";
+import { db, brl, formatCpf, formatPhone, formatPlate } from "@/lib/storage";
 
 export default function Customers() {
   const [q, setQ] = useState("");
@@ -29,7 +29,7 @@ export default function Customers() {
       <header className="border-b border-border px-6 py-4 flex items-center gap-4">
         <div>
           <h1 className="text-xl font-semibold">Clientes</h1>
-          <p className="text-xs text-muted-foreground">{customers.length} cadastrados</p>
+          <p className="text-xs text-muted-foreground">{customers.length} cadastrados · fidelidade por placa</p>
         </div>
         <div className="ml-auto relative w-80 max-w-full">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -49,7 +49,7 @@ export default function Customers() {
               const cOrders = orders.filter((o) => o.customerId === c.id);
               const cVehicles = vehicles.filter((v) => v.customerId === c.id);
               const totalSpent = cOrders.filter((o) => o.status !== "cancelled").reduce((a, o) => a + o.total, 0);
-              const loyalty = getLoyalty(c.totalOrders);
+              const rewards = cVehicles.filter((v) => v.rewardAvailable).length;
               return (
                 <Card key={c.id} className="surface-card p-5">
                   <div className="flex items-start justify-between">
@@ -58,10 +58,12 @@ export default function Customers() {
                       <div className="text-xs text-muted-foreground font-mono">{formatCpf(c.cpf)}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">{formatPhone(c.phone)}</div>
                     </div>
-                    <Badge variant="outline" className="border-primary/40 text-primary">
-                      <Trophy className="h-3 w-3 mr-1" />
-                      {c.totalOrders}/10
-                    </Badge>
+                    {rewards > 0 && (
+                      <Badge variant="outline" className="border-primary/40 text-primary gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        {rewards} {rewards === 1 ? "benefício" : "benefícios"}
+                      </Badge>
+                    )}
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                     <Mini label="Pedidos" value={String(cOrders.length)} />
@@ -69,19 +71,31 @@ export default function Customers() {
                     <Mini label="Gasto" value={brl(totalSpent)} />
                   </div>
                   {cVehicles.length > 0 && (
-                    <div className="mt-3 text-xs text-muted-foreground flex flex-wrap gap-1">
-                      {cVehicles.slice(0, 3).map((v) => (
-                        <Badge key={v.id} variant="outline" className="border-border">
-                          <Car className="h-3 w-3 mr-1" /> {v.plate}
-                        </Badge>
+                    <div className="mt-4 space-y-2">
+                      {cVehicles.map((v) => (
+                        <div key={v.id} className="rounded-lg border border-border bg-muted/20 p-2.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2 font-mono font-medium">
+                              <Car className="h-3 w-3 text-muted-foreground" />
+                              {formatPlate(v.plate)}
+                              <span className="text-muted-foreground font-sans">· {v.brand} {v.model}</span>
+                            </div>
+                            {v.rewardAvailable ? (
+                              <span className="text-primary font-semibold flex items-center gap-1">
+                                <Trophy className="h-3 w-3" /> Pronto
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">{v.washCount ?? 0}/10</span>
+                            )}
+                          </div>
+                          <Progress
+                            value={v.rewardAvailable ? 100 : ((v.washCount ?? 0) / 10) * 100}
+                            className="h-1.5 mt-2"
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
-                  <div className="mt-3 text-[11px] text-muted-foreground">
-                    {loyalty.isRewardPurchase
-                      ? "Próxima compra: prêmio disponível"
-                      : `${loyalty.untilReward} compras até o prêmio`}
-                  </div>
                 </Card>
               );
             })}

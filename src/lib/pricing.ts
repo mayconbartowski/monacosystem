@@ -1,6 +1,6 @@
 import {
-  EXTRAS, ExtraKey, LOYALTY_DISCOUNT, LoyaltyInfo, Order, PriceTable,
-  ServiceKey, SERVICES, VehicleCategory,
+  EXTRAS, ExtraKey, LOYALTY_CYCLE_SIZE, LOYALTY_DISCOUNT,
+  LoyaltyInfo, Order, PriceTable, ServiceKey, SERVICES, Vehicle, VehicleCategory,
 } from "./domain";
 
 export function getServiceDef(key: ServiceKey) {
@@ -54,13 +54,22 @@ export function calcTotals(
   return { servicePrice, extrasPrice, subtotal, loyaltyDiscount, manualDiscount: manual, total };
 }
 
-export function getLoyalty(completed: number): LoyaltyInfo {
-  // every 10th completed order is the reward
-  const inCycle = completed % 10; // 0..9 (completed)
-  // next purchase index in cycle = inCycle + 1; reward when that == 10
-  const isRewardPurchase = inCycle === 9;
-  const untilReward = isRewardPurchase ? 0 : 9 - inCycle;
-  return { completed, inCycle, untilReward, isRewardPurchase };
+/** Calcula o status de fidelidade a partir do veículo (placa). */
+export function getLoyaltyForVehicle(vehicle: Vehicle | null | undefined): LoyaltyInfo {
+  const washCount = vehicle?.washCount ?? 0;
+  const rewardAvailable = !!vehicle?.rewardAvailable;
+  const untilReward = rewardAvailable ? 0 : Math.max(0, LOYALTY_CYCLE_SIZE - washCount);
+  return {
+    washCount,
+    untilReward,
+    rewardAvailable,
+    isRewardPurchase: rewardAvailable,
+  };
+}
+
+/** Backward-compat: hidrata um LoyaltyInfo "vazio". */
+export function emptyLoyalty(): LoyaltyInfo {
+  return { washCount: 0, untilReward: LOYALTY_CYCLE_SIZE, rewardAvailable: false, isRewardPurchase: false };
 }
 
 export function activeQueue(orders: Order[]): Order[] {
