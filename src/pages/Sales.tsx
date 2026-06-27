@@ -379,42 +379,11 @@ export default function Sales() {
                 </Field>
               </div>
 
-              {/* Loyalty */}
-              <div className={cn(
-                "mt-3 p-3 rounded-lg border",
-                existingCustomer ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
-              )}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Trophy className={cn("h-4 w-4", existingCustomer ? "text-primary" : "text-muted-foreground")} />
-                    Programa Monaco Fidelidade
-                  </div>
-                  {existingCustomer && (
-                    <Badge variant="outline" className="border-primary/40 text-primary">
-                      {loyalty.completed} compras
-                    </Badge>
-                  )}
+              {existingCustomer && (
+                <div className="mt-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs text-muted-foreground">
+                  Cliente já cadastrado. A fidelidade agora é vinculada à <span className="text-primary font-medium">placa do veículo</span>.
                 </div>
-                {existingCustomer ? (
-                  <>
-                    <Progress value={(loyalty.inCycle / 10) * 100} className="h-2" />
-                    <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
-                      <span>{loyalty.inCycle}/10 nesta etapa</span>
-                      {loyalty.isRewardPurchase ? (
-                        <span className="text-primary font-semibold flex items-center gap-1">
-                          <Sparkles className="h-3 w-3" /> Esta compra é a premiada!
-                        </span>
-                      ) : (
-                        <span>{loyalty.untilReward} {loyalty.untilReward === 1 ? "compra restante" : "compras restantes"}</span>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-xs text-muted-foreground">
-                    Informe o CPF para verificar o status de fidelidade.
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </Panel>
         </section>
