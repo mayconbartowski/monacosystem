@@ -419,6 +419,69 @@ export default function Sales() {
                   {category ?? <span className="text-muted-foreground">Selecione no painel à esquerda</span>}
                 </div>
               </Field>
+
+              {/* Loyalty — vinculado à PLACA */}
+              <div className={cn(
+                "mt-2 p-3 rounded-lg border",
+                loyalty.rewardAvailable
+                  ? "border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-glow"
+                  : existingVehicle
+                  ? "border-primary/30 bg-primary/5"
+                  : "border-border bg-muted/20"
+              )}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Trophy className={cn("h-4 w-4", existingVehicle || loyalty.rewardAvailable ? "text-primary" : "text-muted-foreground")} />
+                    Fidelidade da placa
+                  </div>
+                  {existingVehicle && (
+                    <Badge variant="outline" className="border-primary/40 text-primary font-mono">
+                      {formatPlate(existingVehicle.plate)}
+                    </Badge>
+                  )}
+                </div>
+
+                {!existingVehicle && normalizePlate(plate).length < 7 && (
+                  <div className="text-xs text-muted-foreground">
+                    Informe a placa para ver o status de fidelidade.
+                  </div>
+                )}
+
+                {!existingVehicle && normalizePlate(plate).length >= 7 && (
+                  <div className="text-xs text-muted-foreground">
+                    Placa nova — esta será a 1ª lavagem do ciclo após confirmação.
+                  </div>
+                )}
+
+                {existingVehicle && loyalty.rewardAvailable && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                      <Sparkles className="h-4 w-4" /> Benefício disponível para esta placa
+                    </div>
+                    {service ? (
+                      <div className="text-xs text-muted-foreground">
+                        {service === "Platinum"
+                          ? "Platinum não recebe desconto de fidelidade — escolha outra lavagem para usar o benefício."
+                          : `Desconto de ${Math.round((totals.loyaltyDiscount / (totals.servicePrice || 1)) * 100)}% sobre a lavagem ${service} (apenas a lavagem; extras à parte).`}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">Selecione uma lavagem para aplicar o desconto.</div>
+                    )}
+                  </div>
+                )}
+
+                {existingVehicle && !loyalty.rewardAvailable && (
+                  <>
+                    <Progress value={(loyalty.washCount / 10) * 100} className="h-2" />
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
+                      <span>Lavagens acumuladas: <span className="text-foreground font-medium">{loyalty.washCount}/10</span></span>
+                      <span>
+                        Faltam {loyalty.untilReward} {loyalty.untilReward === 1 ? "lavagem" : "lavagens"}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </Panel>
 
