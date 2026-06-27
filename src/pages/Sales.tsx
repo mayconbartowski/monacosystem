@@ -51,6 +51,7 @@ export default function Sales() {
   const [model, setModel] = useState("");
   const [color, setColor] = useState("");
   const [year, setYear] = useState("");
+  const [existingVehicle, setExistingVehicle] = useState<Vehicle | null>(null);
 
   const [notes, setNotes] = useState("");
   const [discount, setDiscount] = useState<number>(0);
@@ -76,29 +77,31 @@ export default function Sales() {
     }
   }, [cpf]);
 
-  // auto-fill vehicle by plate
+  // auto-fill vehicle by plate (placa = identificador da fidelidade)
   useEffect(() => {
     if (normalizePlate(plate).length >= 7) {
       const v = db.findVehicleByPlate(plate);
       if (v) {
+        setExistingVehicle(v);
         setBrand(v.brand);
         setModel(v.model);
         setColor(v.color);
         setYear(v.year);
         setCategory(v.category);
         toast.success(`Veículo reconhecido: ${v.brand} ${v.model}`);
+      } else {
+        setExistingVehicle(null);
       }
+    } else {
+      setExistingVehicle(null);
     }
   }, [plate]);
 
-  const loyalty = useMemo(
-    () => (existingCustomer ? getLoyalty(existingCustomer.totalOrders) : getLoyalty(0)),
-    [existingCustomer]
-  );
+  const loyalty = useMemo(() => getLoyaltyForVehicle(existingVehicle), [existingVehicle]);
 
   const totals = useMemo(
-    () => calcTotals(prices, category, service, extras, discount, existingCustomer ? loyalty : null),
-    [prices, category, service, extras, discount, loyalty, existingCustomer]
+    () => calcTotals(prices, category, service, extras, discount, loyalty),
+    [prices, category, service, extras, discount, loyalty]
   );
 
   const duration = useMemo(() => calcDuration(service, extras), [service, extras]);
