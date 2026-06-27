@@ -88,6 +88,12 @@ export interface Vehicle {
   color: string;
   year: string;
   category: VehicleCategory;
+  /** total de lavagens principais concluídas no ciclo atual (0..10) */
+  washCount: number;
+  /** indica se a placa atingiu 10 lavagens e tem benefício pendente */
+  rewardAvailable: boolean;
+  /** ISO datetime do último benefício concedido (10ª lavagem completada) */
+  lastRewardDate?: string;
 }
 
 export type PaymentMethod = "Crédito" | "Débito" | "Pix";
@@ -108,6 +114,8 @@ export interface Order {
   subtotal: number;
   discount: number;
   loyaltyDiscount: number;
+  /** marca esta ordem como a que consumiu o benefício da 10ª lavagem */
+  loyaltyRewardUsed: boolean;
   total: number;
   paymentMethod: PaymentMethod | null;
   notes: string;
@@ -119,12 +127,13 @@ export interface Order {
 }
 
 export interface LoyaltyInfo {
-  completed: number;
-  /** count toward NEXT reward in the 1..10 cycle */
-  inCycle: number;
-  /** purchases until the next reward (0 means next purchase is the reward) */
+  /** lavagens já concluídas no ciclo atual (0..10) */
+  washCount: number;
+  /** quantas faltam para liberar a próxima recompensa */
   untilReward: number;
-  /** is the current pending order eligible for the loyalty reward */
+  /** existe benefício pendente para a próxima compra desta placa */
+  rewardAvailable: boolean;
+  /** se a venda atual será cobrada como a recompensa */
   isRewardPurchase: boolean;
 }
 
@@ -134,3 +143,8 @@ export const LOYALTY_DISCOUNT: Record<ServiceKey, number> = {
   Golden: 0.25,
   Platinum: 0,
 };
+
+/** Serviços principais que contam para o programa de fidelidade. */
+export const LOYALTY_QUALIFYING_SERVICES: ServiceKey[] = ["Essencial", "Premium", "Golden", "Platinum"];
+
+export const LOYALTY_CYCLE_SIZE = 10;
