@@ -116,7 +116,7 @@ export default function Sales() {
   const clearAll = () => {
     setCategory(null); setService(null); setExtras([]);
     setCpf(""); setName(""); setPhone(""); setEmail(""); setExistingCustomer(null);
-    setPlate(""); setBrand(""); setModel(""); setColor(""); setYear("");
+    setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setDiscount(0); setPayment(null);
   };
 
@@ -147,7 +147,7 @@ export default function Sales() {
     }
     db.upsertCustomer(cust);
 
-    // upsert vehicle
+    // upsert vehicle (placa = identificador da fidelidade; cadastra auto na venda)
     let veh = db.findVehicleByPlate(plate);
     if (!veh) {
       veh = {
@@ -159,6 +159,8 @@ export default function Sales() {
         color: color.trim(),
         year: year.trim(),
         category,
+        washCount: 0,
+        rewardAvailable: false,
       };
     } else {
       veh = { ...veh, customerId: cust.id, brand, model, color, year, category };
@@ -181,6 +183,7 @@ export default function Sales() {
       subtotal: totals.subtotal,
       discount: totals.manualDiscount,
       loyaltyDiscount: totals.loyaltyDiscount,
+      loyaltyRewardUsed: totals.loyaltyDiscount > 0,
       total: totals.total,
       paymentMethod: payment,
       notes,
