@@ -25,7 +25,7 @@ import {
   normalizeCpf, normalizePlate, uid,
 } from "@/lib/storage";
 import {
-  calcDuration, calcTotals, estimatedNewWait, getLoyalty, getServiceDef,
+  calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getServiceDef,
 } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
