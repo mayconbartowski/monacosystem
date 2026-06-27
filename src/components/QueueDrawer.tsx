@@ -95,13 +95,18 @@ export function QueueDrawer({ orders, onChanged }: Props) {
                   <div className="mt-1 text-sm font-semibold text-primary">{brl(o.total)}</div>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2 text-xs">
+              <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
                 <Badge variant="outline" className="border-border bg-muted/30">
                   Lavagem {o.service}
                 </Badge>
                 {o.extras.map((e) => (
                   <Badge key={e} variant="outline" className="border-border bg-muted/30">{e}</Badge>
                 ))}
+                {o.loyaltyRewardUsed && (
+                  <Badge className="bg-primary/15 text-primary border border-primary/30 gap-1">
+                    <Sparkles className="h-3 w-3" /> Recompensa fidelidade
+                  </Badge>
+                )}
               </div>
               <div className="mt-3 flex gap-2">
                 <Button size="sm" variant="default" onClick={() => complete(o)} className="flex-1 gap-1.5">
