@@ -1,5 +1,5 @@
 import {
-  Customer, Vehicle, Order, PriceTable, DEFAULT_PRICES,
+  Customer, LOYALTY_CYCLE_SIZE, Order, PriceTable, DEFAULT_PRICES, Vehicle,
 } from "./domain";
 
 const K = {
@@ -7,7 +7,35 @@ const K = {
   vehicles: "monaco.vehicles",
   orders: "monaco.orders",
   prices: "monaco.prices",
+  loyaltyMigration: "monaco.loyaltyMigratedV2",
 };
+
+/**
+ * Migração V2: o programa de fidelidade passou de CPF para PLACA.
+ * Zera wash_count de todos os veículos e descarta o estado anterior.
+ * Roda uma única vez por navegador.
+ */
+function runLoyaltyMigrationV2() {
+  try {
+    if (typeof localStorage === "undefined") return;
+    if (localStorage.getItem(K.loyaltyMigration) === "done") return;
+    const raw = localStorage.getItem(K.vehicles);
+    if (raw) {
+      const list = JSON.parse(raw) as Vehicle[];
+      const migrated = list.map((v) => ({
+        ...v,
+        washCount: 0,
+        rewardAvailable: false,
+        lastRewardDate: undefined,
+      }));
+      localStorage.setItem(K.vehicles, JSON.stringify(migrated));
+    }
+    localStorage.setItem(K.loyaltyMigration, "done");
+  } catch {
+    /* ignore */
+  }
+}
+runLoyaltyMigrationV2();
 
 function read<T>(key: string, fallback: T): T {
   try {
