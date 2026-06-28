@@ -5,22 +5,24 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Search, User, Trophy, Car, Sparkles } from "lucide-react";
-import { db, brl, formatCpf, formatPhone, formatPlate } from "@/lib/storage";
+import { useCustomers, useOrders, useVehicles } from "@/lib/dataStore";
+import { brl, formatCpf, formatPlate, formatWhatsapp, normalizeCpf } from "@/lib/format";
 
 export default function Customers() {
   const [q, setQ] = useState("");
-  const customers = db.listCustomers();
-  const orders = db.listOrders();
-  const vehicles = db.listVehicles();
+  const customers = useCustomers();
+  const orders = useOrders();
+  const vehicles = useVehicles();
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return customers;
+    const digits = s.replace(/\D/g, "");
     return customers.filter(
       (c) =>
         c.name.toLowerCase().includes(s) ||
-        c.cpf.includes(s.replace(/\D/g, "")) ||
-        c.phone.includes(s)
+        (digits && c.cpf.includes(digits)) ||
+        (digits && c.whatsapp.includes(digits))
     );
   }, [q, customers]);
 
@@ -33,7 +35,7 @@ export default function Customers() {
         </div>
         <div className="ml-auto relative w-80 max-w-full">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, CPF ou telefone" className="pl-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp" className="pl-9" />
         </div>
       </header>
 
@@ -53,13 +55,13 @@ export default function Customers() {
               return (
                 <Card key={c.id} className="surface-card p-5">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold">{c.name}</div>
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate">{c.name}</div>
                       <div className="text-xs text-muted-foreground font-mono">{formatCpf(c.cpf)}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{formatPhone(c.phone)}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{formatWhatsapp(c.whatsapp)}</div>
                     </div>
                     {rewards > 0 && (
-                      <Badge variant="outline" className="border-primary/40 text-primary gap-1">
+                      <Badge variant="outline" className="border-primary/40 text-primary gap-1 shrink-0">
                         <Sparkles className="h-3 w-3" />
                         {rewards} {rewards === 1 ? "benefício" : "benefícios"}
                       </Badge>

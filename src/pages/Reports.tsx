@@ -3,12 +3,13 @@ import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { db, brl } from "@/lib/storage";
-import { PaymentMethod, SERVICE_KEYS } from "@/lib/domain";
+import { PaymentMethod, useOrders, useServices } from "@/lib/dataStore";
+import { brl } from "@/lib/format";
 
 export default function Reports() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const orders = db.listOrders();
+  const orders = useOrders();
+  const services = useServices();
 
   const day = useMemo(
     () => orders.filter((o) => o.createdAt.slice(0, 10) === date && o.status !== "cancelled"),
@@ -17,14 +18,15 @@ export default function Reports() {
 
   const revenue = day.reduce((a, o) => a + o.total, 0);
   const discounts = day.reduce((a, o) => a + o.discount + o.loyaltyDiscount, 0);
-  const byPayment: Record<PaymentMethod, number> = { Crédito: 0, Débito: 0, Pix: 0 };
+  const byPayment: Record<PaymentMethod, number> = { "Crédito": 0, "Débito": 0, Pix: 0 };
   day.forEach((o) => o.paymentMethod && (byPayment[o.paymentMethod] += o.total));
 
   const byService: Record<string, { count: number; total: number }> = {};
-  SERVICE_KEYS.forEach((s) => (byService[s] = { count: 0, total: 0 }));
+  services.forEach((s) => (byService[s.key] = { count: 0, total: 0 }));
   day.forEach((o) => {
-    byService[o.service].count += 1;
-    byService[o.service].total += o.total;
+    if (!byService[o.serviceKey]) byService[o.serviceKey] = { count: 0, total: 0 };
+    byService[o.serviceKey].count += 1;
+    byService[o.serviceKey].total += o.total;
   });
 
   return (
