@@ -6,16 +6,17 @@ import {
   Clock, Car, DollarSign, TrendingUp, Users, ListOrdered,
   Trophy, Sparkles, Target,
 } from "lucide-react";
-import { db, brl, formatDuration, formatPlate } from "@/lib/storage";
-import { activeQueue, totalQueueWait } from "@/lib/pricing";
+import { useCustomers, useOrders, useVehicles } from "@/lib/dataStore";
+import { brl, formatDuration, formatPlate } from "@/lib/format";
+import { activeQueue, estimatedNewWait } from "@/lib/pricing";
 
 export default function Dashboard() {
-  const orders = db.listOrders();
-  const customers = db.listCustomers();
-  const vehicles = db.listVehicles();
+  const orders = useOrders();
+  const customers = useCustomers();
+  const vehicles = useVehicles();
   const queue = activeQueue(orders);
   const today = new Date().toISOString().slice(0, 10);
-  const monthPrefix = today.slice(0, 7); // YYYY-MM
+  const monthPrefix = today.slice(0, 7);
 
   const todays = useMemo(
     () => orders.filter((o) => o.createdAt.slice(0, 10) === today && o.status !== "cancelled"),
@@ -24,15 +25,10 @@ export default function Dashboard() {
   const revenue = todays.reduce((a, o) => a + o.total, 0);
   const completed = orders.filter((o) => o.status === "completed").length;
 
-  // ---- Fidelidade (placa) ----
-  const rewardsThisMonth = useMemo(
-    () => orders.filter((o) =>
-      o.status === "completed" &&
-      o.loyaltyRewardUsed &&
+  const rewardsThisMonth = orders.filter(
+    (o) => o.status === "completed" && o.loyaltyRewardUsed &&
       (o.completedAt || o.createdAt).slice(0, 7) === monthPrefix
-    ).length,
-    [orders, monthPrefix]
-  );
+  ).length;
   const closeToReward = vehicles.filter(
     (v) => !v.rewardAvailable && ((v.washCount ?? 0) === 8 || (v.washCount ?? 0) === 9)
   );
@@ -51,7 +47,7 @@ export default function Dashboard() {
           <Metric icon={<DollarSign />} label="Faturamento hoje" value={brl(revenue)} />
           <Metric icon={<TrendingUp />} label="Vendas hoje" value={String(todays.length)} />
           <Metric icon={<Car />} label="Veículos na fila" value={String(queue.length)} />
-          <Metric icon={<Clock />} label="Tempo total fila" value={formatDuration(totalQueueWait(orders))} />
+          <Metric icon={<Clock />} label="Tempo total fila" value={formatDuration(estimatedNewWait(orders))} />
           <Metric icon={<Users />} label="Clientes cadastrados" value={String(customers.length)} />
           <Metric icon={<ListOrdered />} label="Serviços concluídos" value={String(completed)} />
         </div>
@@ -107,7 +103,6 @@ export default function Dashboard() {
           )}
         </div>
 
-
         <Card className="bg-card border-border p-5">
           <h2 className="text-sm font-semibold mb-4">Últimas vendas</h2>
           {recent.length === 0 ? (
@@ -120,7 +115,7 @@ export default function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm truncate">{o.customerName}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {o.service} {o.extras.length ? `+ ${o.extras.join(", ")}` : ""}
+                      {o.serviceKey} {o.extras.length ? `+ ${o.extras.join(", ")}` : ""}
                     </div>
                   </div>
                   <Badge variant="outline" className="text-xs">
