@@ -548,7 +548,9 @@ export async function completeOrder(id: string) {
     .select()
     .single();
   if (statData) {
-    setState({ stats: upsertList(state.stats.map((s) => ({ ...s, id: s.serviceId })), { ...mapStat(statData), id: statData.service_id } as any).map((s: any) => ({ serviceId: s.serviceId, totalWashes: s.totalWashes, sumActualMinutes: s.sumActualMinutes })) });
+    const mapped = mapStat(statData);
+    const filtered = state.stats.filter((s) => s.serviceId !== mapped.serviceId);
+    setState({ stats: [...filtered, mapped] });
   }
   return updated;
 }
