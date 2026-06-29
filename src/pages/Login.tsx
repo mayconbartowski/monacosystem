@@ -20,7 +20,7 @@ export default function Login() {
     if (role === "atendimento") return <Navigate to="/" replace />;
     return <Navigate to="/dashboard" replace />;
   }
-  void ShieldCheck;
+  
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
