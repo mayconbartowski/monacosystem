@@ -15,12 +15,7 @@ export default function Auth() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  // Aguarda loading terminar antes de redirecionar
-  // Isso garante que roles já estão carregados quando o redirect acontece
-  if (!loading && session) {
-    return <Navigate to={primaryRoute(roles)} replace />;
-  }
-
+  // loading=true → AuthContext ainda não resolveu sessão+roles → mostra spinner
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center bg-background text-muted-foreground">
@@ -29,6 +24,12 @@ export default function Auth() {
     );
   }
 
+  // loading=false + session existe + roles carregados → redireciona para a rota certa
+  if (session) {
+    return <Navigate to={primaryRoute(roles)} replace />;
+  }
+
+  // Sem sessão → mostra formulário de login
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password) return;
@@ -45,8 +46,8 @@ export default function Auth() {
         password,
       });
       if (error) throw new Error("Usuário ou senha inválidos");
-      // Não precisa de nav() aqui — o onAuthStateChange atualiza session
-      // e o <Navigate> acima cuida do redirect automaticamente
+      // Sem navigate() manual — o onAuthStateChange no AuthContext atualiza
+      // session+roles e o <Navigate> acima cuida do redirect automaticamente
     } catch (err: any) {
       toast.error(err.message || "Falha no login");
     } finally {
