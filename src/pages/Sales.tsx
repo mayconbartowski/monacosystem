@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { QueueDrawer } from "@/components/QueueDrawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,45 +11,39 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Clock, Car, User, CreditCard, Sparkles, Trophy, CheckCircle2,
-  Trash2, Tag, ChevronRight, Gem, BadgePercent, Search, Loader2,
+  Trash2, Tag, ChevronRight, Gem, BadgePercent,
 } from "lucide-react";
 import {
-  PAYMENT_METHODS, PaymentMethod, VEHICLE_CATEGORIES, VehicleCategory,
-  Customer, Vehicle, ServiceDef, useCustomers, useVehicles, useActiveServices,
-  findCustomerByCpf, findVehicleByPlate, priceFor,
-  upsertCustomer, upsertVehicle, createOrder, useOrders, vehiclesByCustomer,
-} from "@/lib/dataStore";
+  SERVICES, EXTRAS, EXTRA_KEYS, ExtraKey, ServiceKey,
+  VEHICLE_CATEGORIES, VehicleCategory, Order, PaymentMethod, Customer, Vehicle,
+} from "@/lib/domain";
 import {
-  brl, formatCpf, formatPlate, formatWhatsapp, formatDuration,
-  normalizeCpf, normalizePlate, normalizeWhatsapp, isValidWhatsapp,
-} from "@/lib/format";
+  brl, db, formatCpf, formatDuration, formatPhone, formatPlate,
+  normalizeCpf, normalizePlate, uid,
+} from "@/lib/storage";
 import {
-  calcDuration, calcTotals, EXTRAS, EXTRA_KEYS, ExtraKey,
-  estimatedNewWait, getLoyaltyForVehicle,
+  calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getServiceDef,
 } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const PAYMENTS: PaymentMethod[] = ["Crédito", "Débito", "Pix"];
+
 export default function Sales() {
-  const services = useActiveServices();
-  const customers = useCustomers();
-  const vehicles = useVehicles();
-  const orders = useOrders();
+  const [orders, setOrders] = useState<Order[]>(() => db.listOrders());
+  const refreshOrders = () => setOrders(db.listOrders());
 
   const [category, setCategory] = useState<VehicleCategory | null>(null);
-  const [serviceId, setServiceId] = useState<string | null>(null);
+  const [service, setService] = useState<ServiceKey | null>(null);
   const [extras, setExtras] = useState<ExtraKey[]>([]);
 
   const [cpf, setCpf] = useState("");
   const [name, setName] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [existingCustomer, setExistingCustomer] = useState<Customer | null>(null);
 
   const [plate, setPlate] = useState("");
@@ -61,99 +56,66 @@ export default function Sales() {
   const [notes, setNotes] = useState("");
   const [discount, setDiscount] = useState<number>(0);
   const [payment, setPayment] = useState<PaymentMethod | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const prices = useMemo(() => db.getPrices(), []);
 
-  const service = useMemo(() => services.find((s) => s.id === serviceId) || null, [services, serviceId]);
-
-  // auto-lookup customer by CPF
+  // auto-lookup customer
   useEffect(() => {
     if (normalizeCpf(cpf).length === 11) {
-      const found = findCustomerByCpf(cpf);
+      const found = db.findCustomerByCpf(cpf);
       if (found) {
-        applyCustomer(found);
+        setExistingCustomer(found);
+        setName(found.name);
+        setPhone(found.phone);
+        setEmail(found.email || "");
+        toast.success(`Cliente reconhecido: ${found.name}`);
       } else {
         setExistingCustomer(null);
       }
     } else {
       setExistingCustomer(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cpf]);
 
-  // auto-lookup vehicle by plate (fidelidade)
+  // auto-fill vehicle by plate (placa = identificador da fidelidade)
   useEffect(() => {
     if (normalizePlate(plate).length >= 7) {
-      const v = findVehicleByPlate(plate);
+      const v = db.findVehicleByPlate(plate);
       if (v) {
-        applyVehicle(v);
+        setExistingVehicle(v);
+        setBrand(v.brand);
+        setModel(v.model);
+        setColor(v.color);
+        setYear(v.year);
+        setCategory(v.category);
+        toast.success(`Veículo reconhecido: ${v.brand} ${v.model}`);
       } else {
         setExistingVehicle(null);
       }
     } else {
       setExistingVehicle(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plate]);
 
-  const applyCustomer = (c: Customer) => {
-    setExistingCustomer(c);
-    setCpf(c.cpf);
-    setName(c.name);
-    setWhatsapp(c.whatsapp);
-  };
-
-  const applyVehicle = (v: Vehicle) => {
-    setExistingVehicle(v);
-    setPlate(v.plate);
-    setBrand(v.brand);
-    setModel(v.model);
-    setColor(v.color);
-    setYear(v.year);
-    setCategory(v.category);
-    // pull customer too
-    const c = customers.find((x) => x.id === v.customerId);
-    if (c) applyCustomer(c);
-  };
-
-  // === Quick search (name/CPF/plate) ===
-  const searchResults = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (q.length < 2) return [];
-    const digits = q.replace(/\D/g, "");
-    const customerHits: { type: "customer"; customer: Customer }[] = customers
-      .filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          (digits && c.cpf.includes(digits)) ||
-          (digits && c.whatsapp.includes(digits))
-      )
-      .slice(0, 6)
-      .map((c) => ({ type: "customer" as const, customer: c }));
-    const vehicleHits: { type: "vehicle"; vehicle: Vehicle; customer?: Customer }[] = vehicles
-      .filter((v) => normalizePlate(v.plate).includes(q.toUpperCase().replace(/-/g, "")))
-      .slice(0, 6)
-      .map((v) => ({ type: "vehicle" as const, vehicle: v, customer: customers.find((c) => c.id === v.customerId) }));
-    return [...vehicleHits, ...customerHits];
-  }, [searchQuery, customers, vehicles]);
-
   const loyalty = useMemo(() => getLoyaltyForVehicle(existingVehicle), [existingVehicle]);
+
   const totals = useMemo(
-    () => calcTotals(category, service, extras, discount, loyalty),
-    [category, service, extras, discount, loyalty]
+    () => calcTotals(prices, category, service, extras, discount, loyalty),
+    [prices, category, service, extras, discount, loyalty]
   );
+
   const duration = useMemo(() => calcDuration(service, extras), [service, extras]);
   const newWait = useMemo(() => estimatedNewWait(orders), [orders]);
   const queueCount = orders.filter((o) => o.status === "queued" || o.status === "in_progress").length;
+
+  const selectedServiceDef = service ? getServiceDef(service) : null;
 
   const toggleExtra = (k: ExtraKey) =>
     setExtras((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
 
   const clearAll = () => {
-    setCategory(null); setServiceId(null); setExtras([]);
-    setCpf(""); setName(""); setWhatsapp(""); setExistingCustomer(null);
+    setCategory(null); setService(null); setExtras([]);
+    setCpf(""); setName(""); setPhone(""); setEmail(""); setExistingCustomer(null);
     setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setDiscount(0); setPayment(null);
   };
@@ -161,63 +123,86 @@ export default function Sales() {
   const canSubmit =
     !!category && !!service && !!payment &&
     normalizeCpf(cpf).length === 11 && name.trim().length >= 2 &&
-    isValidWhatsapp(whatsapp) &&
     normalizePlate(plate).length >= 7;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit || !category || !service || !payment) {
-      toast.error("Preencha categoria, serviço, cliente (CPF + nome + WhatsApp), placa e pagamento.");
+      toast.error("Preencha categoria, serviço, cliente (CPF + nome), placa e pagamento.");
       return;
     }
-    setSubmitting(true);
-    try {
-      const cust = await upsertCustomer({
-        id: existingCustomer?.id,
-        name,
-        cpf,
-        whatsapp,
-      });
-      const veh = await upsertVehicle({
-        id: existingVehicle?.id,
-        customerId: cust.id,
-        plate,
-        brand, model, color, year,
-        category,
-      });
-      const vehicleLabel = [veh.brand, veh.model, veh.color].filter(Boolean).join(" ");
-      await createOrder({
-        customerId: cust.id,
-        vehicleId: veh.id,
-        serviceId: service.id,
-        customerName: cust.name,
-        vehiclePlate: formatPlate(veh.plate),
-        vehicleLabel,
-        category,
-        serviceKey: service.key,
-        extras,
-        subtotal: totals.subtotal,
-        discount: totals.manualDiscount,
-        loyaltyDiscount: totals.loyaltyDiscount,
-        loyaltyRewardUsed: totals.loyaltyDiscount > 0,
-        total: totals.total,
-        paymentMethod: payment,
-        notes,
-        queuePosition: queueCount + 1,
-        durationMinutes: duration,
-      });
-      toast.success(`Pagamento confirmado — ${brl(totals.total)}`, {
-        description: `Veículo ${formatPlate(veh.plate)} entrou na fila (posição ${queueCount + 1}).`,
-      });
-      clearAll();
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao registrar venda");
-    } finally {
-      setSubmitting(false);
+    // upsert customer
+    let cust = existingCustomer;
+    if (!cust) {
+      cust = {
+        id: uid(),
+        cpf: normalizeCpf(cpf),
+        name: name.trim(),
+        phone: normalizeCpf(phone),
+        email: email.trim() || undefined,
+        totalOrders: 0,
+        createdAt: new Date().toISOString(),
+      };
+    } else {
+      cust = { ...cust, name: name.trim(), phone, email: email.trim() || undefined };
     }
+    db.upsertCustomer(cust);
+
+    // upsert vehicle (placa = identificador da fidelidade; cadastra auto na venda)
+    let veh = db.findVehicleByPlate(plate);
+    if (!veh) {
+      veh = {
+        id: uid(),
+        customerId: cust.id,
+        plate: normalizePlate(plate),
+        brand: brand.trim(),
+        model: model.trim(),
+        color: color.trim(),
+        year: year.trim(),
+        category,
+        washCount: 0,
+        rewardAvailable: false,
+      };
+    } else {
+      veh = { ...veh, customerId: cust.id, brand, model, color, year, category };
+    }
+    db.upsertVehicle(veh);
+
+    const vehicleLabel = [veh.brand, veh.model, veh.color].filter(Boolean).join(" ");
+
+    const order: Order = {
+      id: uid(),
+      customerId: cust.id,
+      customerName: cust.name,
+      customerCpf: cust.cpf,
+      vehicleId: veh.id,
+      vehiclePlate: formatPlate(veh.plate),
+      vehicleLabel,
+      category,
+      service,
+      extras,
+      subtotal: totals.subtotal,
+      discount: totals.manualDiscount,
+      loyaltyDiscount: totals.loyaltyDiscount,
+      loyaltyRewardUsed: totals.loyaltyDiscount > 0,
+      total: totals.total,
+      paymentMethod: payment,
+      notes,
+      queuePosition: queueCount + 1,
+      durationMinutes: duration,
+      createdAt: new Date().toISOString(),
+      status: "queued",
+    };
+    db.addOrder(order);
+    toast.success(`Pagamento confirmado — ${brl(totals.total)}`, {
+      description: `Veículo ${formatPlate(veh.plate)} entrou na fila (posição ${queueCount + 1}).`,
+    });
+    refreshOrders();
+    clearAll();
   };
 
   return (
     <AppShell>
+      {/* HEADER */}
       <header className="border-b border-border bg-gradient-surface px-6 py-4 flex items-center gap-6 sticky top-0 z-20 backdrop-blur">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
@@ -229,9 +214,11 @@ export default function Sales() {
         <div className="ml-auto flex items-center gap-3">
           <StatChip icon={<Clock className="h-4 w-4" />} label="Espera estimada" value={formatDuration(newWait)} />
           <StatChip icon={<Car className="h-4 w-4" />} label="Veículos na fila" value={String(queueCount)} />
+          <QueueDrawer orders={orders} onChanged={refreshOrders} />
         </div>
       </header>
 
+      {/* GRID */}
       <div className="flex-1 p-6 grid gap-6 lg:grid-cols-12 bg-surface-sunken overflow-auto">
         {/* LEFT — services */}
         <section className="lg:col-span-4 space-y-4">
@@ -256,13 +243,13 @@ export default function Sales() {
 
           <Panel title="Serviços" subtitle={category ? `Preços para ${category}` : "Selecione a categoria"}>
             <div className="space-y-2">
-              {services.map((s) => {
-                const price = category ? priceFor(s.id, category) : null;
-                const active = serviceId === s.id;
+              {SERVICES.map((s) => {
+                const price = category ? prices[category][s.key] : null;
+                const active = service === s.key;
                 return (
                   <button
-                    key={s.id}
-                    onClick={() => setServiceId(s.id)}
+                    key={s.key}
+                    onClick={() => setService(s.key)}
                     disabled={!category}
                     className={cn(
                       "w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3",
@@ -279,7 +266,7 @@ export default function Sales() {
                       {s.key === "Platinum" ? <Gem className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold">{s.title}</div>
+                      <div className="text-sm font-semibold">{s.name}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2">
                         <Clock className="h-3 w-3" /> {formatDuration(s.durationMinutes)}
                       </div>
@@ -299,7 +286,7 @@ export default function Sales() {
               <div className="grid grid-cols-3 gap-2">
                 {EXTRA_KEYS.map((k) => {
                   const active = extras.includes(k);
-                  const price = category ? EXTRAS[k].prices[category] : null;
+                  const price = category ? prices[category][k] : null;
                   return (
                     <button
                       key={k}
@@ -325,97 +312,42 @@ export default function Sales() {
           </Panel>
         </section>
 
-        {/* CENTER — detail + customer */}
+        {/* CENTER — service detail + customer */}
         <section className="lg:col-span-4 space-y-4">
           <Panel title="Detalhes do Serviço">
-            {service ? (
+            {selectedServiceDef ? (
               <div className="space-y-3 animate-fade-in">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-lg font-semibold">{service.title}</div>
-                    <div className="text-xs text-muted-foreground">{service.description}</div>
+                    <div className="text-lg font-semibold">{selectedServiceDef.name}</div>
+                    <div className="text-xs text-muted-foreground">{selectedServiceDef.description}</div>
                   </div>
                   <Badge className="bg-gradient-gold text-primary-foreground border-0">
-                    {category ? brl(priceFor(service.id, category)) : "—"}
+                    {category ? brl(prices[category][selectedServiceDef.key]) : "—"}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
-                  Duração base {formatDuration(service.durationMinutes)}
+                  Duração base {formatDuration(selectedServiceDef.durationMinutes)}
                   {extras.length > 0 && (
                     <> · com extras: <span className="text-primary font-medium">{formatDuration(duration)}</span></>
                   )}
                 </div>
+                <ul className="space-y-1.5 text-sm">
+                  {selectedServiceDef.included.map((i) => (
+                    <li key={i} className="flex items-center gap-2 text-foreground/90">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                      {i}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : (
               <EmptyHint icon={<Sparkles className="h-6 w-6" />} text="Selecione um serviço para ver os detalhes." />
             )}
           </Panel>
 
-          <Panel
-            title="Cliente"
-            icon={<User className="h-4 w-4" />}
-            extra={
-              <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-2 text-xs">
-                    <Search className="h-3.5 w-3.5" /> Buscar
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[320px] p-0" align="end">
-                  <Command shouldFilter={false}>
-                    <CommandInput
-                      placeholder="Buscar por nome, CPF ou placa..."
-                      value={searchQuery}
-                      onValueChange={setSearchQuery}
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        {searchQuery.length < 2 ? "Digite ao menos 2 caracteres" : "Nenhum resultado"}
-                      </CommandEmpty>
-                      {searchResults.length > 0 && (
-                        <CommandGroup heading="Resultados">
-                          {searchResults.map((r, i) =>
-                            r.type === "vehicle" ? (
-                              <CommandItem
-                                key={"v" + r.vehicle.id + i}
-                                onSelect={() => {
-                                  applyVehicle(r.vehicle);
-                                  setSearchOpen(false);
-                                  setSearchQuery("");
-                                }}
-                              >
-                                <Car className="h-3.5 w-3.5 mr-2 text-primary" />
-                                <span className="font-mono">{formatPlate(r.vehicle.plate)}</span>
-                                <span className="text-muted-foreground ml-2 truncate">
-                                  {r.vehicle.brand} {r.vehicle.model} · {r.customer?.name ?? "—"}
-                                </span>
-                              </CommandItem>
-                            ) : (
-                              <CommandItem
-                                key={"c" + r.customer.id + i}
-                                onSelect={() => {
-                                  applyCustomer(r.customer);
-                                  setSearchOpen(false);
-                                  setSearchQuery("");
-                                }}
-                              >
-                                <User className="h-3.5 w-3.5 mr-2 text-primary" />
-                                <span>{r.customer.name}</span>
-                                <span className="text-muted-foreground ml-2 font-mono text-xs">
-                                  {formatCpf(r.customer.cpf)}
-                                </span>
-                              </CommandItem>
-                            )
-                          )}
-                        </CommandGroup>
-                      )}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            }
-          >
+          <Panel title="Cliente" icon={<User className="h-4 w-4" />}>
             <div className="space-y-3">
               <Field label="CPF *">
                 <Input
@@ -429,21 +361,27 @@ export default function Sales() {
               <Field label="Nome completo *">
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do cliente" />
               </Field>
-              <Field label="WhatsApp *">
-                <Input
-                  value={formatWhatsapp(whatsapp)}
-                  onChange={(e) => setWhatsapp(normalizeWhatsapp(e.target.value))}
-                  placeholder="(00) 00000-0000"
-                  inputMode="tel"
-                />
-              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Telefone">
+                  <Input
+                    value={formatPhone(phone)}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                  />
+                </Field>
+                <Field label="Email">
+                  <Input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="opcional"
+                    type="email"
+                  />
+                </Field>
+              </div>
 
-              {existingCustomer && existingCustomer.id && (
+              {existingCustomer && (
                 <div className="mt-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs text-muted-foreground">
-                  Cliente já cadastrado. Veículos vinculados:{" "}
-                  <span className="text-foreground">
-                    {vehiclesByCustomer(existingCustomer.id).map((v) => formatPlate(v.plate)).join(", ") || "—"}
-                  </span>
+                  Cliente já cadastrado. A fidelidade agora é vinculada à <span className="text-primary font-medium">placa do veículo</span>.
                 </div>
               )}
             </div>
@@ -482,12 +420,14 @@ export default function Sales() {
                 </div>
               </Field>
 
-              {/* Loyalty — placa */}
+              {/* Loyalty — vinculado à PLACA */}
               <div className={cn(
                 "mt-2 p-3 rounded-lg border",
                 loyalty.rewardAvailable
                   ? "border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-glow"
-                  : existingVehicle ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
+                  : existingVehicle
+                  ? "border-primary/30 bg-primary/5"
+                  : "border-border bg-muted/20"
               )}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-sm font-medium">
@@ -506,26 +446,38 @@ export default function Sales() {
                     Informe a placa para ver o status de fidelidade.
                   </div>
                 )}
+
                 {!existingVehicle && normalizePlate(plate).length >= 7 && (
                   <div className="text-xs text-muted-foreground">
-                    Placa nova — esta será a 1ª lavagem do ciclo.
+                    Placa nova — esta será a 1ª lavagem do ciclo após confirmação.
                   </div>
                 )}
+
                 {existingVehicle && loyalty.rewardAvailable && (
-                  <div className="text-xs text-muted-foreground">
-                    {service?.key === "Platinum"
-                      ? "Platinum não recebe desconto de fidelidade — escolha outra lavagem para usar o benefício."
-                      : service
-                        ? `Desconto sobre a lavagem ${service.title} aplicado automaticamente.`
-                        : "Selecione uma lavagem para aplicar o desconto."}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                      <Sparkles className="h-4 w-4" /> Benefício disponível para esta placa
+                    </div>
+                    {service ? (
+                      <div className="text-xs text-muted-foreground">
+                        {service === "Platinum"
+                          ? "Platinum não recebe desconto de fidelidade — escolha outra lavagem para usar o benefício."
+                          : `Desconto de ${Math.round((totals.loyaltyDiscount / (totals.servicePrice || 1)) * 100)}% sobre a lavagem ${service} (apenas a lavagem; extras à parte).`}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">Selecione uma lavagem para aplicar o desconto.</div>
+                    )}
                   </div>
                 )}
+
                 {existingVehicle && !loyalty.rewardAvailable && (
                   <>
                     <Progress value={(loyalty.washCount / 10) * 100} className="h-2" />
                     <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
                       <span>Lavagens acumuladas: <span className="text-foreground font-medium">{loyalty.washCount}/10</span></span>
-                      <span>Faltam {loyalty.untilReward}</span>
+                      <span>
+                        Faltam {loyalty.untilReward} {loyalty.untilReward === 1 ? "lavagem" : "lavagens"}
+                      </span>
                     </div>
                   </>
                 )}
@@ -538,7 +490,7 @@ export default function Sales() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Detalhes do atendimento, instruções específicas, condição do veículo..."
-              className="min-h-[120px] resize-none"
+              className="min-h-[140px] resize-none"
             />
           </Panel>
         </section>
@@ -566,7 +518,7 @@ export default function Sales() {
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Pagamento</Label>
             <Tabs value={payment ?? ""} onValueChange={(v) => setPayment(v as PaymentMethod)} className="mt-1">
               <TabsList className="grid grid-cols-3 w-full bg-muted/40 h-10">
-                {PAYMENT_METHODS.map((p) => (
+                {PAYMENTS.map((p) => (
                   <TabsTrigger key={p} value={p} className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                     {p}
                   </TabsTrigger>
@@ -623,11 +575,11 @@ export default function Sales() {
 
           <Button
             onClick={handleSubmit}
-            disabled={!canSubmit || submitting}
+            disabled={!canSubmit}
             size="lg"
             className="gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+            <CreditCard className="h-4 w-4" />
             Efetuar Pagamento
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -637,20 +589,21 @@ export default function Sales() {
   );
 }
 
+// --- small presentational helpers ---
+
 function Panel({
-  title, subtitle, icon, extra, children,
-}: { title: string; subtitle?: string; icon?: React.ReactNode; extra?: React.ReactNode; children: React.ReactNode }) {
+  title, subtitle, icon, children,
+}: { title: string; subtitle?: string; icon?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="surface-card p-5">
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <div className="min-w-0">
+      <div className="flex items-center justify-between mb-4">
+        <div>
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             {icon && <span className="text-primary">{icon}</span>}
             {title}
           </div>
           {subtitle && <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>}
         </div>
-        {extra}
       </div>
       {children}
     </div>

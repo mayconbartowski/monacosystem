@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Search } from "lucide-react";
-import { useOrders } from "@/lib/dataStore";
-import { brl, formatDuration } from "@/lib/format";
+import { db, brl, formatDuration } from "@/lib/storage";
 
 const statusLabel: Record<string, { text: string; cls: string }> = {
   queued: { text: "Na fila", cls: "bg-primary/15 text-primary border-primary/30" },
@@ -16,7 +15,7 @@ const statusLabel: Record<string, { text: string; cls: string }> = {
 
 export default function History() {
   const [q, setQ] = useState("");
-  const orders = useOrders();
+  const orders = db.listOrders();
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -25,6 +24,7 @@ export default function History() {
     return list.filter(
       (o) =>
         o.customerName.toLowerCase().includes(s) ||
+        o.customerCpf.includes(s.replace(/\D/g, "")) ||
         o.vehiclePlate.toLowerCase().includes(s)
     );
   }, [q, orders]);
@@ -38,7 +38,7 @@ export default function History() {
         </div>
         <div className="ml-auto relative w-80 max-w-full">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por placa ou nome" className="pl-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por placa, CPF ou nome" className="pl-9" />
         </div>
       </header>
 
@@ -68,7 +68,7 @@ export default function History() {
                   <div className="col-span-2 font-mono">{o.vehiclePlate}</div>
                   <div className="col-span-3 truncate">{o.customerName}</div>
                   <div className="col-span-2">
-                    <div>{o.serviceKey}</div>
+                    <div>{o.service}</div>
                     {o.extras.length > 0 && (
                       <div className="text-[11px] text-muted-foreground">+ {o.extras.join(", ")}</div>
                     )}

@@ -1,42 +1,16 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import {
-  Car, LayoutDashboard, Users, ClipboardList, BarChart3,
-  ListOrdered, Wrench, LogOut,
-} from "lucide-react";
+import { Link, NavLink } from "react-router-dom";
+import { Car, LayoutDashboard, Users, ClipboardList, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AppRole, useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 
-interface NavItem {
-  to: string;
-  label: string;
-  icon: any;
-  allow: AppRole[];
-}
-
-const items: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, allow: ["gerencia"] },
-  { to: "/",          label: "PDV / Vendas", icon: Car,         allow: ["atendimento", "gerencia"] },
-  { to: "/fila",      label: "Fila de Lavagem", icon: ListOrdered, allow: ["lavajato", "atendimento", "gerencia"] },
-  { to: "/clientes",  label: "Clientes",     icon: Users,        allow: ["atendimento", "gerencia"] },
-  { to: "/historico", label: "Histórico",    icon: ClipboardList,allow: ["atendimento", "gerencia"] },
-  { to: "/relatorios",label: "Relatórios",   icon: BarChart3,    allow: ["gerencia"] },
-  { to: "/servicos",  label: "Serviços",     icon: Wrench,       allow: ["gerencia"] },
+const items = [
+  { to: "/", label: "PDV / Vendas", icon: Car },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/clientes", label: "Clientes", icon: Users },
+  { to: "/historico", label: "Histórico", icon: ClipboardList },
+  { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
 ];
 
-const roleLabel: Record<AppRole, string> = {
-  atendimento: "Atendimento",
-  lavajato: "Lava-jato",
-  gerencia: "Gerência",
-};
-
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { roles, fullName, user, signOut } = useAuth();
-  const nav = useNavigate();
-
-  const visible = items.filter((i) => i.allow.some((r) => roles.includes(r)));
-  const topRole = roles.includes("gerencia") ? "gerencia" : roles.includes("lavajato") ? "lavajato" : "atendimento";
-
   return (
     <div className="min-h-screen flex w-full bg-background">
       <aside className="hidden lg:flex w-60 flex-col border-r border-border bg-sidebar">
@@ -50,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
         <nav className="flex-1 p-3 space-y-1">
-          {visible.map((it) => (
+          {items.map((it) => (
             <NavLink
               key={it.to}
               to={it.to}
@@ -69,23 +43,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-sidebar-border space-y-3">
-          <div>
-            <div className="text-sm font-medium text-sidebar-foreground truncate">
-              {fullName || user?.email}
-            </div>
-            <div className="text-[11px] uppercase tracking-wider text-primary">
-              {roleLabel[topRole]}
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-muted-foreground hover:text-destructive"
-            onClick={async () => { await signOut(); nav("/auth"); }}
-          >
-            <LogOut className="h-4 w-4 mr-2" /> Sair
-          </Button>
+        <div className="p-4 text-[11px] text-muted-foreground/70 border-t border-sidebar-border">
+          v1.0 · Premium Auto Care
         </div>
       </aside>
       <main className="flex-1 min-w-0 flex flex-col">{children}</main>
