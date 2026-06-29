@@ -8,7 +8,7 @@ let seedAttempted = false;
 
 /**
  * Boots the in-memory store + realtime channels after the user is authenticated.
- * Tears them down on sign-out. Also ensures the 3 fixed accounts are seeded once.
+ * Tears them down on sign-out.
  */
 export function StoreBoot({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
@@ -33,7 +33,17 @@ export function StoreBoot({ children }: { children: ReactNode }) {
     }
   }, [session?.user?.id]);
 
-  if (loading) return null;
+  // CORREÇÃO: não retorna null durante loading — renderiza children normalmente.
+  // O AuthContext já garante que loading=true até sessão+roles estarem prontos.
+  // Retornar null aqui escondia a tela de login (tela branca no primeiro acesso).
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (session && !loaded && booting) {
     return (
       <div className="min-h-screen grid place-items-center bg-background text-muted-foreground">
@@ -44,6 +54,6 @@ export function StoreBoot({ children }: { children: ReactNode }) {
       </div>
     );
   }
+
   return <>{children}</>;
 }
-
