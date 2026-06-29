@@ -14,7 +14,6 @@ import History from "./pages/History";
 import Reports from "./pages/Reports";
 import Queue from "./pages/Queue";
 import Services from "./pages/Services";
-import Contas from "./pages/Contas";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -72,16 +71,8 @@ const App = () => (
               <Route
                 path="/fila"
                 element={
-                  <ProtectedRoute allow={["lavajato", "gerencia"]}>
+                  <ProtectedRoute allow={["lavajato", "gerencia", "atendimento"]}>
                     <Queue />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/contas"
-                element={
-                  <ProtectedRoute allow={["gerencia"]}>
-                    <Contas />
                   </ProtectedRoute>
                 }
               />

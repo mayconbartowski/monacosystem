@@ -14,33 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      app_accounts: {
-        Row: {
-          auth_user_id: string
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          updated_at: string
-          username: string
-        }
-        Insert: {
-          auth_user_id: string
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          username: string
-        }
-        Update: {
-          auth_user_id?: string
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string
-          username?: string
-        }
-        Relationships: []
-      }
       customers: {
         Row: {
           cpf: string
@@ -391,7 +364,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      resolve_login: { Args: { _username: string }; Returns: string }
     }
     Enums: {
       app_role: "atendimento" | "lavajato" | "gerencia"

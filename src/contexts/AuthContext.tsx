@@ -9,7 +9,6 @@ interface AuthState {
   user: User | null;
   roles: AppRole[];
   fullName: string;
-  // loading=true enquanto sessão OU roles ainda não foram resolvidos
   loading: boolean;
   refreshRoles: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -34,49 +33,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    // Inicializa: busca sessão + roles antes de liberar o loading
-    // Isso garante que loading=false SÓ quando tudo está pronto
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-
-      const s = data.session;
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-
       if (s?.user) {
-        // Aguarda roles antes de desligar o loading
-        await loadProfileAndRoles(s.user.id);
-      }
-
-      if (mounted) setLoading(false);
-    };
-
-    init();
-
-    // Listener para mudanças APÓS o carregamento inicial (login/logout)
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
-      if (!mounted) return;
-
-      // Ignora o INITIAL_SESSION — já tratado no init() acima
-      // Só processa eventos que mudam o estado: SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED
-      setSession(s);
-      setUser(s?.user ?? null);
-
-      if (s?.user) {
-        await loadProfileAndRoles(s.user.id);
+        // Defer Supabase fetch to next tick to avoid deadlock inside the listener
+        setTimeout(() => loadProfileAndRoles(s.user.id), 0);
       } else {
         setRoles([]);
         setFullName("");
       }
     });
 
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
+    supabase.auth.getSession().then(async ({ data }) => {
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      if (data.session?.user) await loadProfileAndRoles(data.session.user.id);
+      setLoading(false);
+    });
+
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   const refreshRoles = async () => {
@@ -114,5 +90,5 @@ export function primaryRoute(roles: AppRole[]): string {
   if (roles.includes("gerencia")) return "/dashboard";
   if (roles.includes("lavajato")) return "/fila";
   if (roles.includes("atendimento")) return "/";
-  return "/auth";
+  return "/";
 }
