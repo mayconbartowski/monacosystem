@@ -12,7 +12,7 @@ export function ProtectedRoute({
   const { session, roles, loading } = useAuth();
   const loc = useLocation();
 
-  // Enquanto loading=true, sessão E roles ainda não estão prontos — aguarda
+  // loading=true → aguarda sessão+roles estarem prontos (garantido pelo AuthContext)
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center bg-background text-muted-foreground">
@@ -21,15 +21,16 @@ export function ProtectedRoute({
     );
   }
 
+  // Sem sessão → vai para login
   if (!session) {
     return <Navigate to="/auth" state={{ from: loc.pathname }} replace />;
   }
 
-  // Só verifica roles após loading=false (garante que roles já foram buscados)
+  // Verifica permissão de role (roles já estão carregados quando chegamos aqui)
   if (allow && allow.length > 0 && !roles.some((r) => allow.includes(r))) {
     const dest = primaryRoute(roles);
-    // Evita loop: se o destino calculado for a rota atual, vai para /auth
-    if (dest === loc.pathname) {
+    // Proteção extra: evita loop se o destino for a própria rota atual
+    if (dest === loc.pathname || dest === "/auth") {
       return <Navigate to="/auth" replace />;
     }
     return <Navigate to={dest} replace />;
