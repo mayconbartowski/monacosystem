@@ -1,120 +1,80 @@
-import { Account, Role, Session } from "./domain";
+import { supabase } from "@/integrations/supabase/client";
+import { AppAccount, Role, Session } from "@/lib/domain";
 
-const K = {
-  accounts: "monaco.accounts",
-  session: "monaco.session",
-  seeded: "monaco.accountsSeededV1",
-};
+export async function loginWithUsername(username: string, password: string): Promise<Session | null> {
+  const uname = username.trim();
+  if (!uname || !password) return null;
 
-const SEED: { role: Role; login: string; password: string }[] = [
-  { role: "atendimento", login: "Atendimento", password: "#Elefante98" },
-  { role: "lavajato",    login: "Lavacarro",   password: "#SkylineGTR34" },
-  { role: "gerente",     login: "Degenuly",    password: "#Vacasgordas22" },
-];
+  // Resolve login → email via RPC (security definer)
+  const { data: emailData, error: emailErr } = await supabase.rpc("resolve_login", { _username: uname });
+  if (emailErr || !emailData) return null;
+  const email = String(emailData);
 
-async function sha256(text: string): Promise<string> {
-  const buf = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest("SHA-256", buf);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+  const { data: signIn, error: signErr } = await supabase.auth.signInWithPassword({
+    email, password,
+  });
+  if (signErr || !signIn.session) return null;
 
-function readAccounts(): Account[] {
-  try {
-    const raw = localStorage.getItem(K.accounts);
-    if (!raw) return [];
-    return JSON.parse(raw) as Account[];
-  } catch {
-    return [];
-  }
-}
+  const userId = signIn.user!.id;
+  const { data: acc } = await supabase
+    .from("app_accounts")
+    .select("role, username")
+    .eq("auth_user_id", userId)
+    .maybeSingle();
 
-function writeAccounts(list: Account[]) {
-  localStorage.setItem(K.accounts, JSON.stringify(list));
-}
-
-let seedPromise: Promise<void> | null = null;
-export function ensureSeed(): Promise<void> {
-  if (typeof localStorage === "undefined") return Promise.resolve();
-  if (seedPromise) return seedPromise;
-  seedPromise = (async () => {
-    const existing = readAccounts();
-    const byRole = new Map(existing.map((a) => [a.role, a]));
-    const next: Account[] = [];
-    for (const s of SEED) {
-      const cur = byRole.get(s.role);
-      if (cur) {
-        next.push(cur);
-      } else {
-        next.push({
-          role: s.role,
-          login: s.login,
-          passwordHash: await sha256(s.password),
-        });
-      }
-    }
-    // Sempre exatamente 3 contas, na ordem definida.
-    writeAccounts(next);
-    localStorage.setItem(K.seeded, "1");
-  })();
-  return seedPromise;
-}
-
-export async function login(loginInput: string, password: string): Promise<Session | null> {
-  await ensureSeed();
-  const accounts = readAccounts();
-  const hash = await sha256(password);
-  const match = accounts.find(
-    (a) => a.login.toLowerCase() === loginInput.trim().toLowerCase() && a.passwordHash === hash
-  );
-  if (!match) return null;
-  const session: Session = {
-    role: match.role,
-    login: match.login,
-    loggedAt: new Date().toISOString(),
-  };
-  localStorage.setItem(K.session, JSON.stringify(session));
-  return session;
-}
-
-export function logout() {
-  localStorage.removeItem(K.session);
-}
-
-export function currentSession(): Session | null {
-  try {
-    const raw = localStorage.getItem(K.session);
-    return raw ? (JSON.parse(raw) as Session) : null;
-  } catch {
+  if (!acc) {
+    await supabase.auth.signOut();
     return null;
   }
+  return {
+    role: acc.role as Role,
+    login: acc.username,
+    userId,
+    loggedAt: new Date().toISOString(),
+  };
 }
 
-export function listAccounts(): Account[] {
-  return readAccounts();
+export async function logout(): Promise<void> {
+  await supabase.auth.signOut();
 }
 
-/** Atualiza login e/ou senha de UMA das 3 contas existentes. Nunca cria contas novas. */
-export async function updateCredentials(
-  role: Role,
-  patch: { login?: string; password?: string }
-): Promise<void> {
-  const accounts = readAccounts();
-  const idx = accounts.findIndex((a) => a.role === role);
-  if (idx < 0) throw new Error("Conta inexistente");
-  const next = { ...accounts[idx] };
-  if (patch.login && patch.login.trim().length >= 3) {
-    const login = patch.login.trim();
-    const dup = accounts.find(
-      (a) => a.role !== role && a.login.toLowerCase() === login.toLowerCase()
-    );
-    if (dup) throw new Error("Login já está em uso por outra conta");
-    next.login = login;
-  }
-  if (patch.password && patch.password.length >= 6) {
-    next.passwordHash = await sha256(patch.password);
-  }
-  accounts[idx] = next;
-  writeAccounts(accounts);
+export async function loadSessionFromSupabase(): Promise<Session | null> {
+  const { data: s } = await supabase.auth.getSession();
+  if (!s.session) return null;
+  const userId = s.session.user.id;
+  const { data: acc } = await supabase
+    .from("app_accounts")
+    .select("role, username")
+    .eq("auth_user_id", userId)
+    .maybeSingle();
+  if (!acc) return null;
+  return {
+    role: acc.role as Role, login: acc.username, userId,
+    loggedAt: s.session.user.last_sign_in_at ?? new Date().toISOString(),
+  };
+}
+
+export async function listAccounts(): Promise<AppAccount[]> {
+  const { data, error } = await supabase
+    .from("app_accounts").select("id, role, username, auth_user_id")
+    .order("role");
+  if (error) throw error;
+  return (data ?? []).map((a) => ({
+    id: a.id, role: a.role as Role, username: a.username, authUserId: a.auth_user_id,
+  }));
+}
+
+export async function updateAccountUsername(accountId: string, username: string): Promise<void> {
+  const u = username.trim();
+  if (u.length < 3) throw new Error("Login muito curto");
+  const { error } = await supabase.from("app_accounts")
+    .update({ username: u }).eq("id", accountId);
+  if (error) throw error;
+}
+
+/** Atualiza apenas a senha do USUÁRIO LOGADO. */
+export async function updateOwnPassword(newPassword: string): Promise<void> {
+  if (!newPassword || newPassword.length < 6) throw new Error("Senha muito curta");
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
 }

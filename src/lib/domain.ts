@@ -76,9 +76,10 @@ export const DEFAULT_PRICES: PriceTable = {
   Luxo:   { Essencial: 320, Premium: 450, Golden: 650, Platinum: 890, Polimento: 800, Enceramento: 110, Excessos: 60 },
 };
 
-/** Overlay editável aplicado por cima dos defaults (somente serviços principais). */
 export interface ServiceOverride {
   key: ServiceKey;
+  /** UUID do registro em public.services */
+  id?: string;
   name?: string;
   description?: string;
   durationMinutes?: number;
@@ -91,10 +92,8 @@ export interface Customer {
   id: string;
   name: string;
   cpf: string;
-  /** WhatsApp do cliente (obrigatório a partir desta versão). */
+  /** WhatsApp do cliente (obrigatório). */
   phone: string;
-  /** @deprecated mantido apenas para compatibilidade de leitura. */
-  email?: string;
   totalOrders: number;
   createdAt: string;
 }
@@ -127,6 +126,7 @@ export interface Order {
   vehicleLabel: string;
   category: VehicleCategory;
   service: ServiceKey;
+  serviceId: string;
   extras: ExtraKey[];
   subtotal: number;
   discount: number;
@@ -162,30 +162,29 @@ export const LOYALTY_QUALIFYING_SERVICES: ServiceKey[] = ["Essencial", "Premium"
 export const LOYALTY_CYCLE_SIZE = 10;
 
 // ---------------- Auth ----------------
+// Mantemos o nome 'gerente' no UI, mas internamente usamos 'gerencia' (enum do banco).
+export type Role = "atendimento" | "lavajato" | "gerencia";
 
-export type Role = "atendimento" | "lavajato" | "gerente";
-
-export interface Account {
+export interface AppAccount {
+  id: string;
   role: Role;
-  /** login canônico, único, case-insensitive na comparação. */
-  login: string;
-  /** SHA-256 hex da senha. */
-  passwordHash: string;
+  username: string;
+  authUserId: string;
 }
 
 export interface Session {
   role: Role;
   login: string;
+  userId: string;
   loggedAt: string;
 }
 
 export const ROLE_LABEL: Record<Role, string> = {
   atendimento: "Atendimento",
   lavajato: "Lava-jato",
-  gerente: "Gerente",
+  gerencia: "Gerente",
 };
 
-/** Permissões granulares derivadas do papel. */
 export interface Permissions {
   pdv: boolean;
   queue: boolean;
@@ -202,7 +201,7 @@ export interface Permissions {
 
 export function permissionsFor(role: Role): Permissions {
   switch (role) {
-    case "gerente":
+    case "gerencia":
       return {
         pdv: true, queue: true,
         customersView: true, customersEdit: true, customersDelete: true,

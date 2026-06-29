@@ -18,7 +18,6 @@ export function RequireRole({ allow, children }: Props) {
   }
   if (!session) return <Navigate to="/login" replace />;
   if (role && !allow.includes(role)) {
-    // redireciona para a primeira rota permitida do papel
     if (role === "lavajato") return <Navigate to="/fila" replace />;
     if (role === "atendimento") return <Navigate to="/" replace />;
     return <Navigate to="/dashboard" replace />;
