@@ -391,6 +391,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      record_service_actual_minutes: {
+        Args: { _minutes: number; _service_id: string }
+        Returns: undefined
+      }
       resolve_login: { Args: { _username: string }; Returns: string }
     }
     Enums: {
