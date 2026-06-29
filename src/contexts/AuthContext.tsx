@@ -9,6 +9,7 @@ interface AuthState {
   user: User | null;
   roles: AppRole[];
   fullName: string;
+  // loading=true enquanto sessão OU roles ainda não foram resolvidos
   loading: boolean;
   refreshRoles: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -21,7 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [fullName, setFullName] = useState("");
-  // loading=true até termos sessão E roles carregados
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndRoles = async (uid: string) => {
@@ -36,28 +36,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // 1. Carrega sessão inicial e roles antes de sair do loading
-    supabase.auth.getSession().then(async ({ data }) => {
+    // Inicializa: busca sessão + roles antes de liberar o loading
+    // Isso garante que loading=false SÓ quando tudo está pronto
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
       if (!mounted) return;
+
       const s = data.session;
       setSession(s);
       setUser(s?.user ?? null);
+
       if (s?.user) {
+        // Aguarda roles antes de desligar o loading
         await loadProfileAndRoles(s.user.id);
       }
-      setLoading(false);
-    });
 
-    // 2. Escuta mudanças futuras (login/logout)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (mounted) setLoading(false);
+    };
+
+    init();
+
+    // Listener para mudanças APÓS o carregamento inicial (login/logout)
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
       if (!mounted) return;
+
+      // Ignora o INITIAL_SESSION — já tratado no init() acima
+      // Só processa eventos que mudam o estado: SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED
       setSession(s);
       setUser(s?.user ?? null);
+
       if (s?.user) {
-        // Defer para evitar deadlock dentro do listener do Supabase
-        setTimeout(() => {
-          if (mounted) loadProfileAndRoles(s.user.id);
-        }, 0);
+        await loadProfileAndRoles(s.user.id);
       } else {
         setRoles([]);
         setFullName("");
@@ -105,5 +114,5 @@ export function primaryRoute(roles: AppRole[]): string {
   if (roles.includes("gerencia")) return "/dashboard";
   if (roles.includes("lavajato")) return "/fila";
   if (roles.includes("atendimento")) return "/";
-  return "/auth"; // sem role definido → volta pro login
+  return "/auth";
 }
