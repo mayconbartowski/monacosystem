@@ -38,12 +38,12 @@ export default function Dashboard() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
+      <header className="border-b border-border px-4 sm:px-6 py-4">
+        <h1 className="text-lg sm:text-xl font-semibold">Dashboard</h1>
         <p className="text-xs text-muted-foreground">Visão operacional Monaco System</p>
       </header>
-      <div className="p-6 space-y-6 bg-surface-sunken flex-1 overflow-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="p-4 sm:p-6 space-y-6 bg-surface-sunken flex-1 overflow-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
           <Metric icon={<DollarSign />} label="Faturamento hoje" value={brl(revenue)} />
           <Metric icon={<TrendingUp />} label="Vendas hoje" value={String(todays.length)} />
           <Metric icon={<Car />} label="Veículos na fila" value={String(queue.length)} />
