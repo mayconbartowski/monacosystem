@@ -8,12 +8,15 @@ export type ExtraKey = "Polimento" | "Enceramento" | "Excessos";
 export const SERVICE_KEYS: ServiceKey[] = ["Essencial", "Premium", "Golden", "Platinum"];
 export const EXTRA_KEYS: ExtraKey[] = ["Polimento", "Enceramento", "Excessos"];
 
+export type ServiceIconKey = "sparkles" | "droplets" | "gem" | "crown" | "shield" | "star" | "car" | "wrench";
+
 export interface ServiceDef {
   key: ServiceKey;
   name: string;
   durationMinutes: number;
   description: string;
   included: string[];
+  icon?: ServiceIconKey;
 }
 
 export const SERVICES: ServiceDef[] = [
@@ -23,6 +26,7 @@ export const SERVICES: ServiceDef[] = [
     durationMinutes: 60,
     description: "Lavagem externa completa com produtos premium.",
     included: ["Lavagem externa", "Pneus pretos", "Secagem com microfibra", "Aromatizante"],
+    icon: "droplets",
   },
   {
     key: "Premium",
@@ -30,6 +34,7 @@ export const SERVICES: ServiceDef[] = [
     durationMinutes: 120,
     description: "Cuidado completo interno e externo para o dia a dia.",
     included: ["Tudo da Essencial", "Aspiração completa", "Limpeza de painel e bancos", "Pretinho nos plásticos"],
+    icon: "sparkles",
   },
   {
     key: "Golden",
@@ -37,6 +42,7 @@ export const SERVICES: ServiceDef[] = [
     durationMinutes: 120,
     description: "Detalhamento avançado com proteção de superfícies.",
     included: ["Tudo da Premium", "Higienização de couro / tecido", "Cera líquida de proteção", "Limpeza de motor leve"],
+    icon: "shield",
   },
   {
     key: "Platinum",
@@ -50,6 +56,7 @@ export const SERVICES: ServiceDef[] = [
       "Cera de carnaúba premium",
       "Cristalização de vidros",
     ],
+    icon: "crown",
   },
 ];
 
@@ -69,11 +76,24 @@ export const DEFAULT_PRICES: PriceTable = {
   Luxo:   { Essencial: 320, Premium: 450, Golden: 650, Platinum: 890, Polimento: 800, Enceramento: 110, Excessos: 60 },
 };
 
+/** Overlay editável aplicado por cima dos defaults (somente serviços principais). */
+export interface ServiceOverride {
+  key: ServiceKey;
+  name?: string;
+  description?: string;
+  durationMinutes?: number;
+  icon?: ServiceIconKey;
+  active: boolean;
+  order: number;
+}
+
 export interface Customer {
   id: string;
   name: string;
   cpf: string;
+  /** WhatsApp do cliente (obrigatório a partir desta versão). */
   phone: string;
+  /** @deprecated mantido apenas para compatibilidade de leitura. */
   email?: string;
   totalOrders: number;
   createdAt: string;
@@ -88,11 +108,8 @@ export interface Vehicle {
   color: string;
   year: string;
   category: VehicleCategory;
-  /** total de lavagens principais concluídas no ciclo atual (0..10) */
   washCount: number;
-  /** indica se a placa atingiu 10 lavagens e tem benefício pendente */
   rewardAvailable: boolean;
-  /** ISO datetime do último benefício concedido (10ª lavagem completada) */
   lastRewardDate?: string;
 }
 
@@ -114,7 +131,6 @@ export interface Order {
   subtotal: number;
   discount: number;
   loyaltyDiscount: number;
-  /** marca esta ordem como a que consumiu o benefício da 10ª lavagem */
   loyaltyRewardUsed: boolean;
   total: number;
   paymentMethod: PaymentMethod | null;
@@ -122,18 +138,15 @@ export interface Order {
   queuePosition: number;
   durationMinutes: number;
   createdAt: string;
+  startedAt?: string;
   completedAt?: string;
   status: OrderStatus;
 }
 
 export interface LoyaltyInfo {
-  /** lavagens já concluídas no ciclo atual (0..10) */
   washCount: number;
-  /** quantas faltam para liberar a próxima recompensa */
   untilReward: number;
-  /** existe benefício pendente para a próxima compra desta placa */
   rewardAvailable: boolean;
-  /** se a venda atual será cobrada como a recompensa */
   isRewardPurchase: boolean;
 }
 
@@ -144,7 +157,71 @@ export const LOYALTY_DISCOUNT: Record<ServiceKey, number> = {
   Platinum: 0,
 };
 
-/** Serviços principais que contam para o programa de fidelidade. */
 export const LOYALTY_QUALIFYING_SERVICES: ServiceKey[] = ["Essencial", "Premium", "Golden", "Platinum"];
 
 export const LOYALTY_CYCLE_SIZE = 10;
+
+// ---------------- Auth ----------------
+
+export type Role = "atendimento" | "lavajato" | "gerente";
+
+export interface Account {
+  role: Role;
+  /** login canônico, único, case-insensitive na comparação. */
+  login: string;
+  /** SHA-256 hex da senha. */
+  passwordHash: string;
+}
+
+export interface Session {
+  role: Role;
+  login: string;
+  loggedAt: string;
+}
+
+export const ROLE_LABEL: Record<Role, string> = {
+  atendimento: "Atendimento",
+  lavajato: "Lava-jato",
+  gerente: "Gerente",
+};
+
+/** Permissões granulares derivadas do papel. */
+export interface Permissions {
+  pdv: boolean;
+  queue: boolean;
+  customersView: boolean;
+  customersEdit: boolean;
+  customersDelete: boolean;
+  historyView: boolean;
+  historyEdit: boolean;
+  reports: boolean;
+  dashboard: boolean;
+  services: boolean;
+  settings: boolean;
+}
+
+export function permissionsFor(role: Role): Permissions {
+  switch (role) {
+    case "gerente":
+      return {
+        pdv: true, queue: true,
+        customersView: true, customersEdit: true, customersDelete: true,
+        historyView: true, historyEdit: true,
+        reports: true, dashboard: true, services: true, settings: true,
+      };
+    case "atendimento":
+      return {
+        pdv: true, queue: true,
+        customersView: true, customersEdit: false, customersDelete: false,
+        historyView: true, historyEdit: false,
+        reports: false, dashboard: false, services: false, settings: false,
+      };
+    case "lavajato":
+      return {
+        pdv: false, queue: true,
+        customersView: false, customersEdit: false, customersDelete: false,
+        historyView: false, historyEdit: false,
+        reports: false, dashboard: false, services: false, settings: false,
+      };
+  }
+}
