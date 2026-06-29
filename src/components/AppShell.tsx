@@ -22,9 +22,9 @@ const ALL_ITEMS = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { perms, session, role, logout } = useAuth();
   const navigate = useNavigate();
-  const items = ALL_ITEMS.filter((i) => perms?.[i.perm] && !(i.hideForGerente && role === "gerente"));
+  const items = ALL_ITEMS.filter((i) => perms?.[i.perm] && !(i.hideForGerente && role === "gerencia"));
 
-  const doLogout = () => { logout(); navigate("/login"); };
+  const doLogout = async () => { await logout(); navigate("/login"); };
 
   return (
     <div className="min-h-screen flex w-full bg-background">

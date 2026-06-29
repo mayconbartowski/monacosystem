@@ -19,25 +19,25 @@ import {
   Trash2, Tag, ChevronRight, BadgePercent, MessageCircle,
 } from "lucide-react";
 import {
-  EXTRAS, EXTRA_KEYS, ExtraKey, ServiceKey, SERVICES,
-  VEHICLE_CATEGORIES, VehicleCategory, Order, PaymentMethod, Customer, Vehicle,
-  ServiceOverride,
+  EXTRA_KEYS, ExtraKey, ServiceKey,
+  VEHICLE_CATEGORIES, VehicleCategory, PaymentMethod, Customer, Vehicle,
 } from "@/lib/domain";
 import {
-  brl, db, formatCpf, formatDuration, formatPhone, formatPlate,
-  normalizeCpf, normalizePlate, uid,
+  brl, formatCpf, formatDuration, formatPhone, formatPlate,
+  normalizeCpf, normalizePlate,
 } from "@/lib/storage";
 import {
   calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getServiceDef,
 } from "@/lib/pricing";
+import { useData } from "@/lib/DataContext";
+import { upsertCustomer, upsertVehicle, createOrder } from "@/services/data";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const PAYMENTS: PaymentMethod[] = ["Crédito", "Débito", "Pix"];
 
 export default function Sales() {
-  const [orders, setOrders] = useState<Order[]>(() => db.listOrders());
-  const refreshOrders = () => setOrders(db.listOrders());
+  const { orders, services, prices, findCustomerByCpf, findVehicleByPlate } = useData();
 
   const [category, setCategory] = useState<VehicleCategory | null>(null);
   const [service, setService] = useState<ServiceKey | null>(null);
@@ -58,53 +58,44 @@ export default function Sales() {
   const [notes, setNotes] = useState("");
   const [discount, setDiscount] = useState<number>(0);
   const [payment, setPayment] = useState<PaymentMethod | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const prices = useMemo(() => db.getPrices(), []);
-  const overrides: ServiceOverride[] = useMemo(
-    () => [...db.listServiceOverrides()].sort((a, b) => a.order - b.order),
-    []
-  );
   const activeServices = useMemo(
-    () => overrides.filter((o) => o.active).map((o) => ({ override: o, def: getServiceDef(o.key) })),
-    [overrides]
+    () => [...services].filter((s) => s.active).sort((a, b) => a.order - b.order)
+      .map((o) => ({ override: o, def: getServiceDef(o.key) })),
+    [services]
   );
 
-  // auto-lookup customer por CPF
   useEffect(() => {
     if (normalizeCpf(cpf).length === 11) {
-      const found = db.findCustomerByCpf(cpf);
+      const found = findCustomerByCpf(cpf);
       if (found) {
         setExistingCustomer(found);
         setName(found.name);
         setPhone(found.phone);
-        toast.success(`Cliente reconhecido: ${found.name}`);
       } else {
         setExistingCustomer(null);
       }
     } else {
       setExistingCustomer(null);
     }
-  }, [cpf]);
+  }, [cpf, findCustomerByCpf]);
 
-  // auto-fill vehicle por placa
   useEffect(() => {
     if (normalizePlate(plate).length >= 7) {
-      const v = db.findVehicleByPlate(plate);
+      const v = findVehicleByPlate(plate);
       if (v) {
         setExistingVehicle(v);
-        setBrand(v.brand);
-        setModel(v.model);
-        setColor(v.color);
-        setYear(v.year);
+        setBrand(v.brand); setModel(v.model);
+        setColor(v.color); setYear(v.year);
         setCategory(v.category);
-        toast.success(`Veículo reconhecido: ${v.brand} ${v.model}`);
       } else {
         setExistingVehicle(null);
       }
     } else {
       setExistingVehicle(null);
     }
-  }, [plate]);
+  }, [plate, findVehicleByPlate]);
 
   const loyalty = useMemo(() => getLoyaltyForVehicle(existingVehicle), [existingVehicle]);
 
@@ -118,7 +109,7 @@ export default function Sales() {
   const queueCount = orders.filter((o) => o.status === "queued" || o.status === "in_progress").length;
 
   const selectedServiceDef = service ? getServiceDef(service) : null;
-  const selectedOverride = service ? overrides.find((o) => o.key === service) : null;
+  const selectedOverride = service ? services.find((o) => o.key === service) : null;
 
   const toggleExtra = (k: ExtraKey) =>
     setExtras((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
@@ -150,87 +141,64 @@ export default function Sales() {
   };
 
   const canSubmit =
-    !!category && !!service && !!payment &&
+    !!category && !!service && !!payment && !submitting &&
     normalizeCpf(cpf).length === 11 && name.trim().length >= 2 &&
     (phone || "").replace(/\D/g, "").length >= 10 &&
     normalizePlate(plate).length >= 7;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit || !category || !service || !payment) {
       toast.error("Preencha categoria, serviço, cliente (CPF, nome, WhatsApp), placa e pagamento.");
       return;
     }
-    let cust = existingCustomer;
-    const phoneDigits = (phone || "").replace(/\D/g, "");
-    if (!cust) {
-      cust = {
-        id: uid(),
-        cpf: normalizeCpf(cpf),
+    const serviceRow = services.find((s) => s.key === service);
+    if (!serviceRow?.id) { toast.error("Serviço não encontrado no banco."); return; }
+    setSubmitting(true);
+    try {
+      const cust = await upsertCustomer({
+        id: existingCustomer?.id,
         name: name.trim(),
-        phone: phoneDigits,
-        totalOrders: 0,
-        createdAt: new Date().toISOString(),
-      };
-    } else {
-      cust = { ...cust, name: name.trim(), phone: phoneDigits };
-    }
-    db.upsertCustomer(cust);
-
-    let veh = db.findVehicleByPlate(plate);
-    if (!veh) {
-      veh = {
-        id: uid(),
+        cpf, phone,
+      });
+      const veh = await upsertVehicle({
+        id: existingVehicle?.id,
         customerId: cust.id,
-        plate: normalizePlate(plate),
-        brand: brand.trim(),
-        model: model.trim(),
-        color: color.trim(),
-        year: year.trim(),
+        plate, brand, model, color, year, category,
+      });
+      const vehicleLabel = [veh.brand, veh.model, veh.color].filter(Boolean).join(" ");
+      await createOrder({
+        customerId: cust.id,
+        customerName: cust.name,
+        vehicleId: veh.id,
+        vehiclePlate: formatPlate(veh.plate),
+        vehicleLabel,
         category,
-        washCount: 0,
-        rewardAvailable: false,
-      };
-    } else {
-      veh = { ...veh, customerId: cust.id, brand, model, color, year, category };
+        serviceId: serviceRow.id,
+        serviceKey: service,
+        extras,
+        subtotal: totals.subtotal,
+        discount: totals.manualDiscount,
+        loyaltyDiscount: totals.loyaltyDiscount,
+        loyaltyRewardUsed: totals.loyaltyDiscount > 0,
+        total: totals.total,
+        paymentMethod: payment,
+        notes,
+        queuePosition: queueCount + 1,
+        durationMinutes: duration,
+      });
+      toast.success(`Pagamento confirmado — ${brl(totals.total)}`, {
+        description: `Veículo ${formatPlate(veh.plate)} entrou na fila.`,
+      });
+      clearAll();
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao registrar pedido");
+    } finally {
+      setSubmitting(false);
     }
-    db.upsertVehicle(veh);
-
-    const vehicleLabel = [veh.brand, veh.model, veh.color].filter(Boolean).join(" ");
-
-    const order: Order = {
-      id: uid(),
-      customerId: cust.id,
-      customerName: cust.name,
-      customerCpf: cust.cpf,
-      vehicleId: veh.id,
-      vehiclePlate: formatPlate(veh.plate),
-      vehicleLabel,
-      category,
-      service,
-      extras,
-      subtotal: totals.subtotal,
-      discount: totals.manualDiscount,
-      loyaltyDiscount: totals.loyaltyDiscount,
-      loyaltyRewardUsed: totals.loyaltyDiscount > 0,
-      total: totals.total,
-      paymentMethod: payment,
-      notes,
-      queuePosition: queueCount + 1,
-      durationMinutes: duration,
-      createdAt: new Date().toISOString(),
-      status: "queued",
-    };
-    db.addOrder(order);
-    toast.success(`Pagamento confirmado — ${brl(totals.total)}`, {
-      description: `Veículo ${formatPlate(veh.plate)} entrou na fila (posição ${queueCount + 1}).`,
-    });
-    refreshOrders();
-    clearAll();
   };
 
   return (
     <AppShell>
-      {/* HEADER */}
       <header className="border-b border-border bg-gradient-surface px-6 py-4 flex items-center gap-6 sticky top-0 z-20 backdrop-blur">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
@@ -238,33 +206,25 @@ export default function Sales() {
           </h1>
           <p className="text-xs text-muted-foreground">Atendimento rápido · Monaco System</p>
         </div>
-
         <div className="ml-auto flex items-center gap-3">
           <StatChip icon={<Clock className="h-4 w-4" />} label="Espera estimada" value={formatDuration(newWait)} />
           <StatChip icon={<Car className="h-4 w-4" />} label="Veículos na fila" value={String(queueCount)} />
-          <QueueDrawer orders={orders} onChanged={refreshOrders} />
+          <QueueDrawer orders={orders} />
         </div>
       </header>
 
-      {/* GRID */}
       <div className="flex-1 p-6 grid gap-6 lg:grid-cols-12 bg-surface-sunken overflow-auto">
-        {/* LEFT — services */}
         <section className="lg:col-span-4 space-y-4">
           <Panel title="Categoria do Veículo" subtitle="Selecione antes do serviço">
             <div className="grid grid-cols-3 gap-2">
               {VEHICLE_CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCategory(c)}
+                <button key={c} onClick={() => setCategory(c)}
                   className={cn(
                     "px-3 py-3 rounded-lg border text-sm font-medium transition-all active:scale-[0.98]",
                     category === c
                       ? "border-primary bg-primary/15 text-primary shadow-glow"
                       : "border-border bg-muted/30 text-foreground hover:border-primary/40 hover:bg-muted/50"
-                  )}
-                >
-                  {c}
-                </button>
+                  )}>{c}</button>
               ))}
             </div>
           </Panel>
@@ -275,22 +235,14 @@ export default function Sales() {
                 const price = category ? prices[category][override.key] : null;
                 const active = service === override.key;
                 return (
-                  <button
-                    key={override.key}
-                    onClick={() => setService(override.key)}
-                    disabled={!category}
+                  <button key={override.key} onClick={() => setService(override.key)} disabled={!category}
                     className={cn(
                       "w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3 active:scale-[0.99]",
-                      active
-                        ? "border-primary bg-primary/10 shadow-glow"
-                        : "border-border bg-muted/20 hover:border-primary/40 hover:bg-muted/30",
+                      active ? "border-primary bg-primary/10 shadow-glow" : "border-border bg-muted/20 hover:border-primary/40 hover:bg-muted/30",
                       !category && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    <div className={cn(
-                      "h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-all",
-                      active ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-secondary-foreground"
                     )}>
+                    <div className={cn("h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-all",
+                      active ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-secondary-foreground")}>
                       <ServiceIcon iconKey={override.icon} serviceKey={override.key} className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -300,9 +252,7 @@ export default function Sales() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-primary">
-                        {price !== null ? brl(price) : "—"}
-                      </div>
+                      <div className="text-sm font-bold text-primary">{price !== null ? brl(price) : "—"}</div>
                     </div>
                   </button>
                 );
@@ -316,22 +266,14 @@ export default function Sales() {
                   const active = extras.includes(k);
                   const price = category ? prices[category][k] : null;
                   return (
-                    <button
-                      key={k}
-                      onClick={() => toggleExtra(k)}
-                      disabled={!category}
+                    <button key={k} onClick={() => toggleExtra(k)} disabled={!category}
                       className={cn(
                         "p-2.5 rounded-lg border text-xs transition-all active:scale-[0.98]",
-                        active
-                          ? "border-primary bg-primary/15 text-primary"
-                          : "border-border bg-muted/20 hover:border-primary/40",
+                        active ? "border-primary bg-primary/15 text-primary" : "border-border bg-muted/20 hover:border-primary/40",
                         !category && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
+                      )}>
                       <div className="font-medium">{k}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        {price !== null ? brl(price) : "—"}
-                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{price !== null ? brl(price) : "—"}</div>
                     </button>
                   );
                 })}
@@ -340,7 +282,6 @@ export default function Sales() {
           </Panel>
         </section>
 
-        {/* CENTER — service detail + customer */}
         <section className="lg:col-span-4 space-y-4">
           <Panel title="Detalhes do Serviço">
             {selectedServiceDef ? (
@@ -380,24 +321,12 @@ export default function Sales() {
             )}
           </Panel>
 
-          <Panel
-            title="Cliente"
-            icon={<User className="h-4 w-4" />}
-            right={
-              <div className="w-64">
-                <CustomerLiveSearch onSelect={fillFromMatch} placeholder="Buscar cliente…" />
-              </div>
-            }
-          >
+          <Panel title="Cliente" icon={<User className="h-4 w-4" />}
+            right={<div className="w-64"><CustomerLiveSearch onSelect={fillFromMatch} placeholder="Buscar cliente…" /></div>}>
             <div className="space-y-3">
               <Field label="CPF *">
-                <Input
-                  value={formatCpf(cpf)}
-                  onChange={(e) => setCpf(e.target.value)}
-                  placeholder="000.000.000-00"
-                  inputMode="numeric"
-                  className="font-mono"
-                />
+                <Input value={formatCpf(cpf)} onChange={(e) => setCpf(e.target.value)}
+                  placeholder="000.000.000-00" inputMode="numeric" className="font-mono" />
               </Field>
               <Field label="Nome completo *">
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do cliente" />
@@ -405,16 +334,10 @@ export default function Sales() {
               <Field label="WhatsApp *">
                 <div className="relative">
                   <MessageCircle className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
-                  <Input
-                    value={formatPhone(phone)}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(00) 00000-0000"
-                    inputMode="numeric"
-                    className="pl-9"
-                  />
+                  <Input value={formatPhone(phone)} onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(00) 00000-0000" inputMode="numeric" className="pl-9" />
                 </div>
               </Field>
-
               {existingCustomer && (
                 <div className="mt-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs text-muted-foreground">
                   Cliente já cadastrado. A fidelidade é vinculada à <span className="text-primary font-medium">placa do veículo</span>.
@@ -424,31 +347,18 @@ export default function Sales() {
           </Panel>
         </section>
 
-        {/* RIGHT — vehicle + notes */}
         <section className="lg:col-span-4 space-y-4">
           <Panel title="Veículo" icon={<Car className="h-4 w-4" />}>
             <div className="space-y-3">
               <Field label="Placa *">
-                <Input
-                  value={formatPlate(plate)}
-                  onChange={(e) => setPlate(e.target.value)}
-                  placeholder="ABC-1D23"
-                  className="font-mono uppercase tracking-wider"
-                />
+                <Input value={formatPlate(plate)} onChange={(e) => setPlate(e.target.value)}
+                  placeholder="ABC-1D23" className="font-mono uppercase tracking-wider" />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Marca">
-                  <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Ex: Toyota" />
-                </Field>
-                <Field label="Modelo">
-                  <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Ex: Corolla" />
-                </Field>
-                <Field label="Cor">
-                  <Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="Ex: Prata" />
-                </Field>
-                <Field label="Ano">
-                  <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="Ex: 2022" inputMode="numeric" />
-                </Field>
+                <Field label="Marca"><Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Ex: Toyota" /></Field>
+                <Field label="Modelo"><Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Ex: Corolla" /></Field>
+                <Field label="Cor"><Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="Ex: Prata" /></Field>
+                <Field label="Ano"><Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="Ex: 2022" inputMode="numeric" /></Field>
               </div>
               <Field label="Categoria detectada">
                 <div className="px-3 py-2 rounded-md bg-muted/40 text-sm border border-border">
@@ -460,9 +370,7 @@ export default function Sales() {
                 "mt-2 p-3 rounded-lg border transition-all",
                 loyalty.rewardAvailable
                   ? "border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-glow"
-                  : existingVehicle
-                  ? "border-primary/30 bg-primary/5"
-                  : "border-border bg-muted/20"
+                  : existingVehicle ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
               )}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-sm font-medium">
@@ -475,16 +383,11 @@ export default function Sales() {
                     </Badge>
                   )}
                 </div>
-
                 {!existingVehicle && normalizePlate(plate).length < 7 && (
-                  <div className="text-xs text-muted-foreground">
-                    Informe a placa para ver o status de fidelidade.
-                  </div>
+                  <div className="text-xs text-muted-foreground">Informe a placa para ver o status de fidelidade.</div>
                 )}
                 {!existingVehicle && normalizePlate(plate).length >= 7 && (
-                  <div className="text-xs text-muted-foreground">
-                    Placa nova — esta será a 1ª lavagem do ciclo após confirmação.
-                  </div>
+                  <div className="text-xs text-muted-foreground">Placa nova — esta será a 1ª lavagem do ciclo após confirmação.</div>
                 )}
                 {existingVehicle && loyalty.rewardAvailable && (
                   <div className="space-y-2">
@@ -516,33 +419,22 @@ export default function Sales() {
           </Panel>
 
           <Panel title="Observações do Atendente">
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="Detalhes do atendimento, instruções específicas, condição do veículo..."
-              className="min-h-[140px] resize-none"
-            />
+              className="min-h-[140px] resize-none" />
           </Panel>
         </section>
       </div>
 
-      {/* BOTTOM BAR */}
       <footer className="border-t border-border bg-gradient-surface px-6 py-4 sticky bottom-0 z-20">
         <div className="grid lg:grid-cols-12 gap-4 items-center">
           <div className="lg:col-span-3">
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Desconto manual (R$)</Label>
             <div className="mt-1 relative">
               <Tag className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="number" min={0}
-                value={discount || ""}
-                onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-                placeholder="0,00"
-                className="pl-9"
-              />
+              <Input type="number" min={0} value={discount || ""} onChange={(e) => setDiscount(Number(e.target.value) || 0)} placeholder="0,00" className="pl-9" />
             </div>
           </div>
-
           <div className="lg:col-span-3">
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Pagamento</Label>
             <Tabs value={payment ?? ""} onValueChange={(v) => setPayment(v as PaymentMethod)} className="mt-1">
@@ -555,7 +447,6 @@ export default function Sales() {
               </TabsList>
             </Tabs>
           </div>
-
           <div className="lg:col-span-3">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Resumo</div>
             <div className="mt-1 text-xs text-muted-foreground flex flex-col">
@@ -570,7 +461,6 @@ export default function Sales() {
               )}
             </div>
           </div>
-
           <div className="lg:col-span-3 flex items-center justify-end gap-3">
             <div className="text-right">
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Total</div>
@@ -578,7 +468,6 @@ export default function Sales() {
             </div>
           </div>
         </div>
-
         <div className="mt-3 flex gap-3 justify-end">
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -601,15 +490,10 @@ export default function Sales() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            size="lg"
-            className="gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]"
-          >
+          <Button onClick={handleSubmit} disabled={!canSubmit} size="lg"
+            className="gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
             <CreditCard className="h-4 w-4" />
-            Efetuar Pagamento
+            {submitting ? "Salvando…" : "Efetuar Pagamento"}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -618,9 +502,7 @@ export default function Sales() {
   );
 }
 
-function Panel({
-  title, subtitle, icon, right, children,
-}: { title: string; subtitle?: string; icon?: React.ReactNode; right?: React.ReactNode; children: React.ReactNode }) {
+function Panel({ title, subtitle, icon, right, children }: { title: string; subtitle?: string; icon?: React.ReactNode; right?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="surface-card p-5 transition-shadow hover:shadow-elegant">
       <div className="flex items-center justify-between gap-3 mb-4">

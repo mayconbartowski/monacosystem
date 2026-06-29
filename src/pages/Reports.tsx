@@ -3,12 +3,13 @@ import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { db, brl } from "@/lib/storage";
+import { brl } from "@/lib/storage";
 import { PaymentMethod, SERVICE_KEYS } from "@/lib/domain";
+import { useData } from "@/lib/DataContext";
 
 export default function Reports() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const orders = db.listOrders();
+  const { orders } = useData();
 
   const day = useMemo(
     () => orders.filter((o) => o.createdAt.slice(0, 10) === date && o.status !== "cancelled"),
@@ -23,6 +24,7 @@ export default function Reports() {
   const byService: Record<string, { count: number; total: number }> = {};
   SERVICE_KEYS.forEach((s) => (byService[s] = { count: 0, total: 0 }));
   day.forEach((o) => {
+    if (!byService[o.service]) byService[o.service] = { count: 0, total: 0 };
     byService[o.service].count += 1;
     byService[o.service].total += o.total;
   });

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, User, Car, IdCard } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { db, formatCpf, formatPlate } from "@/lib/storage";
+import { formatCpf, formatPlate } from "@/lib/storage";
 import { Customer, Vehicle } from "@/lib/domain";
+import { useData } from "@/lib/DataContext";
 import { cn } from "@/lib/utils";
 
 interface Match {
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function CustomerLiveSearch({ onSelect, placeholder = "Buscar por nome, CPF ou placa…", className }: Props) {
+  const { searchCustomers } = useData();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [hi, setHi] = useState(0);
@@ -34,8 +36,8 @@ export function CustomerLiveSearch({ onSelect, placeholder = "Buscar por nome, C
 
   const results = useMemo<Match[]>(() => {
     if (!q.trim()) return [];
-    return db.searchCustomers(q, 8);
-  }, [q]);
+    return searchCustomers(q, 8);
+  }, [q, searchCustomers]);
 
   useEffect(() => { setHi(0); }, [q]);
 

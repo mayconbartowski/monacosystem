@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Search } from "lucide-react";
-import { db, brl, formatDuration } from "@/lib/storage";
+import { brl, formatDuration } from "@/lib/storage";
+import { useData } from "@/lib/DataContext";
 
 const statusLabel: Record<string, { text: string; cls: string }> = {
   queued: { text: "Na fila", cls: "bg-primary/15 text-primary border-primary/30" },
@@ -15,7 +16,7 @@ const statusLabel: Record<string, { text: string; cls: string }> = {
 
 export default function History() {
   const [q, setQ] = useState("");
-  const orders = db.listOrders();
+  const { orders } = useData();
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -24,7 +25,6 @@ export default function History() {
     return list.filter(
       (o) =>
         o.customerName.toLowerCase().includes(s) ||
-        o.customerCpf.includes(s.replace(/\D/g, "")) ||
         o.vehiclePlate.toLowerCase().includes(s)
     );
   }, [q, orders]);
@@ -38,7 +38,7 @@ export default function History() {
         </div>
         <div className="ml-auto relative w-80 max-w-full">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por placa, CPF ou nome" className="pl-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por placa ou nome" className="pl-9" />
         </div>
       </header>
 
