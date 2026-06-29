@@ -1,5 +1,6 @@
 import {
   Customer, LOYALTY_CYCLE_SIZE, Order, PriceTable, DEFAULT_PRICES, Vehicle,
+  ServiceOverride, SERVICES, ServiceKey,
 } from "./domain";
 
 const K = {
@@ -7,14 +8,11 @@ const K = {
   vehicles: "monaco.vehicles",
   orders: "monaco.orders",
   prices: "monaco.prices",
+  services: "monaco.services",
   loyaltyMigration: "monaco.loyaltyMigratedV2",
 };
 
-/**
- * Migração V2: o programa de fidelidade passou de CPF para PLACA.
- * Zera wash_count de todos os veículos e descarta o estado anterior.
- * Roda uma única vez por navegador.
- */
+/** Migração V2: zera fidelidade. Roda 1x por navegador. */
 function runLoyaltyMigrationV2() {
   try {
     if (typeof localStorage === "undefined") return;
@@ -31,9 +29,7 @@ function runLoyaltyMigrationV2() {
       localStorage.setItem(K.vehicles, JSON.stringify(migrated));
     }
     localStorage.setItem(K.loyaltyMigration, "done");
-  } catch {
-    /* ignore */
-  }
+  } catch { /* ignore */ }
 }
 runLoyaltyMigrationV2();
 
@@ -51,6 +47,18 @@ function write<T>(key: string, value: T): void {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function defaultOverrides(): ServiceOverride[] {
+  return SERVICES.map((s, i) => ({
+    key: s.key,
+    name: s.name,
+    description: s.description,
+    durationMinutes: s.durationMinutes,
+    icon: s.icon,
+    active: true,
+    order: i,
+  }));
+}
+
 export const db = {
   // customers
   listCustomers: (): Customer[] => read(K.customers, []),
@@ -63,6 +71,10 @@ export const db = {
     if (idx >= 0) list[idx] = c; else list.push(c);
     db.saveCustomers(list);
     return c;
+  },
+  deleteCustomer: (id: string) => {
+    db.saveCustomers(db.listCustomers().filter((c) => c.id !== id));
+    db.saveVehicles(db.listVehicles().filter((v) => v.customerId !== id));
   },
 
   // vehicles
@@ -94,17 +106,37 @@ export const db = {
       db.saveOrders(list);
     }
   },
+  deleteOrder: (id: string) => {
+    db.saveOrders(db.listOrders().filter((o) => o.id !== id));
+  },
 
   // prices
   getPrices: (): PriceTable => read(K.prices, DEFAULT_PRICES),
   savePrices: (p: PriceTable) => write(K.prices, p),
 
-  /**
-   * Aplica as regras de fidelidade quando uma ordem é concluída.
-   * - Se a ordem consumiu o benefício (reward), zera o contador da placa.
-   * - Caso contrário, incrementa wash_count e libera benefício ao atingir 10.
-   * Considera apenas as 4 lavagens principais (LOYALTY_QUALIFYING_SERVICES).
-   */
+  // services (overlay editável)
+  listServiceOverrides: (): ServiceOverride[] => {
+    const raw = read<ServiceOverride[]>(K.services, []);
+    if (!raw.length) {
+      const seed = defaultOverrides();
+      write(K.services, seed);
+      return seed;
+    }
+    // garantir 1 entry por chave conhecida
+    const byKey = new Map(raw.map((o) => [o.key, o]));
+    const merged = defaultOverrides().map((d) => ({ ...d, ...byKey.get(d.key) }));
+    return merged;
+  },
+  saveServiceOverrides: (list: ServiceOverride[]) => write(K.services, list),
+  updateServiceOverride: (key: ServiceKey, patch: Partial<ServiceOverride>) => {
+    const list = db.listServiceOverrides();
+    const idx = list.findIndex((o) => o.key === key);
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...patch };
+      db.saveServiceOverrides(list);
+    }
+  },
+
   applyLoyaltyOnCompletion: (order: Order): Vehicle | undefined => {
     const vehicles = db.listVehicles();
     const idx = vehicles.findIndex((v) => v.id === order.vehicleId);
@@ -124,6 +156,44 @@ export const db = {
     vehicles[idx] = v;
     db.saveVehicles(vehicles);
     return v;
+  },
+
+  /** Pesquisa cruzada cliente/placa para o live search do PDV. */
+  searchCustomers: (q: string, limit = 8): {
+    customer: Customer;
+    vehicles: Vehicle[];
+    matchedBy: "name" | "cpf" | "plate";
+    matchedPlate?: string;
+  }[] => {
+    const s = q.trim().toLowerCase();
+    if (!s) return [];
+    const digits = s.replace(/\D/g, "");
+    const plateNorm = normalizePlate(s);
+    const customers = db.listCustomers();
+    const vehicles = db.listVehicles();
+    const results: { customer: Customer; vehicles: Vehicle[]; matchedBy: "name" | "cpf" | "plate"; matchedPlate?: string }[] = [];
+    const seen = new Set<string>();
+
+    for (const c of customers) {
+      const vs = vehicles.filter((v) => v.customerId === c.id);
+      if (c.name.toLowerCase().includes(s)) {
+        if (!seen.has(c.id)) { results.push({ customer: c, vehicles: vs, matchedBy: "name" }); seen.add(c.id); }
+        continue;
+      }
+      if (digits.length >= 3 && normalizeCpf(c.cpf).includes(digits)) {
+        if (!seen.has(c.id)) { results.push({ customer: c, vehicles: vs, matchedBy: "cpf" }); seen.add(c.id); }
+        continue;
+      }
+      const pv = vs.find((v) => normalizePlate(v.plate).includes(plateNorm) && plateNorm.length >= 2);
+      if (pv) {
+        if (!seen.has(c.id)) {
+          results.push({ customer: c, vehicles: vs, matchedBy: "plate", matchedPlate: pv.plate });
+          seen.add(c.id);
+        }
+      }
+      if (results.length >= limit) break;
+    }
+    return results.slice(0, limit);
   },
 };
 
