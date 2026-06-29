@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Car, ChevronDown, ChevronRight, Clock, Play, CheckCircle2,
   ListOrdered, Sparkles, Trophy, Hourglass, FileText, User, Phone, XCircle,
@@ -39,57 +40,71 @@ export default function Queue() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+      <header className="border-b border-border px-4 sm:px-6 py-4 flex items-center gap-4">
         <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2">
+          <h1 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
             <ListOrdered className="h-5 w-5 text-primary" />
             Fila de Lavagem
           </h1>
           <p className="text-xs text-muted-foreground">
-            Atualização em tempo real · {lavando.length + proximos.length} ativos
+            Tempo real · {lavando.length + proximos.length} ativos
           </p>
         </div>
       </header>
 
-      <div className="flex-1 p-6 bg-surface-sunken overflow-auto grid lg:grid-cols-3 gap-6">
-        <Column
-          title="Lavando"
-          accent="text-primary"
-          icon={<Hourglass className="h-4 w-4" />}
-          count={lavando.length}
-          emptyText="Nenhum veículo em lavagem."
-        >
-          {lavando.map((o) => (
-            <OrderCard key={o.id} order={o} canCancel={isManager} variant="in_progress" />
-          ))}
+      {/* Desktop: 3 columns */}
+      <div className="hidden lg:grid flex-1 p-6 bg-surface-sunken overflow-auto grid-cols-3 gap-6">
+        <Column title="Lavando" accent="text-primary" icon={<Hourglass className="h-4 w-4" />} count={lavando.length} emptyText="Nenhum veículo em lavagem.">
+          {lavando.map((o) => <OrderCard key={o.id} order={o} canCancel={isManager} variant="in_progress" />)}
         </Column>
+        <Column title="Próximos" accent="text-foreground" icon={<Clock className="h-4 w-4" />} count={proximos.length} emptyText="Fila vazia.">
+          {proximos.map((o, i) => <OrderCard key={o.id} order={o} canCancel={isManager} variant="queued" position={i + 1} />)}
+        </Column>
+        <Column title="Lavados (hoje)" accent="text-success" icon={<CheckCircle2 className="h-4 w-4" />} count={lavados.length} emptyText="Nada concluído hoje ainda.">
+          {lavados.slice(0, 30).map((o) => <OrderCard key={o.id} order={o} variant="completed" />)}
+        </Column>
+      </div>
 
-        <Column
-          title="Próximos"
-          accent="text-foreground"
-          icon={<Clock className="h-4 w-4" />}
-          count={proximos.length}
-          emptyText="Fila vazia."
-        >
-          {proximos.map((o, i) => (
-            <OrderCard key={o.id} order={o} canCancel={isManager} variant="queued" position={i + 1} />
-          ))}
-        </Column>
-
-        <Column
-          title="Lavados (hoje)"
-          accent="text-success"
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          count={lavados.length}
-          emptyText="Nada concluído hoje ainda."
-        >
-          {lavados.slice(0, 30).map((o) => (
-            <OrderCard key={o.id} order={o} variant="completed" />
-          ))}
-        </Column>
+      {/* Mobile: tabs */}
+      <div className="lg:hidden flex-1 p-3 bg-surface-sunken overflow-auto">
+        <Tabs defaultValue="lavando" className="w-full">
+          <TabsList className="grid grid-cols-3 w-full sticky top-0 z-10">
+            <TabsTrigger value="lavando" className="text-xs gap-1">
+              <Hourglass className="h-3.5 w-3.5" /> Lavando
+              <Badge variant="outline" className="ml-1 h-4 px-1 text-[10px]">{lavando.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="proximos" className="text-xs gap-1">
+              <Clock className="h-3.5 w-3.5" /> Próximos
+              <Badge variant="outline" className="ml-1 h-4 px-1 text-[10px]">{proximos.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="lavados" className="text-xs gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Lavados
+              <Badge variant="outline" className="ml-1 h-4 px-1 text-[10px]">{lavados.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="lavando" className="space-y-3 mt-3">
+            {lavando.length === 0
+              ? <Empty text="Nenhum veículo em lavagem." />
+              : lavando.map((o) => <OrderCard key={o.id} order={o} canCancel={isManager} variant="in_progress" />)}
+          </TabsContent>
+          <TabsContent value="proximos" className="space-y-3 mt-3">
+            {proximos.length === 0
+              ? <Empty text="Fila vazia." />
+              : proximos.map((o, i) => <OrderCard key={o.id} order={o} canCancel={isManager} variant="queued" position={i + 1} />)}
+          </TabsContent>
+          <TabsContent value="lavados" className="space-y-3 mt-3">
+            {lavados.length === 0
+              ? <Empty text="Nada concluído hoje ainda." />
+              : lavados.slice(0, 30).map((o) => <OrderCard key={o.id} order={o} variant="completed" />)}
+          </TabsContent>
+        </Tabs>
       </div>
     </AppShell>
   );
+}
+
+function Empty({ text }: { text: string }) {
+  return <div className="text-center text-muted-foreground text-xs py-12">{text}</div>;
 }
 
 function Column({
