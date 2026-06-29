@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { FormEvent, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,16 +11,23 @@ import { primaryRoute, useAuth } from "@/contexts/AuthContext";
 
 export default function Auth() {
   const { session, roles, loading } = useAuth();
-  const nav = useNavigate();
   const [busy, setBusy] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  useEffect(() => {
-    if (session && !loading) nav(primaryRoute(roles), { replace: true });
-  }, [session, roles, loading, nav]);
+  // Aguarda loading terminar antes de redirecionar
+  // Isso garante que roles já estão carregados quando o redirect acontece
+  if (!loading && session) {
+    return <Navigate to={primaryRoute(roles)} replace />;
+  }
 
-  if (session) return <Navigate to={primaryRoute(roles)} replace />;
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -38,6 +45,8 @@ export default function Auth() {
         password,
       });
       if (error) throw new Error("Usuário ou senha inválidos");
+      // Não precisa de nav() aqui — o onAuthStateChange atualiza session
+      // e o <Navigate> acima cuida do redirect automaticamente
     } catch (err: any) {
       toast.error(err.message || "Falha no login");
     } finally {
