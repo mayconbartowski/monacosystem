@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [fullName, setFullName] = useState("");
+  // loading=true até termos sessão E roles carregados
   const [loading, setLoading] = useState(true);
 
   const loadProfileAndRoles = async (uid: string) => {
@@ -33,26 +34,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    let mounted = true;
+
+    // 1. Carrega sessão inicial e roles antes de sair do loading
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!mounted) return;
+      const s = data.session;
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        // Defer Supabase fetch to next tick to avoid deadlock inside the listener
-        setTimeout(() => loadProfileAndRoles(s.user.id), 0);
+        await loadProfileAndRoles(s.user.id);
+      }
+      setLoading(false);
+    });
+
+    // 2. Escuta mudanças futuras (login/logout)
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!mounted) return;
+      setSession(s);
+      setUser(s?.user ?? null);
+      if (s?.user) {
+        // Defer para evitar deadlock dentro do listener do Supabase
+        setTimeout(() => {
+          if (mounted) loadProfileAndRoles(s.user.id);
+        }, 0);
       } else {
         setRoles([]);
         setFullName("");
       }
     });
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      if (data.session?.user) await loadProfileAndRoles(data.session.user.id);
-      setLoading(false);
-    });
-
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const refreshRoles = async () => {
@@ -90,5 +105,5 @@ export function primaryRoute(roles: AppRole[]): string {
   if (roles.includes("gerencia")) return "/dashboard";
   if (roles.includes("lavajato")) return "/fila";
   if (roles.includes("atendimento")) return "/";
-  return "/";
+  return "/auth"; // sem role definido → volta pro login
 }
