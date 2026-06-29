@@ -6,16 +6,15 @@ import {
   Clock, Car, DollarSign, TrendingUp, Users, ListOrdered,
   Trophy, Sparkles, Target,
 } from "lucide-react";
-import { db, brl, formatDuration, formatPlate } from "@/lib/storage";
+import { brl, formatDuration, formatPlate } from "@/lib/storage";
 import { activeQueue, totalQueueWait } from "@/lib/pricing";
+import { useData } from "@/lib/DataContext";
 
 export default function Dashboard() {
-  const orders = db.listOrders();
-  const customers = db.listCustomers();
-  const vehicles = db.listVehicles();
+  const { orders, customers, vehicles } = useData();
   const queue = activeQueue(orders);
   const today = new Date().toISOString().slice(0, 10);
-  const monthPrefix = today.slice(0, 7); // YYYY-MM
+  const monthPrefix = today.slice(0, 7);
 
   const todays = useMemo(
     () => orders.filter((o) => o.createdAt.slice(0, 10) === today && o.status !== "cancelled"),
@@ -24,11 +23,9 @@ export default function Dashboard() {
   const revenue = todays.reduce((a, o) => a + o.total, 0);
   const completed = orders.filter((o) => o.status === "completed").length;
 
-  // ---- Fidelidade (placa) ----
   const rewardsThisMonth = useMemo(
     () => orders.filter((o) =>
-      o.status === "completed" &&
-      o.loyaltyRewardUsed &&
+      o.status === "completed" && o.loyaltyRewardUsed &&
       (o.completedAt || o.createdAt).slice(0, 7) === monthPrefix
     ).length,
     [orders, monthPrefix]
@@ -44,7 +41,7 @@ export default function Dashboard() {
     <AppShell>
       <header className="border-b border-border px-6 py-4">
         <h1 className="text-xl font-semibold">Dashboard</h1>
-        <p className="text-xs text-muted-foreground">Visão operacional Monaco System</p>
+        <p className="text-xs text-muted-foreground">Visão operacional Monaco System · sincronizada em tempo real</p>
       </header>
       <div className="p-6 space-y-6 bg-surface-sunken flex-1 overflow-auto">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -71,9 +68,7 @@ export default function Dashboard() {
             <Card className="surface-card p-5 mt-4">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                    Benefícios disponíveis
-                  </div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Benefícios disponíveis</div>
                   {benefitsAvailable.length === 0 ? (
                     <div className="text-xs text-muted-foreground">Nenhum no momento.</div>
                   ) : (
@@ -87,9 +82,7 @@ export default function Dashboard() {
                   )}
                 </div>
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                    Próximas da recompensa
-                  </div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Próximas da recompensa</div>
                   {closeToReward.length === 0 ? (
                     <div className="text-xs text-muted-foreground">Nenhuma no momento.</div>
                   ) : (
@@ -106,7 +99,6 @@ export default function Dashboard() {
             </Card>
           )}
         </div>
-
 
         <Card className="bg-card border-border p-5">
           <h2 className="text-sm font-semibold mb-4">Últimas vendas</h2>

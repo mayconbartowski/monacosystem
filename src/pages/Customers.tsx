@@ -10,36 +10,34 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Search, User, Trophy, Car, Sparkles, MessageCircle, Trash2 } from "lucide-react";
-import { db, brl, formatCpf, formatPhone, formatPlate } from "@/lib/storage";
+import { brl, formatCpf, formatPhone, formatPlate, normalizePlate } from "@/lib/storage";
 import { useAuth } from "@/lib/authContext";
+import { useData } from "@/lib/DataContext";
+import { deleteCustomer } from "@/services/data";
 import { toast } from "sonner";
 
 export default function Customers() {
   const [q, setQ] = useState("");
-  const [tick, setTick] = useState(0);
-  const customers = useMemo(() => db.listCustomers(), [tick]);
-  const orders = useMemo(() => db.listOrders(), [tick]);
-  const vehicles = useMemo(() => db.listVehicles(), [tick]);
+  const { customers, vehicles, orders } = useData();
   const { perms } = useAuth();
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return customers;
     const digits = s.replace(/\D/g, "");
-    const plateNorm = s.replace(/[^a-z0-9]/gi, "").toUpperCase();
+    const plateNorm = normalizePlate(s);
     return customers.filter((c) => {
       if (c.name.toLowerCase().includes(s)) return true;
       if (digits.length >= 2 && c.cpf.includes(digits)) return true;
       if (c.phone.includes(digits) && digits.length >= 2) return true;
       const vs = vehicles.filter((v) => v.customerId === c.id);
-      return vs.some((v) => v.plate.toUpperCase().includes(plateNorm));
+      return vs.some((v) => normalizePlate(v.plate).includes(plateNorm) && plateNorm.length >= 2);
     });
   }, [q, customers, vehicles]);
 
-  const remove = (id: string) => {
-    db.deleteCustomer(id);
-    toast.success("Cliente excluído");
-    setTick((n) => n + 1);
+  const remove = async (id: string) => {
+    try { await deleteCustomer(id); toast.success("Cliente excluído"); }
+    catch (e: any) { toast.error(e.message ?? "Erro ao excluir"); }
   };
 
   return (
@@ -51,12 +49,8 @@ export default function Customers() {
         </div>
         <div className="ml-auto relative w-80 max-w-full">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar por nome, CPF, WhatsApp ou placa"
-            className="pl-9"
-          />
+          <Input value={q} onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar por nome, CPF, WhatsApp ou placa" className="pl-9" />
         </div>
       </header>
 
@@ -139,10 +133,7 @@ export default function Customers() {
                               <span className="text-muted-foreground">{v.washCount ?? 0}/10</span>
                             )}
                           </div>
-                          <Progress
-                            value={v.rewardAvailable ? 100 : ((v.washCount ?? 0) / 10) * 100}
-                            className="h-1.5 mt-2"
-                          />
+                          <Progress value={v.rewardAvailable ? 100 : ((v.washCount ?? 0) / 10) * 100} className="h-1.5 mt-2" />
                         </div>
                       ))}
                     </div>

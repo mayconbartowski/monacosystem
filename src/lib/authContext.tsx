@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Permissions, Role, Session, permissionsFor } from "./domain";
-import { currentSession, ensureSeed, login as doLogin, logout as doLogout } from "./auth";
+import { loadSessionFromSupabase, loginWithUsername, logout as doLogout } from "./auth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthState {
   session: Session | null;
@@ -8,7 +9,7 @@ interface AuthState {
   perms: Permissions | null;
   ready: boolean;
   login: (user: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthState | null>(null);
@@ -18,20 +19,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    ensureSeed().then(() => {
-      setSession(currentSession());
+    // 1) seed initial state from supabase storage
+    void loadSessionFromSupabase().then((s) => {
+      setSession(s);
       setReady(true);
     });
+
+    // 2) subscribe to auth changes
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setSession(null);
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        // defer to avoid deadlock
+        setTimeout(() => {
+          void loadSessionFromSupabase().then(setSession);
+        }, 0);
+      }
+    });
+    return () => { data.subscription.unsubscribe(); };
   }, []);
 
   const login = useCallback(async (user: string, password: string) => {
-    const s = await doLogin(user, password);
+    const s = await loginWithUsername(user, password);
     if (s) setSession(s);
     return !!s;
   }, []);
 
-  const logout = useCallback(() => {
-    doLogout();
+  const logout = useCallback(async () => {
+    await doLogout();
     setSession(null);
   }, []);
 

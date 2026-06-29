@@ -1,50 +1,40 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Car, ListOrdered, Trash2, CheckCircle2, Trophy, Sparkles } from "lucide-react";
+import { Clock, Car, ListOrdered, Trash2, CheckCircle2, Sparkles } from "lucide-react";
 import { LOYALTY_QUALIFYING_SERVICES, Order } from "@/lib/domain";
 import { activeQueue } from "@/lib/pricing";
-import { brl, formatDuration, db } from "@/lib/storage";
+import { brl, formatDuration } from "@/lib/storage";
+import { cancelOrder, finishOrder } from "@/services/data";
 import { toast } from "sonner";
 
 interface Props {
   orders: Order[];
-  onChanged: () => void;
 }
 
-export function QueueDrawer({ orders, onChanged }: Props) {
+export function QueueDrawer({ orders }: Props) {
   const queue = activeQueue(orders);
 
-  const complete = (o: Order) => {
-    const completedAt = new Date().toISOString();
-    db.updateOrder(o.id, { status: "completed", completedAt });
-    // mantém contador genérico do cliente (histórico)
-    const customers = db.listCustomers();
-    const idx = customers.findIndex((c) => c.id === o.customerId);
-    if (idx >= 0) {
-      customers[idx].totalOrders += 1;
-      db.saveCustomers(customers);
-    }
-    // aplica fidelidade na PLACA (apenas se foi uma lavagem qualificante)
-    if (LOYALTY_QUALIFYING_SERVICES.includes(o.service)) {
-      const veh = db.applyLoyaltyOnCompletion({ ...o, completedAt });
-      if (veh?.rewardAvailable && !o.loyaltyRewardUsed) {
-        toast.success(`Placa ${o.vehiclePlate} desbloqueou um benefício de fidelidade!`, {
-          description: "Disponível na próxima venda desta placa.",
-        });
+  const complete = async (o: Order) => {
+    try {
+      await finishOrder(o);
+      if (LOYALTY_QUALIFYING_SERVICES.includes(o.service) && !o.loyaltyRewardUsed) {
+        toast.success(`Concluído — ${o.vehiclePlate}`);
       } else {
-        toast.success(`Serviço concluído — ${o.vehiclePlate}`);
+        toast.success(`Concluído — ${o.vehiclePlate}`);
       }
-    } else {
-      toast.success(`Serviço concluído — ${o.vehiclePlate}`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao concluir");
     }
-    onChanged();
   };
 
-  const cancel = (o: Order) => {
-    db.updateOrder(o.id, { status: "cancelled" });
-    toast("Pedido cancelado");
-    onChanged();
+  const cancel = async (o: Order) => {
+    try {
+      await cancelOrder(o.id);
+      toast("Pedido cancelado");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao cancelar");
+    }
   };
 
   return (
@@ -96,9 +86,7 @@ export function QueueDrawer({ orders, onChanged }: Props) {
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
-                <Badge variant="outline" className="border-border bg-muted/30">
-                  Lavagem {o.service}
-                </Badge>
+                <Badge variant="outline" className="border-border bg-muted/30">Lavagem {o.service}</Badge>
                 {o.extras.map((e) => (
                   <Badge key={e} variant="outline" className="border-border bg-muted/30">{e}</Badge>
                 ))}

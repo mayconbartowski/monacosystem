@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,39 +7,52 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowDown, ArrowUp, Save, Clock } from "lucide-react";
-import { ServiceOverride, ServiceIconKey, VEHICLE_CATEGORIES, PriceTable, ServiceKey, ExtraKey, EXTRA_KEYS } from "@/lib/domain";
-import { db, brl } from "@/lib/storage";
-import { ServiceIcon, SERVICE_ICON_OPTIONS } from "@/components/ServiceIcon";
+import { Save, Clock } from "lucide-react";
+import { ServiceOverride, VEHICLE_CATEGORIES, VehicleCategory } from "@/lib/domain";
+import { brl } from "@/lib/storage";
+import { useData } from "@/lib/DataContext";
+import { updateServiceRow, upsertServicePrice } from "@/services/data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export default function Services() {
+  const { services: dbServices, prices: dbPrices } = useData();
   const [services, setServices] = useState<ServiceOverride[]>([]);
-  const [prices, setPrices] = useState<PriceTable>(db.getPrices());
+  const [prices, setPrices] = useState(dbPrices);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setServices([...db.listServiceOverrides()].sort((a, b) => a.order - b.order));
-  }, []);
+  useEffect(() => { setServices([...dbServices].sort((a, b) => a.order - b.order)); }, [dbServices]);
+  useEffect(() => { setPrices(dbPrices); }, [dbPrices]);
 
   const update = (i: number, patch: Partial<ServiceOverride>) =>
     setServices((cur) => cur.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
 
-  const move = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
-    if (j < 0 || j >= services.length) return;
-    const next = [...services];
-    [next[i], next[j]] = [next[j], next[i]];
-    setServices(next.map((s, idx) => ({ ...s, order: idx })));
-  };
-
-  const setPrice = (cat: keyof PriceTable, key: ServiceKey | ExtraKey, v: number) =>
+  const setPrice = (cat: VehicleCategory, key: ServiceOverride["key"], v: number) =>
     setPrices((p) => ({ ...p, [cat]: { ...p[cat], [key]: v } }));
 
-  const saveAll = () => {
-    db.saveServiceOverrides(services.map((s, i) => ({ ...s, order: i })));
-    db.savePrices(prices);
-    toast.success("Serviços e preços atualizados");
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      await Promise.all(services.map((s) => s.id ? updateServiceRow(s.id, {
+        title: s.name, description: s.description,
+        duration_minutes: s.durationMinutes ?? 60,
+        active: s.active, position: s.order,
+      }) : Promise.resolve()));
+      // prices
+      const tasks: Promise<unknown>[] = [];
+      for (const s of services) {
+        if (!s.id) continue;
+        for (const cat of VEHICLE_CATEGORIES) {
+          tasks.push(upsertServicePrice(s.id, cat, prices[cat][s.key] || 0));
+        }
+      }
+      await Promise.all(tasks);
+      toast.success("Serviços e preços atualizados");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -47,19 +60,16 @@ export default function Services() {
       <header className="border-b border-border px-6 py-4 flex items-center gap-4">
         <div>
           <h1 className="text-xl font-semibold">Serviços</h1>
-          <p className="text-xs text-muted-foreground">Gerencie título, tempo, preços, ordem e visibilidade</p>
+          <p className="text-xs text-muted-foreground">Gerencie título, tempo, preços e visibilidade · alterações sincronizam para todas as estações</p>
         </div>
-        <Button onClick={saveAll} className="ml-auto gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow">
-          <Save className="h-4 w-4" /> Salvar tudo
+        <Button onClick={saveAll} disabled={saving} className="ml-auto gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow">
+          <Save className="h-4 w-4" /> {saving ? "Salvando…" : "Salvar tudo"}
         </Button>
       </header>
       <div className="p-6 bg-surface-sunken flex-1 overflow-auto space-y-4">
         {services.map((s, i) => (
           <Card key={s.key} className={cn("surface-card p-5", !s.active && "opacity-60")}>
             <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-xl bg-primary/15 text-primary grid place-items-center shrink-0">
-                <ServiceIcon iconKey={s.icon} serviceKey={s.key} className="h-5 w-5" />
-              </div>
               <div className="flex-1 min-w-0 grid md:grid-cols-3 gap-3">
                 <div className="space-y-1.5 md:col-span-1">
                   <Label className="text-xs text-muted-foreground">Título</Label>
@@ -67,11 +77,8 @@ export default function Services() {
                 </div>
                 <div className="space-y-1.5 md:col-span-2">
                   <Label className="text-xs text-muted-foreground">Descrição</Label>
-                  <Textarea
-                    value={s.description ?? ""}
-                    onChange={(e) => update(i, { description: e.target.value })}
-                    className="min-h-[42px] resize-none"
-                  />
+                  <Textarea value={s.description ?? ""} onChange={(e) => update(i, { description: e.target.value })}
+                    className="min-h-[42px] resize-none" />
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
@@ -79,14 +86,6 @@ export default function Services() {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>Ativo</span>
                   <Switch checked={s.active} onCheckedChange={(v) => update(i, { active: v })} />
-                </div>
-                <div className="flex gap-1">
-                  <Button size="icon" variant="ghost" onClick={() => move(i, -1)} disabled={i === 0}>
-                    <ArrowUp className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => move(i, 1)} disabled={i === services.length - 1}>
-                    <ArrowDown className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
               </div>
             </div>
@@ -96,36 +95,8 @@ export default function Services() {
                 <Label className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" /> Tempo previsto (min)
                 </Label>
-                <Input
-                  type="number" min={1}
-                  value={s.durationMinutes ?? 0}
-                  onChange={(e) => update(i, { durationMinutes: Number(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="md:col-span-9 space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Ícone</Label>
-                <div className="flex flex-wrap gap-2">
-                  {SERVICE_ICON_OPTIONS.map((opt) => {
-                    const Icon = opt.Icon;
-                    const active = (s.icon ?? "sparkles") === opt.key;
-                    return (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => update(i, { icon: opt.key as ServiceIconKey })}
-                        className={cn(
-                          "h-9 w-9 rounded-lg border grid place-items-center transition-all",
-                          active
-                            ? "border-primary bg-primary/15 text-primary shadow-glow"
-                            : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40"
-                        )}
-                        title={opt.label}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </button>
-                    );
-                  })}
-                </div>
+                <Input type="number" min={1} value={s.durationMinutes ?? 0}
+                  onChange={(e) => update(i, { durationMinutes: Number(e.target.value) || 0 })} />
               </div>
             </div>
 
@@ -135,12 +106,9 @@ export default function Services() {
                 {VEHICLE_CATEGORIES.map((cat) => (
                   <div key={cat} className="space-y-1">
                     <Label className="text-[11px] text-muted-foreground">{cat}</Label>
-                    <Input
-                      type="number" min={0}
-                      value={prices[cat][s.key]}
+                    <Input type="number" min={0} value={prices[cat][s.key]}
                       onChange={(e) => setPrice(cat, s.key, Number(e.target.value) || 0)}
-                      className="font-mono"
-                    />
+                      className="font-mono" />
                     <div className="text-[10px] text-muted-foreground/70">{brl(prices[cat][s.key])}</div>
                   </div>
                 ))}
@@ -149,30 +117,8 @@ export default function Services() {
           </Card>
         ))}
 
-        <Card className="surface-card p-5">
-          <div className="text-sm font-semibold mb-3">Extras</div>
-          <div className="space-y-3">
-            {EXTRA_KEYS.map((ex) => (
-              <div key={ex} className="grid grid-cols-2 md:grid-cols-6 gap-2 items-center">
-                <div className="text-sm font-medium">{ex}</div>
-                {VEHICLE_CATEGORIES.map((cat) => (
-                  <div key={cat} className="space-y-1">
-                    <Label className="text-[11px] text-muted-foreground">{cat}</Label>
-                    <Input
-                      type="number" min={0}
-                      value={prices[cat][ex]}
-                      onChange={(e) => setPrice(cat, ex, Number(e.target.value) || 0)}
-                      className="font-mono"
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </Card>
-
         <div className="text-[11px] text-muted-foreground">
-          Criação de novos serviços estará disponível em uma próxima versão.
+          Os extras (Polimento, Enceramento, Excessos) usam preços padrão por categoria definidos no sistema.
         </div>
       </div>
     </AppShell>

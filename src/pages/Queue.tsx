@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ListOrdered, Clock, CheckCircle2, Play, Car, LogOut, RefreshCw, Trophy, Sparkles,
+  ListOrdered, Clock, CheckCircle2, Play, Car, LogOut, Trophy, Sparkles,
 } from "lucide-react";
-import { LOYALTY_QUALIFYING_SERVICES, Order } from "@/lib/domain";
+import { Order } from "@/lib/domain";
 import { activeQueue } from "@/lib/pricing";
-import { db, formatDuration, formatPlate } from "@/lib/storage";
+import { formatDuration } from "@/lib/storage";
 import { useAuth } from "@/lib/authContext";
+import { useData } from "@/lib/DataContext";
+import { finishOrder, startOrder } from "@/services/data";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ServiceIcon } from "@/components/ServiceIcon";
@@ -16,11 +18,9 @@ import { cn } from "@/lib/utils";
 export default function Queue() {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>(() => db.listOrders());
+  const { orders } = useData();
   const [, force] = useState(0);
-  const refresh = () => setOrders(db.listOrders());
 
-  // tick para tempo decorrido
   useEffect(() => {
     const t = setInterval(() => force((n) => n + 1), 30_000);
     return () => clearInterval(t);
@@ -28,32 +28,17 @@ export default function Queue() {
 
   const queue = activeQueue(orders);
 
-  const start = (o: Order) => {
-    db.updateOrder(o.id, { status: "in_progress", startedAt: new Date().toISOString() });
-    toast.success(`Lavagem iniciada — ${o.vehiclePlate}`);
-    refresh();
+  const start = async (o: Order) => {
+    try { await startOrder(o.id); toast.success(`Lavagem iniciada — ${o.vehiclePlate}`); }
+    catch (e: any) { toast.error(e.message ?? "Erro ao iniciar"); }
   };
 
-  const finish = (o: Order) => {
-    const completedAt = new Date().toISOString();
-    db.updateOrder(o.id, { status: "completed", completedAt });
-    const customers = db.listCustomers();
-    const idx = customers.findIndex((c) => c.id === o.customerId);
-    if (idx >= 0) { customers[idx].totalOrders += 1; db.saveCustomers(customers); }
-    if (LOYALTY_QUALIFYING_SERVICES.includes(o.service)) {
-      const veh = db.applyLoyaltyOnCompletion({ ...o, completedAt });
-      if (veh?.rewardAvailable && !o.loyaltyRewardUsed) {
-        toast.success(`Placa ${o.vehiclePlate} desbloqueou um benefício!`);
-      } else {
-        toast.success(`Concluído — ${o.vehiclePlate}`);
-      }
-    } else {
-      toast.success(`Concluído — ${o.vehiclePlate}`);
-    }
-    refresh();
+  const finish = async (o: Order) => {
+    try { await finishOrder(o); toast.success(`Concluído — ${o.vehiclePlate}`); }
+    catch (e: any) { toast.error(e.message ?? "Erro ao finalizar"); }
   };
 
-  const doLogout = () => { logout(); navigate("/login"); };
+  const doLogout = async () => { await logout(); navigate("/login"); };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -62,16 +47,12 @@ export default function Queue() {
         <div className="leading-tight min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>
           <div className="text-sm font-semibold flex items-center gap-1.5">
-            <ListOrdered className="h-3.5 w-3.5 text-primary" />
-            Fila de Lavagem
+            <ListOrdered className="h-3.5 w-3.5 text-primary" /> Fila de Lavagem
           </div>
         </div>
         <Badge variant="outline" className="ml-auto border-primary/40 text-primary">
           {queue.length} veíc.
         </Badge>
-        <Button size="icon" variant="ghost" onClick={refresh} aria-label="Atualizar">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
         <Button size="icon" variant="ghost" onClick={doLogout} aria-label="Sair">
           <LogOut className="h-4 w-4" />
         </Button>
@@ -89,13 +70,7 @@ export default function Queue() {
             const elapsed = started ? Math.max(0, Math.floor((Date.now() - started.getTime()) / 60000)) : 0;
             const inProgress = o.status === "in_progress";
             return (
-              <div
-                key={o.id}
-                className={cn(
-                  "surface-card p-4 animate-fade-in",
-                  inProgress && "border-primary/50 shadow-glow"
-                )}
-              >
+              <div key={o.id} className={cn("surface-card p-4 animate-fade-in", inProgress && "border-primary/50 shadow-glow")}>
                 <div className="flex items-start gap-3">
                   <div className="h-12 w-12 rounded-xl bg-primary/15 text-primary grid place-items-center shrink-0 text-lg font-bold">
                     {i + 1}
@@ -136,22 +111,14 @@ export default function Queue() {
 
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {!inProgress ? (
-                    <Button
-                      size="lg"
-                      onClick={() => start(o)}
-                      className="col-span-2 h-12 gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    >
-                      <Play className="h-5 w-5" />
-                      Iniciar lavagem
+                    <Button size="lg" onClick={() => start(o)}
+                      className="col-span-2 h-12 gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                      <Play className="h-5 w-5" /> Iniciar lavagem
                     </Button>
                   ) : (
-                    <Button
-                      size="lg"
-                      onClick={() => finish(o)}
-                      className="col-span-2 h-12 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold"
-                    >
-                      <CheckCircle2 className="h-5 w-5" />
-                      Finalizar
+                    <Button size="lg" onClick={() => finish(o)}
+                      className="col-span-2 h-12 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+                      <CheckCircle2 className="h-5 w-5" /> Finalizar
                     </Button>
                   )}
                 </div>
