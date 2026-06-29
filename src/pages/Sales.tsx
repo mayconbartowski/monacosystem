@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { QueueDrawer } from "@/components/QueueDrawer";
+import { CustomerLiveSearch } from "@/components/CustomerLiveSearch";
+import { ServiceIcon } from "@/components/ServiceIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,11 +16,12 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Clock, Car, User, CreditCard, Sparkles, Trophy, CheckCircle2,
-  Trash2, Tag, ChevronRight, Gem, BadgePercent,
+  Trash2, Tag, ChevronRight, BadgePercent, MessageCircle,
 } from "lucide-react";
 import {
-  SERVICES, EXTRAS, EXTRA_KEYS, ExtraKey, ServiceKey,
+  EXTRAS, EXTRA_KEYS, ExtraKey, ServiceKey, SERVICES,
   VEHICLE_CATEGORIES, VehicleCategory, Order, PaymentMethod, Customer, Vehicle,
+  ServiceOverride,
 } from "@/lib/domain";
 import {
   brl, db, formatCpf, formatDuration, formatPhone, formatPlate,
@@ -43,7 +46,6 @@ export default function Sales() {
   const [cpf, setCpf] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [existingCustomer, setExistingCustomer] = useState<Customer | null>(null);
 
   const [plate, setPlate] = useState("");
@@ -58,8 +60,16 @@ export default function Sales() {
   const [payment, setPayment] = useState<PaymentMethod | null>(null);
 
   const prices = useMemo(() => db.getPrices(), []);
+  const overrides: ServiceOverride[] = useMemo(
+    () => [...db.listServiceOverrides()].sort((a, b) => a.order - b.order),
+    []
+  );
+  const activeServices = useMemo(
+    () => overrides.filter((o) => o.active).map((o) => ({ override: o, def: getServiceDef(o.key) })),
+    [overrides]
+  );
 
-  // auto-lookup customer
+  // auto-lookup customer por CPF
   useEffect(() => {
     if (normalizeCpf(cpf).length === 11) {
       const found = db.findCustomerByCpf(cpf);
@@ -67,7 +77,6 @@ export default function Sales() {
         setExistingCustomer(found);
         setName(found.name);
         setPhone(found.phone);
-        setEmail(found.email || "");
         toast.success(`Cliente reconhecido: ${found.name}`);
       } else {
         setExistingCustomer(null);
@@ -77,7 +86,7 @@ export default function Sales() {
     }
   }, [cpf]);
 
-  // auto-fill vehicle by plate (placa = identificador da fidelidade)
+  // auto-fill vehicle por placa
   useEffect(() => {
     if (normalizePlate(plate).length >= 7) {
       const v = db.findVehicleByPlate(plate);
@@ -109,45 +118,64 @@ export default function Sales() {
   const queueCount = orders.filter((o) => o.status === "queued" || o.status === "in_progress").length;
 
   const selectedServiceDef = service ? getServiceDef(service) : null;
+  const selectedOverride = service ? overrides.find((o) => o.key === service) : null;
 
   const toggleExtra = (k: ExtraKey) =>
     setExtras((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
 
   const clearAll = () => {
     setCategory(null); setService(null); setExtras([]);
-    setCpf(""); setName(""); setPhone(""); setEmail(""); setExistingCustomer(null);
+    setCpf(""); setName(""); setPhone(""); setExistingCustomer(null);
     setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setDiscount(0); setPayment(null);
+  };
+
+  const fillFromMatch = (m: {
+    customer: Customer; vehicles: Vehicle[]; matchedPlate?: string;
+  }) => {
+    const c = m.customer;
+    setExistingCustomer(c);
+    setCpf(c.cpf); setName(c.name); setPhone(c.phone);
+    const pick = m.matchedPlate
+      ? m.vehicles.find((v) => v.plate === m.matchedPlate)
+      : m.vehicles[0];
+    if (pick) {
+      setExistingVehicle(pick);
+      setPlate(pick.plate);
+      setBrand(pick.brand); setModel(pick.model);
+      setColor(pick.color); setYear(pick.year);
+      setCategory(pick.category);
+    }
+    toast.success(`Cliente carregado: ${c.name}`);
   };
 
   const canSubmit =
     !!category && !!service && !!payment &&
     normalizeCpf(cpf).length === 11 && name.trim().length >= 2 &&
+    (phone || "").replace(/\D/g, "").length >= 10 &&
     normalizePlate(plate).length >= 7;
 
   const handleSubmit = () => {
     if (!canSubmit || !category || !service || !payment) {
-      toast.error("Preencha categoria, serviço, cliente (CPF + nome), placa e pagamento.");
+      toast.error("Preencha categoria, serviço, cliente (CPF, nome, WhatsApp), placa e pagamento.");
       return;
     }
-    // upsert customer
     let cust = existingCustomer;
+    const phoneDigits = (phone || "").replace(/\D/g, "");
     if (!cust) {
       cust = {
         id: uid(),
         cpf: normalizeCpf(cpf),
         name: name.trim(),
-        phone: normalizeCpf(phone),
-        email: email.trim() || undefined,
+        phone: phoneDigits,
         totalOrders: 0,
         createdAt: new Date().toISOString(),
       };
     } else {
-      cust = { ...cust, name: name.trim(), phone, email: email.trim() || undefined };
+      cust = { ...cust, name: name.trim(), phone: phoneDigits };
     }
     db.upsertCustomer(cust);
 
-    // upsert vehicle (placa = identificador da fidelidade; cadastra auto na venda)
     let veh = db.findVehicleByPlate(plate);
     if (!veh) {
       veh = {
@@ -229,10 +257,10 @@ export default function Sales() {
                   key={c}
                   onClick={() => setCategory(c)}
                   className={cn(
-                    "px-3 py-3 rounded-lg border text-sm font-medium transition-all",
+                    "px-3 py-3 rounded-lg border text-sm font-medium transition-all active:scale-[0.98]",
                     category === c
                       ? "border-primary bg-primary/15 text-primary shadow-glow"
-                      : "border-border bg-muted/30 text-foreground hover:border-primary/40"
+                      : "border-border bg-muted/30 text-foreground hover:border-primary/40 hover:bg-muted/50"
                   )}
                 >
                   {c}
@@ -243,32 +271,32 @@ export default function Sales() {
 
           <Panel title="Serviços" subtitle={category ? `Preços para ${category}` : "Selecione a categoria"}>
             <div className="space-y-2">
-              {SERVICES.map((s) => {
-                const price = category ? prices[category][s.key] : null;
-                const active = service === s.key;
+              {activeServices.map(({ override, def }) => {
+                const price = category ? prices[category][override.key] : null;
+                const active = service === override.key;
                 return (
                   <button
-                    key={s.key}
-                    onClick={() => setService(s.key)}
+                    key={override.key}
+                    onClick={() => setService(override.key)}
                     disabled={!category}
                     className={cn(
-                      "w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3",
+                      "w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3 active:scale-[0.99]",
                       active
                         ? "border-primary bg-primary/10 shadow-glow"
-                        : "border-border bg-muted/20 hover:border-primary/40",
+                        : "border-border bg-muted/20 hover:border-primary/40 hover:bg-muted/30",
                       !category && "opacity-50 cursor-not-allowed"
                     )}
                   >
                     <div className={cn(
-                      "h-9 w-9 rounded-lg grid place-items-center shrink-0",
+                      "h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-all",
                       active ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-secondary-foreground"
                     )}>
-                      {s.key === "Platinum" ? <Gem className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                      <ServiceIcon iconKey={override.icon} serviceKey={override.key} className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold">{s.name}</div>
+                      <div className="text-sm font-semibold truncate">{override.name ?? def.name}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        <Clock className="h-3 w-3" /> {formatDuration(s.durationMinutes)}
+                        <Clock className="h-3 w-3" /> {formatDuration(override.durationMinutes ?? def.durationMinutes)}
                       </div>
                     </div>
                     <div className="text-right">
@@ -293,7 +321,7 @@ export default function Sales() {
                       onClick={() => toggleExtra(k)}
                       disabled={!category}
                       className={cn(
-                        "p-2.5 rounded-lg border text-xs transition-all",
+                        "p-2.5 rounded-lg border text-xs transition-all active:scale-[0.98]",
                         active
                           ? "border-primary bg-primary/15 text-primary"
                           : "border-border bg-muted/20 hover:border-primary/40",
@@ -318,17 +346,22 @@ export default function Sales() {
             {selectedServiceDef ? (
               <div className="space-y-3 animate-fade-in">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-lg font-semibold">{selectedServiceDef.name}</div>
-                    <div className="text-xs text-muted-foreground">{selectedServiceDef.description}</div>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary grid place-items-center shrink-0">
+                      <ServiceIcon iconKey={selectedOverride?.icon} serviceKey={selectedServiceDef.key} className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-lg font-semibold truncate">{selectedOverride?.name ?? selectedServiceDef.name}</div>
+                      <div className="text-xs text-muted-foreground">{selectedOverride?.description ?? selectedServiceDef.description}</div>
+                    </div>
                   </div>
-                  <Badge className="bg-gradient-gold text-primary-foreground border-0">
+                  <Badge className="bg-gradient-gold text-primary-foreground border-0 shrink-0">
                     {category ? brl(prices[category][selectedServiceDef.key]) : "—"}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
-                  Duração base {formatDuration(selectedServiceDef.durationMinutes)}
+                  Duração base {formatDuration(selectedOverride?.durationMinutes ?? selectedServiceDef.durationMinutes)}
                   {extras.length > 0 && (
                     <> · com extras: <span className="text-primary font-medium">{formatDuration(duration)}</span></>
                   )}
@@ -347,7 +380,15 @@ export default function Sales() {
             )}
           </Panel>
 
-          <Panel title="Cliente" icon={<User className="h-4 w-4" />}>
+          <Panel
+            title="Cliente"
+            icon={<User className="h-4 w-4" />}
+            right={
+              <div className="w-64">
+                <CustomerLiveSearch onSelect={fillFromMatch} placeholder="Buscar cliente…" />
+              </div>
+            }
+          >
             <div className="space-y-3">
               <Field label="CPF *">
                 <Input
@@ -361,27 +402,22 @@ export default function Sales() {
               <Field label="Nome completo *">
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do cliente" />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Telefone">
+              <Field label="WhatsApp *">
+                <div className="relative">
+                  <MessageCircle className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
                   <Input
                     value={formatPhone(phone)}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="(00) 00000-0000"
+                    inputMode="numeric"
+                    className="pl-9"
                   />
-                </Field>
-                <Field label="Email">
-                  <Input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="opcional"
-                    type="email"
-                  />
-                </Field>
-              </div>
+                </div>
+              </Field>
 
               {existingCustomer && (
                 <div className="mt-3 p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs text-muted-foreground">
-                  Cliente já cadastrado. A fidelidade agora é vinculada à <span className="text-primary font-medium">placa do veículo</span>.
+                  Cliente já cadastrado. A fidelidade é vinculada à <span className="text-primary font-medium">placa do veículo</span>.
                 </div>
               )}
             </div>
@@ -420,9 +456,8 @@ export default function Sales() {
                 </div>
               </Field>
 
-              {/* Loyalty — vinculado à PLACA */}
               <div className={cn(
-                "mt-2 p-3 rounded-lg border",
+                "mt-2 p-3 rounded-lg border transition-all",
                 loyalty.rewardAvailable
                   ? "border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-glow"
                   : existingVehicle
@@ -446,13 +481,11 @@ export default function Sales() {
                     Informe a placa para ver o status de fidelidade.
                   </div>
                 )}
-
                 {!existingVehicle && normalizePlate(plate).length >= 7 && (
                   <div className="text-xs text-muted-foreground">
                     Placa nova — esta será a 1ª lavagem do ciclo após confirmação.
                   </div>
                 )}
-
                 {existingVehicle && loyalty.rewardAvailable && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm font-semibold text-primary">
@@ -461,23 +494,20 @@ export default function Sales() {
                     {service ? (
                       <div className="text-xs text-muted-foreground">
                         {service === "Platinum"
-                          ? "Platinum não recebe desconto de fidelidade — escolha outra lavagem para usar o benefício."
-                          : `Desconto de ${Math.round((totals.loyaltyDiscount / (totals.servicePrice || 1)) * 100)}% sobre a lavagem ${service} (apenas a lavagem; extras à parte).`}
+                          ? "Platinum não recebe desconto de fidelidade — escolha outra lavagem."
+                          : `Desconto sobre a lavagem ${service} (apenas a lavagem; extras à parte).`}
                       </div>
                     ) : (
                       <div className="text-xs text-muted-foreground">Selecione uma lavagem para aplicar o desconto.</div>
                     )}
                   </div>
                 )}
-
                 {existingVehicle && !loyalty.rewardAvailable && (
                   <>
                     <Progress value={(loyalty.washCount / 10) * 100} className="h-2" />
                     <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
-                      <span>Lavagens acumuladas: <span className="text-foreground font-medium">{loyalty.washCount}/10</span></span>
-                      <span>
-                        Faltam {loyalty.untilReward} {loyalty.untilReward === 1 ? "lavagem" : "lavagens"}
-                      </span>
+                      <span>Lavagens: <span className="text-foreground font-medium">{loyalty.washCount}/10</span></span>
+                      <span>Faltam {loyalty.untilReward} {loyalty.untilReward === 1 ? "lavagem" : "lavagens"}</span>
                     </div>
                   </>
                 )}
@@ -504,8 +534,7 @@ export default function Sales() {
             <div className="mt-1 relative">
               <Tag className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                type="number"
-                min={0}
+                type="number" min={0}
                 value={discount || ""}
                 onChange={(e) => setDiscount(Number(e.target.value) || 0)}
                 placeholder="0,00"
@@ -577,7 +606,7 @@ export default function Sales() {
             onClick={handleSubmit}
             disabled={!canSubmit}
             size="lg"
-            className="gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold"
+            className="gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]"
           >
             <CreditCard className="h-4 w-4" />
             Efetuar Pagamento
@@ -589,21 +618,20 @@ export default function Sales() {
   );
 }
 
-// --- small presentational helpers ---
-
 function Panel({
-  title, subtitle, icon, children,
-}: { title: string; subtitle?: string; icon?: React.ReactNode; children: React.ReactNode }) {
+  title, subtitle, icon, right, children,
+}: { title: string; subtitle?: string; icon?: React.ReactNode; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="surface-card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
+    <div className="surface-card p-5 transition-shadow hover:shadow-elegant">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             {icon && <span className="text-primary">{icon}</span>}
             {title}
           </div>
           {subtitle && <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>}
         </div>
+        {right}
       </div>
       {children}
     </div>
@@ -633,7 +661,7 @@ function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string
 
 function EmptyHint({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="text-center text-muted-foreground py-10">
+    <div className="text-center text-muted-foreground py-10 animate-fade-in">
       <div className="mx-auto mb-2 opacity-50">{icon}</div>
       <div className="text-sm">{text}</div>
     </div>
