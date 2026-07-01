@@ -22,8 +22,15 @@ export default function Queue() {
   const [, force] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => force((n) => n + 1), 30_000);
-    return () => clearInterval(t);
+    let cancelled = false;
+    let handle: number;
+    const tick = () => {
+      if (cancelled) return;
+      force((n) => n + 1);
+      handle = window.setTimeout(tick, 30_000);
+    };
+    handle = window.setTimeout(tick, 30_000);
+    return () => { cancelled = true; window.clearTimeout(handle); };
   }, []);
 
   const queue = activeQueue(orders);
