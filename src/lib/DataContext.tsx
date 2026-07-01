@@ -90,14 +90,14 @@ function mapService(s: ServiceRow): ServiceOverride {
 }
 
 /* upsert helper for lists keyed by id */
-function upsertById<T extends { id: string }>(list: T[], row: T): T[] {
+function upsertById<T extends { id?: string }>(list: T[], row: T): T[] {
   const i = list.findIndex((x) => x.id === row.id);
   if (i < 0) return [row, ...list];
   const next = list.slice();
   next[i] = row;
   return next;
 }
-function removeById<T extends { id: string }>(list: T[], id: string): T[] {
+function removeById<T extends { id?: string }>(list: T[], id: string): T[] {
   return list.filter((x) => x.id !== id);
 }
 
