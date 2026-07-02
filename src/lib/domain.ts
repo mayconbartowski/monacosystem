@@ -210,7 +210,7 @@ export function permissionsFor(role: Role): Permissions {
       };
     case "atendimento":
       return {
-        pdv: true, queue: true,
+        pdv: true, queue: false,
         customersView: true, customersEdit: false, customersDelete: false,
         historyView: true, historyEdit: false,
         reports: false, dashboard: false, services: false, settings: false,
