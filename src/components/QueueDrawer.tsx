@@ -1,41 +1,30 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Car, ListOrdered, Trash2, CheckCircle2, Sparkles } from "lucide-react";
-import { LOYALTY_QUALIFYING_SERVICES, Order } from "@/lib/domain";
-import { activeQueue } from "@/lib/pricing";
+import { Clock, Car, ListOrdered, Sparkles, Play, CheckCircle2 } from "lucide-react";
+import { Order } from "@/lib/domain";
 import { brl, formatDuration } from "@/lib/storage";
-import { cancelOrder, finishOrder } from "@/services/data";
-import { toast } from "sonner";
+import { useAuth } from "@/lib/authContext";
 
 interface Props {
   orders: Order[];
 }
 
+/**
+ * Drawer somente-leitura da fila (visível na aba lateral direita do PDV).
+ * Sem ações de concluir / remover — essas ficam no módulo Fila.
+ */
 export function QueueDrawer({ orders }: Props) {
-  const queue = activeQueue(orders);
+  const { role } = useAuth();
+  const visible = orders
+    .filter((o) => o.status === "queued" || o.status === "in_progress" || o.status === "completed")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  const complete = async (o: Order) => {
-    try {
-      await finishOrder(o);
-      if (LOYALTY_QUALIFYING_SERVICES.includes(o.service) && !o.loyaltyRewardUsed) {
-        toast.success(`Concluído — ${o.vehiclePlate}`);
-      } else {
-        toast.success(`Concluído — ${o.vehiclePlate}`);
-      }
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao concluir");
-    }
-  };
-
-  const cancel = async (o: Order) => {
-    try {
-      await cancelOrder(o.id);
-      toast("Pedido cancelado");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao cancelar");
-    }
-  };
+  const groups: Array<{ key: Order["status"]; label: string; icon: JSX.Element }> = [
+    { key: "queued", label: "Aguardando", icon: <ListOrdered className="h-3.5 w-3.5" /> },
+    { key: "in_progress", label: "Lavando", icon: <Play className="h-3.5 w-3.5" /> },
+    { key: "completed", label: "Finalizados", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
+  ];
 
   return (
     <Sheet>
@@ -44,7 +33,7 @@ export function QueueDrawer({ orders }: Props) {
           <ListOrdered className="h-4 w-4" />
           Ver Fila
           <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
-            {queue.length}
+            {visible.length}
           </Badge>
         </Button>
       </SheetTrigger>
@@ -54,59 +43,68 @@ export function QueueDrawer({ orders }: Props) {
             <ListOrdered className="h-5 w-5 text-primary" />
             Fila de Atendimento
           </SheetTitle>
+          {role === "atendimento" && (
+            <p className="text-[11px] text-muted-foreground text-left">
+              Visualização apenas · ações na tela de Fila.
+            </p>
+          )}
         </SheetHeader>
 
-        <div className="mt-6 space-y-3 overflow-y-auto max-h-[calc(100vh-8rem)] pr-1">
-          {queue.length === 0 && (
+        <div className="mt-6 space-y-5 overflow-y-auto max-h-[calc(100vh-8rem)] pr-1">
+          {visible.length === 0 && (
             <div className="text-center py-16 text-muted-foreground text-sm">
               <Car className="mx-auto h-10 w-10 mb-3 opacity-40" />
               Nenhum veículo na fila.
             </div>
           )}
 
-          {queue.map((o, i) => (
-            <div key={o.id} className="surface-card p-4 animate-fade-in">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="h-6 w-6 grid place-items-center rounded-md bg-primary/15 text-primary text-xs font-bold">
-                      {i + 1}
-                    </span>
-                    <span className="font-mono text-sm font-semibold">{o.vehiclePlate}</span>
-                  </div>
-                  <div className="mt-1 text-sm text-foreground truncate">{o.customerName}</div>
-                  <div className="text-xs text-muted-foreground truncate">{o.vehicleLabel} · {o.category}</div>
+          {visible.length > 0 && groups.map((g) => {
+            const items = visible.filter((o) => o.status === g.key);
+            if (items.length === 0) return null;
+            return (
+              <div key={g.key}>
+                <div className="flex items-center gap-2 mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {g.icon} {g.label} <span className="ml-auto">{items.length}</span>
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                    <Clock className="h-3 w-3" />
-                    {formatDuration(o.durationMinutes)}
-                  </div>
-                  <div className="mt-1 text-sm font-semibold text-primary">{brl(o.total)}</div>
+                <div className="space-y-2">
+                  {items.map((o, i) => (
+                    <div key={o.id} className="surface-card p-3 animate-fade-in">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="h-5 w-5 grid place-items-center rounded-md bg-primary/15 text-primary text-[11px] font-bold">
+                              {i + 1}
+                            </span>
+                            <span className="font-mono text-sm font-semibold">{o.vehiclePlate}</span>
+                          </div>
+                          <div className="mt-1 text-sm text-foreground truncate">{o.customerName}</div>
+                          <div className="text-xs text-muted-foreground truncate">{o.vehicleLabel} · {o.category}</div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                            <Clock className="h-3 w-3" />
+                            {formatDuration(o.durationMinutes)}
+                          </div>
+                          <div className="mt-1 text-sm font-semibold text-primary">{brl(o.total)}</div>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2 text-xs flex-wrap">
+                        <Badge variant="outline" className="border-border bg-muted/30">{o.service}</Badge>
+                        {o.extras.map((e) => (
+                          <Badge key={e} variant="outline" className="border-border bg-muted/30">{e}</Badge>
+                        ))}
+                        {o.loyaltyRewardUsed && (
+                          <Badge className="bg-primary/15 text-primary border border-primary/30 gap-1">
+                            <Sparkles className="h-3 w-3" /> Recompensa
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
-                <Badge variant="outline" className="border-border bg-muted/30">Lavagem {o.service}</Badge>
-                {o.extras.map((e) => (
-                  <Badge key={e} variant="outline" className="border-border bg-muted/30">{e}</Badge>
-                ))}
-                {o.loyaltyRewardUsed && (
-                  <Badge className="bg-primary/15 text-primary border border-primary/30 gap-1">
-                    <Sparkles className="h-3 w-3" /> Recompensa fidelidade
-                  </Badge>
-                )}
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="default" onClick={() => complete(o)} className="flex-1 gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Concluir
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => cancel(o)} className="text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </SheetContent>
     </Sheet>
