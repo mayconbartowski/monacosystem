@@ -34,7 +34,7 @@ const App = () => (
                 <RequireRole allow={["atendimento", "gerencia"]}><Sales /></RequireRole>
               } />
               <Route path="/fila" element={
-                <RequireRole allow={["lavajato", "atendimento", "gerencia"]}><Queue /></RequireRole>
+                <RequireRole allow={["lavajato", "gerencia"]}><Queue /></RequireRole>
               } />
               <Route path="/clientes" element={
                 <RequireRole allow={["atendimento", "gerencia"]}><Customers /></RequireRole>
