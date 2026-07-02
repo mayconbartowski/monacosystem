@@ -114,7 +114,7 @@ export interface Vehicle {
 
 export type PaymentMethod = "Crédito" | "Débito" | "Pix";
 
-export type OrderStatus = "queued" | "in_progress" | "completed" | "cancelled";
+export type OrderStatus = "queued" | "in_progress" | "completed" | "cancelled" | "delivered";
 
 export interface Order {
   id: string;
@@ -210,7 +210,7 @@ export function permissionsFor(role: Role): Permissions {
       };
     case "atendimento":
       return {
-        pdv: true, queue: true,
+        pdv: true, queue: false,
         customersView: true, customersEdit: false, customersDelete: false,
         historyView: true, historyEdit: false,
         reports: false, dashboard: false, services: false, settings: false,

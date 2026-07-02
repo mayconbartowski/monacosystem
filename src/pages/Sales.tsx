@@ -24,7 +24,7 @@ import {
 } from "@/lib/domain";
 import {
   brl, formatCpf, formatDuration, formatPhone, formatPlate,
-  normalizeCpf, normalizePlate,
+  normalizeCpf, normalizePlate, toTitleCase, toUpperCase,
 } from "@/lib/storage";
 import {
   calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getServiceDef,
@@ -329,7 +329,7 @@ export default function Sales() {
                   placeholder="000.000.000-00" inputMode="numeric" className="font-mono" />
               </Field>
               <Field label="Nome completo *">
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do cliente" />
+                <Input value={name} onChange={(e) => setName(toTitleCase(e.target.value))} placeholder="Nome do cliente" />
               </Field>
               <Field label="WhatsApp *">
                 <div className="relative">
@@ -355,9 +355,9 @@ export default function Sales() {
                   placeholder="ABC-1D23" className="font-mono uppercase tracking-wider" />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Marca"><Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Ex: Toyota" /></Field>
-                <Field label="Modelo"><Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Ex: Corolla" /></Field>
-                <Field label="Cor"><Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="Ex: Prata" /></Field>
+                <Field label="Marca"><Input value={brand} onChange={(e) => setBrand(toTitleCase(e.target.value))} placeholder="Ex: Toyota" /></Field>
+                <Field label="Modelo"><Input value={model} onChange={(e) => setModel(toTitleCase(e.target.value))} placeholder="Ex: Corolla" /></Field>
+                <Field label="Cor"><Input value={color} onChange={(e) => setColor(toUpperCase(e.target.value))} placeholder="Ex: PRATA" className="uppercase" /></Field>
                 <Field label="Ano"><Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="Ex: 2022" inputMode="numeric" /></Field>
               </div>
               <Field label="Categoria detectada">

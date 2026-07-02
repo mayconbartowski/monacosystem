@@ -26,7 +26,7 @@ type OrderRow = {
   loyalty_reward_used: boolean; total: number;
   payment_method: "Crédito" | "Débito" | "Pix" | null;
   notes: string; queue_position: number; duration_minutes: number;
-  status: "queued" | "in_progress" | "completed" | "cancelled";
+  status: "queued" | "in_progress" | "completed" | "cancelled" | "delivered";
   created_at: string; started_at: string | null; completed_at: string | null;
 };
 type ServiceRow = {
@@ -222,6 +222,12 @@ export async function cancelOrder(orderId: string): Promise<void> {
 
 export async function deleteOrder(orderId: string): Promise<void> {
   const { error } = await supabase.from("orders").delete().eq("id", orderId);
+  if (error) throw error;
+}
+
+export async function deliverOrder(orderId: string): Promise<void> {
+  const { error } = await supabase.from("orders")
+    .update({ status: "delivered" }).eq("id", orderId);
   if (error) throw error;
 }
 

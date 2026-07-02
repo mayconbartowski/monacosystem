@@ -399,7 +399,12 @@ export type Database = {
     }
     Enums: {
       app_role: "atendimento" | "lavajato" | "gerencia"
-      order_status: "queued" | "in_progress" | "completed" | "cancelled"
+      order_status:
+        | "queued"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "delivered"
       payment_method: "Crédito" | "Débito" | "Pix"
       vehicle_category: "Hatch" | "Sedan" | "SUV" | "Picape" | "Luxo"
     }
@@ -530,7 +535,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["atendimento", "lavajato", "gerencia"],
-      order_status: ["queued", "in_progress", "completed", "cancelled"],
+      order_status: [
+        "queued",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "delivered",
+      ],
       payment_method: ["Crédito", "Débito", "Pix"],
       vehicle_category: ["Hatch", "Sedan", "SUV", "Picape", "Luxo"],
     },

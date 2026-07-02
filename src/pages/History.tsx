@@ -10,7 +10,8 @@ import { useData } from "@/lib/DataContext";
 const statusLabel: Record<string, { text: string; cls: string }> = {
   queued: { text: "Na fila", cls: "bg-primary/15 text-primary border-primary/30" },
   in_progress: { text: "Em andamento", cls: "bg-secondary text-secondary-foreground border-secondary" },
-  completed: { text: "Concluído", cls: "bg-success/20 text-success border-success/30" },
+  completed: { text: "Finalizado", cls: "bg-success/20 text-success border-success/30" },
+  delivered: { text: "Entregue", cls: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
   cancelled: { text: "Cancelado", cls: "bg-muted text-muted-foreground border-border" },
 };
 
