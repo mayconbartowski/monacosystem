@@ -26,7 +26,7 @@ type OrderRow = {
   loyalty_reward_used: boolean; total: number;
   payment_method: "Crédito" | "Débito" | "Pix" | null;
   notes: string; queue_position: number; duration_minutes: number;
-  status: "queued" | "in_progress" | "completed" | "cancelled";
+  status: "queued" | "in_progress" | "completed" | "cancelled" | "delivered";
   created_at: string; started_at: string | null; completed_at: string | null;
 };
 type ServiceRow = {
