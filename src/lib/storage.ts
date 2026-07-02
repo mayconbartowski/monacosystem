@@ -14,8 +14,6 @@ export function toUpperCase(v: string): string {
 export function normalizeCpf(cpf: string): string {
   return (cpf || "").replace(/\D/g, "");
 }
-  return (cpf || "").replace(/\D/g, "");
-}
 export function formatCpf(cpf: string): string {
   const v = normalizeCpf(cpf).slice(0, 11);
   return v
