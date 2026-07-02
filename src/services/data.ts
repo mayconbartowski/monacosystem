@@ -225,6 +225,12 @@ export async function deleteOrder(orderId: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deliverOrder(orderId: string): Promise<void> {
+  const { error } = await supabase.from("orders")
+    .update({ status: "delivered" }).eq("id", orderId);
+  if (error) throw error;
+}
+
 export async function finishOrder(order: Order): Promise<void> {
   const completedAt = new Date().toISOString();
   const startMs = order.startedAt ? new Date(order.startedAt).getTime() : Date.now();
