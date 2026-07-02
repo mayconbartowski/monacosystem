@@ -329,7 +329,7 @@ export default function Sales() {
                   placeholder="000.000.000-00" inputMode="numeric" className="font-mono" />
               </Field>
               <Field label="Nome completo *">
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do cliente" />
+                <Input value={name} onChange={(e) => setName(toTitleCase(e.target.value))} placeholder="Nome do cliente" />
               </Field>
               <Field label="WhatsApp *">
                 <div className="relative">
