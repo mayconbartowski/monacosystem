@@ -114,7 +114,7 @@ export interface Vehicle {
 
 export type PaymentMethod = "Crédito" | "Débito" | "Pix";
 
-export type OrderStatus = "queued" | "in_progress" | "completed" | "cancelled";
+export type OrderStatus = "queued" | "in_progress" | "completed" | "cancelled" | "delivered";
 
 export interface Order {
   id: string;
