@@ -24,7 +24,7 @@ import {
 } from "@/lib/domain";
 import {
   brl, formatCpf, formatDuration, formatPhone, formatPlate,
-  normalizeCpf, normalizePlate,
+  normalizeCpf, normalizePlate, toTitleCase, toUpperCase,
 } from "@/lib/storage";
 import {
   calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getServiceDef,
