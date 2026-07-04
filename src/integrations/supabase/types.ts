@@ -43,6 +43,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          active: boolean
           cpf: string
           created_at: string
           created_by: string | null
@@ -52,6 +53,7 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
+          active?: boolean
           cpf: string
           created_at?: string
           created_by?: string | null
@@ -61,6 +63,7 @@ export type Database = {
           whatsapp: string
         }
         Update: {
+          active?: boolean
           cpf?: string
           created_at?: string
           created_by?: string | null
