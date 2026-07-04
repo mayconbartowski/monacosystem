@@ -185,6 +185,38 @@ export default function Customers() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar cliente</DialogTitle>
+            <DialogDescription>
+              O ID e todo o histórico de Ordens de Serviço são preservados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name">Nome</Label>
+              <Input id="edit-name" value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: toTitleCase(e.target.value) }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cpf">CPF</Label>
+              <Input id="edit-cpf" value={form.cpf} inputMode="numeric"
+                onChange={(e) => setForm((f) => ({ ...f, cpf: formatCpf(e.target.value) }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-phone">WhatsApp</Label>
+              <Input id="edit-phone" value={form.phone} inputMode="tel"
+                onChange={(e) => setForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Cancelar</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving ? "Salvando…" : "Salvar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
