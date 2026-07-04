@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,17 +10,45 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, User, Trophy, Car, Sparkles, MessageCircle, Trash2 } from "lucide-react";
-import { brl, formatCpf, formatPhone, formatPlate, normalizePlate } from "@/lib/storage";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import { Search, User, Trophy, Car, Sparkles, MessageCircle, Trash2, Pencil } from "lucide-react";
+import { brl, formatCpf, formatPhone, formatPlate, normalizePlate, toTitleCase } from "@/lib/storage";
 import { useAuth } from "@/lib/authContext";
 import { useData } from "@/lib/DataContext";
-import { deleteCustomer } from "@/services/data";
+import { deleteCustomer, updateCustomer } from "@/services/data";
 import { toast } from "sonner";
+import type { Customer } from "@/lib/domain";
 
 export default function Customers() {
   const [q, setQ] = useState("");
   const { customers, vehicles, orders } = useData();
   const { perms } = useAuth();
+  const [editing, setEditing] = useState<Customer | null>(null);
+  const [form, setForm] = useState({ name: "", cpf: "", phone: "" });
+  const [saving, setSaving] = useState(false);
+
+  const openEdit = (c: Customer) => {
+    setEditing(c);
+    setForm({ name: c.name, cpf: formatCpf(c.cpf), phone: formatPhone(c.phone) });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    if (!form.name.trim()) { toast.error("Informe o nome"); return; }
+    if (!form.phone.replace(/\D/g, "")) { toast.error("Informe o WhatsApp"); return; }
+    setSaving(true);
+    try {
+      await updateCustomer(editing.id, form);
+      toast.success("Cliente atualizado");
+      setEditing(null);
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -85,29 +114,41 @@ export default function Customers() {
                           {rewards} {rewards === 1 ? "benefício" : "benefícios"}
                         </Badge>
                       )}
-                      {perms?.customersDelete && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {c.name} e seus veículos serão removidos. Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => remove(c.id)} className="bg-destructive hover:bg-destructive/90">
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {perms?.customersEdit && (
+                          <Button
+                            size="icon" variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => openEdit(c)}
+                            aria-label="Editar cliente"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {perms?.customersDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {c.name} será marcado como inativo. O histórico de Ordens de Serviço é preservado.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => remove(c.id)} className="bg-destructive hover:bg-destructive/90">
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -144,6 +185,38 @@ export default function Customers() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar cliente</DialogTitle>
+            <DialogDescription>
+              O ID e todo o histórico de Ordens de Serviço são preservados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name">Nome</Label>
+              <Input id="edit-name" value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: toTitleCase(e.target.value) }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cpf">CPF</Label>
+              <Input id="edit-cpf" value={form.cpf} inputMode="numeric"
+                onChange={(e) => setForm((f) => ({ ...f, cpf: formatCpf(e.target.value) }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-phone">WhatsApp</Label>
+              <Input id="edit-phone" value={form.phone} inputMode="tel"
+                onChange={(e) => setForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Cancelar</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving ? "Salvando…" : "Salvar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

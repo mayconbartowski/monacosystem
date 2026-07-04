@@ -72,7 +72,7 @@ function mapOrder(r: OrderRow): Order {
 // ---------- fetches ----------
 export async function fetchAll() {
   const [cs, vs, os, ss, sps] = await Promise.all([
-    supabase.from("customers").select("*").order("created_at", { ascending: false }),
+    supabase.from("customers").select("*").eq("active", true).order("created_at", { ascending: false }),
     supabase.from("vehicles").select("*"),
     supabase.from("orders").select("*").order("created_at", { ascending: false }),
     supabase.from("services").select("*").order("position"),
@@ -120,11 +120,12 @@ export async function upsertCustomer(c: {
     if (error) throw error;
     return mapCustomer(data as CustomerRow);
   }
+  // Reativa automaticamente se já existir um cadastro (mesmo inativo) com o CPF
   const existing = await supabase.from("customers")
     .select("*").eq("cpf", row.cpf).maybeSingle();
   if (existing.data) {
     const { data, error } = await supabase.from("customers")
-      .update(row).eq("id", (existing.data as CustomerRow).id).select().single();
+      .update({ ...row, active: true }).eq("id", (existing.data as CustomerRow).id).select().single();
     if (error) throw error;
     return mapCustomer(data as CustomerRow);
   }
@@ -134,8 +135,25 @@ export async function upsertCustomer(c: {
   return mapCustomer(data as CustomerRow);
 }
 
+/** Atualiza cadastro do cliente preservando o mesmo id (não cria novo registro). */
+export async function updateCustomer(id: string, patch: {
+  name: string; cpf: string; phone: string;
+}): Promise<Customer> {
+  const row = {
+    name: patch.name.trim(),
+    cpf: normalizeCpf(patch.cpf),
+    whatsapp: (patch.phone || "").replace(/\D/g, ""),
+  };
+  const { data, error } = await supabase.from("customers")
+    .update(row).eq("id", id).select().single();
+  if (error) throw error;
+  return mapCustomer(data as CustomerRow);
+}
+
+/** Soft delete: marca o cliente como inativo, preservando OS e histórico. */
 export async function deleteCustomer(id: string): Promise<void> {
-  const { error } = await supabase.from("customers").delete().eq("id", id);
+  const { error } = await supabase.from("customers")
+    .update({ active: false }).eq("id", id);
   if (error) throw error;
 }
 

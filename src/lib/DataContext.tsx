@@ -183,7 +183,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (id) setCustomers((prev) => removeById(prev, id));
         return;
       }
-      const row = p.new as CustomerRow;
+      const row = p.new as CustomerRow & { active?: boolean };
+      // Soft delete: cliente inativo sai da listagem
+      if (row && row.active === false) {
+        setCustomers((prev) => removeById(prev, row.id));
+        return;
+      }
       setCustomers((prev) => {
         const existing = prev.find((c) => c.id === row.id);
         return upsertById(prev, mapCustomer(row, existing?.totalOrders ?? 0));
