@@ -114,29 +114,41 @@ export default function Customers() {
                           {rewards} {rewards === 1 ? "benefício" : "benefícios"}
                         </Badge>
                       )}
-                      {perms?.customersDelete && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {c.name} e seus veículos serão removidos. Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => remove(c.id)} className="bg-destructive hover:bg-destructive/90">
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {perms?.customersEdit && (
+                          <Button
+                            size="icon" variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => openEdit(c)}
+                            aria-label="Editar cliente"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {perms?.customersDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {c.name} será marcado como inativo. O histórico de Ordens de Serviço é preservado.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => remove(c.id)} className="bg-destructive hover:bg-destructive/90">
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center">
