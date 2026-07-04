@@ -25,6 +25,30 @@ export default function Customers() {
   const [q, setQ] = useState("");
   const { customers, vehicles, orders } = useData();
   const { perms } = useAuth();
+  const [editing, setEditing] = useState<Customer | null>(null);
+  const [form, setForm] = useState({ name: "", cpf: "", phone: "" });
+  const [saving, setSaving] = useState(false);
+
+  const openEdit = (c: Customer) => {
+    setEditing(c);
+    setForm({ name: c.name, cpf: formatCpf(c.cpf), phone: formatPhone(c.phone) });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    if (!form.name.trim()) { toast.error("Informe o nome"); return; }
+    if (!form.phone.replace(/\D/g, "")) { toast.error("Informe o WhatsApp"); return; }
+    setSaving(true);
+    try {
+      await updateCustomer(editing.id, form);
+      toast.success("Cliente atualizado");
+      setEditing(null);
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
