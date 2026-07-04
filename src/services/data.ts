@@ -72,7 +72,7 @@ function mapOrder(r: OrderRow): Order {
 // ---------- fetches ----------
 export async function fetchAll() {
   const [cs, vs, os, ss, sps] = await Promise.all([
-    supabase.from("customers").select("*").order("created_at", { ascending: false }),
+    supabase.from("customers").select("*").eq("active", true).order("created_at", { ascending: false }),
     supabase.from("vehicles").select("*"),
     supabase.from("orders").select("*").order("created_at", { ascending: false }),
     supabase.from("services").select("*").order("position"),
