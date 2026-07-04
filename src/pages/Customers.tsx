@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,12 +10,16 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, User, Trophy, Car, Sparkles, MessageCircle, Trash2 } from "lucide-react";
-import { brl, formatCpf, formatPhone, formatPlate, normalizePlate } from "@/lib/storage";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import { Search, User, Trophy, Car, Sparkles, MessageCircle, Trash2, Pencil } from "lucide-react";
+import { brl, formatCpf, formatPhone, formatPlate, normalizePlate, toTitleCase } from "@/lib/storage";
 import { useAuth } from "@/lib/authContext";
 import { useData } from "@/lib/DataContext";
-import { deleteCustomer } from "@/services/data";
+import { deleteCustomer, updateCustomer } from "@/services/data";
 import { toast } from "sonner";
+import type { Customer } from "@/lib/domain";
 
 export default function Customers() {
   const [q, setQ] = useState("");
