@@ -531,7 +531,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-muted/30 border border-border">
+    <div className="flex items-center gap-3 h-14 px-4 rounded-lg bg-muted/30 border border-border">
       <span className="text-primary">{icon}</span>
       <div className="leading-tight">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
