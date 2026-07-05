@@ -78,9 +78,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   end={it.to === "/"}
                   className={({ isActive }) =>
                     cn(
-                      "group flex items-center gap-3 rounded-lg text-sm transition-all relative",
-                      collapsed ? "justify-center h-10 w-full" : "px-3 py-2.5",
+                      "group flex items-center rounded-lg text-sm transition-all relative",
+                      collapsed ? "mx-auto justify-center items-center h-10 w-10 p-0" : "gap-3 px-3 py-2.5",
                       isActive
+
                         ? "bg-sidebar-accent text-primary font-medium"
                         : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
                     )
