@@ -170,57 +170,59 @@ export default function Reports() {
           <Stat label="Serviços concluídos" value={String(rangeOrders.filter((o) => o.status === "completed" || o.status === "delivered").length)} />
         </div>
 
-        <Card className="surface-card p-5">
-          <h3 className="text-sm font-semibold mb-4">Faturamento por forma de pagamento</h3>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
-                  tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-                <RTooltip
-                  formatter={(v: number) => brl(v)}
-                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                {PAYMENTS.map((p) => (
-                  <Line key={p} type="monotone" dataKey={p} stroke={PAYMENT_COLORS[p]}
-                    strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {PAYMENTS.map((p) => (
-              <Row key={p} label={p} value={brl(byPaymentTotal[p])} />
-            ))}
-          </div>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="surface-card p-5">
+            <h3 className="text-sm font-semibold mb-4">Faturamento por forma de pagamento</h3>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
+                    tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                  <RTooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  {PAYMENTS.map((p) => (
+                    <Line key={p} type="monotone" dataKey={p} stroke={PAYMENT_COLORS[p]}
+                      strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {PAYMENTS.map((p) => (
+                <Row key={p} label={p} value={brl(byPaymentTotal[p])} />
+              ))}
+            </div>
+          </Card>
 
-        <Card className="surface-card p-5">
-          <h3 className="text-sm font-semibold mb-4">Faturamento por serviço</h3>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={serviceData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
-                  tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-                <RTooltip
-                  formatter={(v: number, name) => name === "total" ? brl(v) : String(v)}
-                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                />
-                <Bar dataKey="total" name="Faturamento" fill="hsl(38 100% 55%)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
-            {serviceData.map((s) => (
-              <Row key={s.label} label={`${s.label} (${s.qty})`} value={brl(s.total)} />
-            ))}
-          </div>
-        </Card>
+          <Card className="surface-card p-5">
+            <h3 className="text-sm font-semibold mb-4">Faturamento por serviço</h3>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={serviceData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
+                    tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                  <RTooltip
+                    formatter={(v: number, name) => name === "total" ? brl(v) : String(v)}
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                  />
+                  <Bar dataKey="total" name="Faturamento" fill="hsl(38 100% 55%)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {serviceData.map((s) => (
+                <Row key={s.label} label={`${s.label} (${s.qty})`} value={brl(s.total)} />
+              ))}
+            </div>
+          </Card>
+        </div>
 
         <Card className="surface-card p-5">
           <h3 className="text-sm font-semibold mb-4">Por categoria de veículo</h3>
