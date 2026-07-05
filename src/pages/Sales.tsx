@@ -468,10 +468,10 @@ export default function Sales() {
             </div>
           </div>
         </div>
-        <div className="mt-3 flex gap-3 justify-end">
+        <div className="mt-3 flex gap-3 justify-end items-stretch">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" className="gap-2 border-border text-muted-foreground hover:text-destructive hover:border-destructive/50">
+              <Button variant="outline" size="lg" className="gap-2 border-border text-muted-foreground hover:text-destructive hover:border-destructive/50">
                 <Trash2 className="h-4 w-4" /> Limpar / Cancelar
               </Button>
             </AlertDialogTrigger>
