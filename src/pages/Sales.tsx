@@ -427,12 +427,12 @@ export default function Sales() {
       </div>
 
       <footer className="border-t border-border bg-gradient-surface px-6 py-4 sticky bottom-0 z-20">
-        <div className="grid lg:grid-cols-12 gap-4 items-center">
-          <div className="lg:col-span-3">
+        <div className="grid lg:grid-cols-12 gap-4 items-end">
+          <div className="lg:col-span-2">
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Desconto manual (R$)</Label>
             <div className="mt-1 relative">
               <Tag className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input type="number" min={0} value={discount || ""} onChange={(e) => setDiscount(Number(e.target.value) || 0)} placeholder="0,00" className="pl-9" />
+              <Input type="number" min={0} value={discount || ""} onChange={(e) => setDiscount(Number(e.target.value) || 0)} placeholder="0,00" className="pl-9 h-10" />
             </div>
           </div>
           <div className="lg:col-span-3">
@@ -447,55 +447,51 @@ export default function Sales() {
               </TabsList>
             </Tabs>
           </div>
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Resumo</div>
-            <div className="mt-1 text-xs text-muted-foreground flex flex-col">
+            <div className="mt-1 text-xs text-muted-foreground flex flex-col justify-end h-10">
               <span>Subtotal: <span className="text-foreground">{brl(totals.subtotal)}</span></span>
               {totals.loyaltyDiscount > 0 && (
                 <span className="text-primary flex items-center gap-1">
                   <BadgePercent className="h-3 w-3" /> Fidelidade: −{brl(totals.loyaltyDiscount)}
                 </span>
               )}
-              {totals.manualDiscount > 0 && (
-                <span>Desconto: <span className="text-foreground">−{brl(totals.manualDiscount)}</span></span>
-              )}
+              <span>Desconto: <span className="text-foreground">−{brl(totals.manualDiscount)}</span></span>
             </div>
           </div>
-          <div className="lg:col-span-3 flex items-center justify-end gap-3">
-            <div className="text-right">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Total</div>
-              <div className="text-2xl font-bold gold-text leading-tight">{brl(totals.total)}</div>
-            </div>
+          <div className="lg:col-span-2 flex flex-col items-end">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Total</div>
+            <div className="text-2xl font-bold gold-text leading-tight">{brl(totals.total)}</div>
           </div>
-        </div>
-        <div className="mt-3 flex gap-3 justify-end items-stretch">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="lg" className="gap-2 border-border text-muted-foreground hover:text-destructive hover:border-destructive/50">
-                <Trash2 className="h-4 w-4" /> Limpar / Cancelar
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Limpar venda atual?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Todas as informações desta venda serão descartadas. Esta ação não pode ser desfeita.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Voltar</AlertDialogCancel>
-                <AlertDialogAction onClick={clearAll} className="bg-destructive hover:bg-destructive/90">
-                  Sim, limpar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Button onClick={handleSubmit} disabled={!canSubmit} size="lg"
-            className="gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
-            <CreditCard className="h-4 w-4" />
-            {submitting ? "Salvando…" : "Efetuar Pagamento"}
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="lg:col-span-3 flex gap-2 justify-end">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="h-10 gap-2 border-border text-muted-foreground hover:text-destructive hover:border-destructive/50">
+                  <Trash2 className="h-4 w-4" /> Limpar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Limpar venda atual?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Todas as informações desta venda serão descartadas. Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction onClick={clearAll} className="bg-destructive hover:bg-destructive/90">
+                    Sim, limpar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button onClick={handleSubmit} disabled={!canSubmit}
+              className="h-10 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
+              <CreditCard className="h-4 w-4" />
+              {submitting ? "Salvando…" : "Efetuar Pagamento"}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </footer>
     </AppShell>
