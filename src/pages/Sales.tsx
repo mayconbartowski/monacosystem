@@ -468,10 +468,10 @@ export default function Sales() {
             </div>
           </div>
         </div>
-        <div className="mt-3 flex gap-3 justify-end">
+        <div className="mt-3 flex gap-3 justify-end items-stretch">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" className="gap-2 border-border text-muted-foreground hover:text-destructive hover:border-destructive/50">
+              <Button variant="outline" size="lg" className="gap-2 border-border text-muted-foreground hover:text-destructive hover:border-destructive/50">
                 <Trash2 className="h-4 w-4" /> Limpar / Cancelar
               </Button>
             </AlertDialogTrigger>
@@ -531,7 +531,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-muted/30 border border-border">
+    <div className="flex items-center gap-3 h-14 px-4 rounded-lg bg-muted/30 border border-border">
       <span className="text-primary">{icon}</span>
       <div className="leading-tight">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>

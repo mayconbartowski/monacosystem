@@ -29,7 +29,7 @@ export function QueueDrawer({ orders }: Props) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" className="gap-2 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
+        <Button variant="outline" className="gap-2 h-14 px-4 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
           <ListOrdered className="h-4 w-4" />
           Ver Fila
           <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
