@@ -178,11 +178,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       setCustomers([]); setVehicles([]); setOrders([]); setServices([]);
       setPrices(DEFAULT_PRICES);
+      setExpenses([]);
       return;
     }
 
     setLoading(true);
     void doFetch();
+    void refreshExpenses();
 
     // Ensure realtime uses the current access token
     void supabase.auth.getSession().then(({ data }) => {
