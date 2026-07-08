@@ -254,6 +254,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
+    const onExpenses = (p: RealtimePostgresChangesPayload<any>) => {
+      if (p.eventType === "DELETE") {
+        const id = (p.old as any)?.id;
+        if (id) setExpenses((prev) => removeById(prev, id));
+        return;
+      }
+      const row = p.new as any;
+      if (row && row.active === false) {
+        setExpenses((prev) => removeById(prev, row.id));
+        return;
+      }
+      const mapped = mapExpense(row);
+      setExpenses((prev) => {
+        const next = upsertById(prev, mapped);
+        return next.sort((a, b) =>
+          b.expenseDate.localeCompare(a.expenseDate) ||
+          b.createdAt.localeCompare(a.createdAt)
+        );
+      });
+    };
+
     /* One channel per table = more resilient than multiplexing */
     const mk = (name: string, table: string, handler: (p: any) => void) =>
       supabase
@@ -271,13 +292,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       mk("orders", "orders", onOrders),
       mk("services", "services", onServices),
       mk("service_prices", "service_prices", () => void refetchPrices()),
+      mk("store_expenses", "store_expenses", onExpenses),
     ];
 
     return () => {
       for (const ch of channelsRef.current) supabase.removeChannel(ch);
       channelsRef.current = [];
     };
-  }, [session, doFetch, refetchPrices]);
+  }, [session, doFetch, refetchPrices, refreshExpenses]);
 
   const findCustomerByCpf = useCallback(
     (cpf: string) => {
