@@ -1,17 +1,34 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Clock, Car, DollarSign, TrendingUp, Users, ListOrdered,
-  Trophy, Sparkles, Target,
+  Trophy, Sparkles, Target, Plus, Pencil, Trash2, Receipt, Wallet,
 } from "lucide-react";
 import { brl, formatDuration, formatPlate } from "@/lib/storage";
 import { activeQueue, totalQueueWait } from "@/lib/pricing";
 import { useData } from "@/lib/DataContext";
+import { useAuth } from "@/lib/authContext";
+import { ExpenseFormDialog } from "@/components/ExpenseFormDialog";
+import { softDeleteExpense } from "@/services/expenses";
+import { Expense } from "@/lib/expenses";
+import { toast } from "sonner";
 
 export default function Dashboard() {
-  const { orders, customers, vehicles } = useData();
+  const { orders, customers, vehicles, expenses } = useData();
+  const { role } = useAuth();
+  const isAdmin = role === "gerencia";
+
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [editing, setEditing] = useState<Expense | null>(null);
+  const [deleting, setDeleting] = useState<Expense | null>(null);
+
   const queue = activeQueue(orders);
   const today = new Date().toISOString().slice(0, 10);
   const monthPrefix = today.slice(0, 7);
@@ -22,6 +39,14 @@ export default function Dashboard() {
   );
   const revenue = todays.reduce((a, o) => a + o.total, 0);
   const completed = orders.filter((o) => o.status === "completed").length;
+
+  // Expenses metrics
+  const activeExpenses = useMemo(() => expenses.filter((e) => e.active), [expenses]);
+  const expensesToday = activeExpenses.filter((e) => e.expenseDate === today);
+  const expensesMonth = activeExpenses.filter((e) => e.expenseDate.startsWith(monthPrefix));
+  const expensesTodayTotal = expensesToday.reduce((a, e) => a + e.amount, 0);
+  const expensesMonthTotal = expensesMonth.reduce((a, e) => a + e.amount, 0);
+  const netToday = revenue - expensesTodayTotal;
 
   const rewardsThisMonth = useMemo(
     () => orders.filter((o) =>
@@ -36,12 +61,38 @@ export default function Dashboard() {
   const benefitsAvailable = vehicles.filter((v) => v.rewardAvailable);
 
   const recent = [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+  const recentExpenses = activeExpenses.slice(0, 6);
+
+  const openNew = () => { setEditing(null); setExpenseOpen(true); };
+  const openEdit = (e: Expense) => { setEditing(e); setExpenseOpen(true); };
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await softDeleteExpense(deleting.id);
+      toast.success("Despesa removida");
+    } catch (err: any) {
+      toast.error(err.message ?? "Erro ao remover");
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
-        <p className="text-xs text-muted-foreground">Visão operacional Monaco System · sincronizada em tempo real</p>
+      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+        <div>
+          <h1 className="text-xl font-semibold">Dashboard</h1>
+          <p className="text-xs text-muted-foreground">Visão operacional Monaco System · sincronizada em tempo real</p>
+        </div>
+        {isAdmin && (
+          <Button
+            onClick={openNew}
+            className="ml-auto bg-gradient-gold text-primary-foreground border-0 gap-2"
+            size="sm"
+          >
+            <Plus className="h-4 w-4" /> Adicionar Despesa
+          </Button>
+        )}
       </header>
       <div className="p-6 space-y-6 bg-surface-sunken flex-1 overflow-auto">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -52,6 +103,60 @@ export default function Dashboard() {
           <Metric icon={<Users />} label="Clientes cadastrados" value={String(customers.length)} />
           <Metric icon={<ListOrdered />} label="Serviços concluídos" value={String(completed)} />
         </div>
+
+        {isAdmin && (
+          <div>
+            <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-primary" />
+              Despesas da Loja
+              <span className="text-muted-foreground font-normal">· caixa operacional</span>
+            </h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Metric icon={<Receipt />} label="Despesas hoje" value={brl(expensesTodayTotal)} />
+              <Metric icon={<Wallet />} label="Despesas do mês" value={brl(expensesMonthTotal)} />
+              <Metric icon={<TrendingUp />} label="Resultado líquido (hoje)" value={brl(netToday)} />
+              <Metric icon={<ListOrdered />} label="Lançamentos no mês" value={String(expensesMonth.length)} />
+            </div>
+
+            <Card className="surface-card p-5 mt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-semibold">Últimas despesas</div>
+                <Button size="sm" variant="outline" onClick={openNew} className="gap-2">
+                  <Plus className="h-3.5 w-3.5" /> Nova
+                </Button>
+              </div>
+              {recentExpenses.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-8 text-center">
+                  Nenhuma despesa registrada ainda.
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {recentExpenses.map((e) => (
+                    <div key={e.id} className="py-3 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{e.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {new Date(e.expenseDate + "T00:00:00").toLocaleDateString("pt-BR")}
+                          {e.paymentMethod ? ` · ${e.paymentMethod}` : ""}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">{e.category}</Badge>
+                      <div className="w-28 text-right font-semibold text-primary">−{brl(e.amount)}</div>
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(e)} title="Editar">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => setDeleting(e)} title="Remover">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
 
         <div>
           <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -125,6 +230,31 @@ export default function Dashboard() {
           )}
         </Card>
       </div>
+
+      {isAdmin && (
+        <ExpenseFormDialog
+          open={expenseOpen}
+          onOpenChange={setExpenseOpen}
+          editing={editing}
+        />
+      )}
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover despesa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleting ? `"${deleting.name}" — ${brl(deleting.amount)} será marcada como inativa e sairá dos relatórios ativos. O histórico é preservado.` : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
