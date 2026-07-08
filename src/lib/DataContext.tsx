@@ -126,6 +126,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [services, setServices] = useState<ServiceOverride[]>([]);
   const [prices, setPrices] = useState<PriceTable>(DEFAULT_PRICES);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const channelsRef = useRef<RealtimeChannel[]>([]);
 
