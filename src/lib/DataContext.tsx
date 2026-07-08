@@ -8,6 +8,8 @@ import {
   ServiceKey, ServiceIconKey, SERVICES, VehicleCategory,
 } from "@/lib/domain";
 import { fetchAll } from "@/services/data";
+import { fetchExpenses, mapExpense } from "@/services/expenses";
+import { Expense } from "@/lib/expenses";
 import { useAuth } from "@/lib/authContext";
 import { normalizeCpf, normalizePlate } from "@/lib/storage";
 
@@ -17,8 +19,10 @@ interface DataState {
   orders: Order[];
   services: ServiceOverride[];
   prices: PriceTable;
+  expenses: Expense[];
   loading: boolean;
   refresh: () => Promise<void>;
+  refreshExpenses: () => Promise<void>;
   searchCustomers: (q: string, limit?: number) => {
     customer: Customer; vehicles: Vehicle[];
     matchedBy: "name" | "cpf" | "plate"; matchedPlate?: string;
@@ -122,6 +126,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [services, setServices] = useState<ServiceOverride[]>([]);
   const [prices, setPrices] = useState<PriceTable>(DEFAULT_PRICES);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const channelsRef = useRef<RealtimeChannel[]>([]);
 
@@ -137,6 +142,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       console.error("[Monaco] fetchAll error", e);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const refreshExpenses = useCallback(async () => {
+    try {
+      const list = await fetchExpenses();
+      setExpenses(list);
+    } catch (e) {
+      console.error("[Monaco] fetchExpenses error", e);
     }
   }, []);
 
@@ -164,11 +178,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       setCustomers([]); setVehicles([]); setOrders([]); setServices([]);
       setPrices(DEFAULT_PRICES);
+      setExpenses([]);
       return;
     }
 
     setLoading(true);
     void doFetch();
+    void refreshExpenses();
 
     // Ensure realtime uses the current access token
     void supabase.auth.getSession().then(({ data }) => {
@@ -238,6 +254,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
+    const onExpenses = (p: RealtimePostgresChangesPayload<any>) => {
+      if (p.eventType === "DELETE") {
+        const id = (p.old as any)?.id;
+        if (id) setExpenses((prev) => removeById(prev, id));
+        return;
+      }
+      const row = p.new as any;
+      if (row && row.active === false) {
+        setExpenses((prev) => removeById(prev, row.id));
+        return;
+      }
+      const mapped = mapExpense(row);
+      setExpenses((prev) => {
+        const next = upsertById(prev, mapped);
+        return next.sort((a, b) =>
+          b.expenseDate.localeCompare(a.expenseDate) ||
+          b.createdAt.localeCompare(a.createdAt)
+        );
+      });
+    };
+
     /* One channel per table = more resilient than multiplexing */
     const mk = (name: string, table: string, handler: (p: any) => void) =>
       supabase
@@ -255,13 +292,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       mk("orders", "orders", onOrders),
       mk("services", "services", onServices),
       mk("service_prices", "service_prices", () => void refetchPrices()),
+      mk("store_expenses", "store_expenses", onExpenses),
     ];
 
     return () => {
       for (const ch of channelsRef.current) supabase.removeChannel(ch);
       channelsRef.current = [];
     };
-  }, [session, doFetch, refetchPrices]);
+  }, [session, doFetch, refetchPrices, refreshExpenses]);
 
   const findCustomerByCpf = useCallback(
     (cpf: string) => {
@@ -313,9 +351,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<DataState>(() => ({
-    customers, vehicles, orders, services, prices, loading,
-    refresh: doFetch, searchCustomers, findCustomerByCpf, findVehicleByPlate,
-  }), [customers, vehicles, orders, services, prices, loading, doFetch, searchCustomers, findCustomerByCpf, findVehicleByPlate]);
+    customers, vehicles, orders, services, prices, expenses, loading,
+    refresh: doFetch, refreshExpenses,
+    searchCustomers, findCustomerByCpf, findVehicleByPlate,
+  }), [customers, vehicles, orders, services, prices, expenses, loading, doFetch, refreshExpenses, searchCustomers, findCustomerByCpf, findVehicleByPlate]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
