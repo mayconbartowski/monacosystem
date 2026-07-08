@@ -351,9 +351,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<DataState>(() => ({
-    customers, vehicles, orders, services, prices, loading,
-    refresh: doFetch, searchCustomers, findCustomerByCpf, findVehicleByPlate,
-  }), [customers, vehicles, orders, services, prices, loading, doFetch, searchCustomers, findCustomerByCpf, findVehicleByPlate]);
+    customers, vehicles, orders, services, prices, expenses, loading,
+    refresh: doFetch, refreshExpenses,
+    searchCustomers, findCustomerByCpf, findVehicleByPlate,
+  }), [customers, vehicles, orders, services, prices, expenses, loading, doFetch, refreshExpenses, searchCustomers, findCustomerByCpf, findVehicleByPlate]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
