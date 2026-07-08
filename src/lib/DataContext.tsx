@@ -145,6 +145,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const refreshExpenses = useCallback(async () => {
+    try {
+      const list = await fetchExpenses();
+      setExpenses(list);
+    } catch (e) {
+      console.error("[Monaco] fetchExpenses error", e);
+    }
+  }, []);
+
   /* refetch just the prices table (small, needs join with services) */
   const refetchPrices = useCallback(async () => {
     try {
