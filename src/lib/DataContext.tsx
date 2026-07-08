@@ -19,8 +19,10 @@ interface DataState {
   orders: Order[];
   services: ServiceOverride[];
   prices: PriceTable;
+  expenses: Expense[];
   loading: boolean;
   refresh: () => Promise<void>;
+  refreshExpenses: () => Promise<void>;
   searchCustomers: (q: string, limit?: number) => {
     customer: Customer; vehicles: Vehicle[];
     matchedBy: "name" | "cpf" | "plate"; matchedPlate?: string;
