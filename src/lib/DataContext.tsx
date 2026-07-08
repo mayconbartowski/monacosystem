@@ -8,6 +8,8 @@ import {
   ServiceKey, ServiceIconKey, SERVICES, VehicleCategory,
 } from "@/lib/domain";
 import { fetchAll } from "@/services/data";
+import { fetchExpenses, mapExpense } from "@/services/expenses";
+import { Expense } from "@/lib/expenses";
 import { useAuth } from "@/lib/authContext";
 import { normalizeCpf, normalizePlate } from "@/lib/storage";
 
