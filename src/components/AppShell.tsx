@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full bg-background">
         <aside
           className={cn(
-            "hidden lg:flex flex-col border-r border-border bg-sidebar transition-[width] duration-200 ease-out",
+            "hidden lg:flex flex-col border-r border-border bg-sidebar transition-[width] duration-200 ease-out h-screen sticky top-0",
             collapsed ? "w-16" : "w-60"
           )}
         >
