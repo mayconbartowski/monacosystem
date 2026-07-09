@@ -261,14 +261,22 @@ export default function Dashboard() {
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <Card className="surface-card p-4">
+    <Card className={highlight ? "bg-gradient-gold border-0 p-4" : "surface-card p-4"}>
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 grid place-items-center rounded-lg bg-primary/15 text-primary">{icon}</div>
+        <div className={
+          highlight
+            ? "h-10 w-10 grid place-items-center rounded-lg bg-primary-foreground/20 text-primary-foreground"
+            : "h-10 w-10 grid place-items-center rounded-lg bg-primary/15 text-primary"
+        }>{icon}</div>
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-          <div className="text-lg font-bold">{value}</div>
+          <div className={
+            highlight
+              ? "text-[11px] uppercase tracking-wider text-primary-foreground/80"
+              : "text-[11px] uppercase tracking-wider text-muted-foreground"
+          }>{label}</div>
+          <div className={highlight ? "text-lg font-bold text-primary-foreground" : "text-lg font-bold"}>{value}</div>
         </div>
       </div>
     </Card>
