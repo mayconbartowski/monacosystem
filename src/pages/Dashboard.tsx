@@ -120,7 +120,7 @@ export default function Dashboard() {
               <Metric icon={<ListOrdered />} label="Lançamentos no mês" value={String(expensesMonth.length)} />
             </div>
 
-            <Card className="surface-card p-5 mt-4">
+            <Card className="bg-card/25 border-border shadow-card rounded-xl p-5 mt-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold">Últimas despesas</div>
                 <Button size="sm" variant="outline" onClick={openNew} className="gap-2">
