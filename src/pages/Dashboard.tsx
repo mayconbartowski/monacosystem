@@ -110,7 +110,6 @@ export default function Dashboard() {
         {isAdmin && (
           <div>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-primary" />
               Despesas da Loja
               <span className="text-muted-foreground font-normal">· caixa operacional</span>
             </h2>
