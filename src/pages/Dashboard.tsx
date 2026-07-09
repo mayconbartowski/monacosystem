@@ -206,7 +206,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <Card className="bg-card border-border p-5">
+        <Card className="bg-card/25 border-border shadow-card rounded-xl p-5">
           <h2 className="text-sm font-semibold mb-4">Últimas vendas</h2>
           {recent.length === 0 ? (
             <div className="text-sm text-muted-foreground py-8 text-center">Nenhuma venda registrada ainda.</div>
