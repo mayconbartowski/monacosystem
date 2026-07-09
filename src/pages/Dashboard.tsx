@@ -60,7 +60,7 @@ export default function Dashboard() {
   );
   const benefitsAvailable = vehicles.filter((v) => v.rewardAvailable);
 
-  const recent = [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+  const recent = [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30);
   const recentExpenses = activeExpenses.slice(0, 6);
 
   const openNew = () => { setEditing(null); setExpenseOpen(true); };
@@ -105,6 +105,34 @@ export default function Dashboard() {
             <Metric icon={<Users />} label="Clientes cadastrados" value={String(customers.length)} />
             <Metric icon={<ListOrdered />} label="Serviços concluídos" value={String(completed)} />
           </div>
+
+          <Card className="bg-card/25 border-border shadow-card rounded-xl p-5 mt-4">
+            <h2 className="text-sm font-semibold mb-4">Últimas vendas</h2>
+            {recent.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8 text-center">Nenhuma venda registrada ainda.</div>
+            ) : (
+              <div className="relative">
+                <div className="divide-y divide-border max-h-[380px] overflow-y-auto pr-1">
+                  {recent.map((o) => (
+                    <div key={o.id} className="py-3 flex items-center gap-3">
+                      <div className="font-mono text-sm w-24">{o.vehiclePlate}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm truncate">{o.customerName}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {o.service} {o.extras.length ? `+ ${o.extras.join(", ")}` : ""}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {o.status === "completed" ? "Concluído" : o.status === "queued" ? "Fila" : o.status === "in_progress" ? "Em andamento" : "Cancelado"}
+                      </Badge>
+                      <div className="w-28 text-right font-semibold text-primary">{brl(o.total)}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-b from-transparent to-surface-sunken" />
+              </div>
+            )}
+          </Card>
         </div>
 
         {isAdmin && (
@@ -205,31 +233,6 @@ export default function Dashboard() {
             </Card>
           )}
         </div>
-
-        <Card className="bg-card/25 border-border shadow-card rounded-xl p-5">
-          <h2 className="text-sm font-semibold mb-4">Últimas vendas</h2>
-          {recent.length === 0 ? (
-            <div className="text-sm text-muted-foreground py-8 text-center">Nenhuma venda registrada ainda.</div>
-          ) : (
-            <div className="divide-y divide-border">
-              {recent.map((o) => (
-                <div key={o.id} className="py-3 flex items-center gap-3">
-                  <div className="font-mono text-sm w-24">{o.vehiclePlate}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm truncate">{o.customerName}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {o.service} {o.extras.length ? `+ ${o.extras.join(", ")}` : ""}
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {o.status === "completed" ? "Concluído" : o.status === "queued" ? "Fila" : o.status === "in_progress" ? "Em andamento" : "Cancelado"}
-                  </Badge>
-                  <div className="w-28 text-right font-semibold text-primary">{brl(o.total)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
       </div>
 
       {isAdmin && (

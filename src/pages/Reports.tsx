@@ -196,13 +196,10 @@ export default function Reports() {
 
       <div className="p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Stat label="Receita bruta" value={brl(revenue)} accent />
+          <Stat label="Receita bruta" value={brl(revenue)} highlight />
           <Stat label="Despesas" value={brl(totalExpenses)} />
           <Stat label="Resultado líquido" value={brl(netResult)} accent={netResult >= 0} />
           <Stat label="Ticket médio" value={brl(rangeOrders.length ? revenue / rangeOrders.length : 0)} />
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Stat label="Vendas" value={String(rangeOrders.length)} />
           <Stat label="Descontos" value={brl(discounts)} />
           <Stat label="Clientes atendidos no período" value={String(attendedInPeriod)} />
@@ -248,6 +245,7 @@ export default function Reports() {
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
                     tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
                   <RTooltip
+                    cursor={{ fill: "#ffffff", fillOpacity: 0.05 }}
                     formatter={(v: number, name) => name === "total" ? brl(v) : String(v)}
                     contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                   />
@@ -304,6 +302,7 @@ export default function Reports() {
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
                       tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
                     <RTooltip
+                      cursor={{ fill: "#ffffff", fillOpacity: 0.05 }}
                       formatter={(v: number) => brl(v)}
                       contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                     />
@@ -377,7 +376,15 @@ export default function Reports() {
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Stat({ label, value, accent, highlight }: { label: string; value: string; accent?: boolean; highlight?: boolean }) {
+  if (highlight) {
+    return (
+      <Card className="bg-gradient-gold border-0 p-4">
+        <div className="text-[11px] uppercase tracking-wider text-primary-foreground/80">{label}</div>
+        <div className="text-2xl font-bold text-primary-foreground">{value}</div>
+      </Card>
+    );
+  }
   return (
     <Card className="surface-card p-4">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
