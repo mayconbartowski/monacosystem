@@ -196,13 +196,10 @@ export default function Reports() {
 
       <div className="p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Stat label="Receita bruta" value={brl(revenue)} accent />
+          <Stat label="Receita bruta" value={brl(revenue)} highlight />
           <Stat label="Despesas" value={brl(totalExpenses)} />
           <Stat label="Resultado líquido" value={brl(netResult)} accent={netResult >= 0} />
           <Stat label="Ticket médio" value={brl(rangeOrders.length ? revenue / rangeOrders.length : 0)} />
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Stat label="Vendas" value={String(rangeOrders.length)} />
           <Stat label="Descontos" value={brl(discounts)} />
           <Stat label="Clientes atendidos no período" value={String(attendedInPeriod)} />
