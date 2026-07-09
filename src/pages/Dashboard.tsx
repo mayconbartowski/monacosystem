@@ -94,14 +94,17 @@ export default function Dashboard() {
           </Button>
         )}
       </header>
-      <div className="p-6 space-y-6 bg-surface-sunken flex-1 overflow-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Metric icon={<DollarSign />} label="Faturamento hoje" value={brl(revenue)} />
-          <Metric icon={<TrendingUp />} label="Vendas hoje" value={String(todays.length)} />
-          <Metric icon={<Car />} label="Veículos na fila" value={String(queue.length)} />
-          <Metric icon={<Clock />} label="Tempo total fila" value={formatDuration(totalQueueWait(orders))} />
-          <Metric icon={<Users />} label="Clientes cadastrados" value={String(customers.length)} />
-          <Metric icon={<ListOrdered />} label="Serviços concluídos" value={String(completed)} />
+      <div className="p-6 space-y-12 bg-surface-sunken flex-1 overflow-auto">
+        <div>
+          <h2 className="text-sm font-semibold mb-3">Resumo do Dia</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Metric icon={<DollarSign />} label="Faturamento hoje" value={brl(revenue)} highlight />
+            <Metric icon={<TrendingUp />} label="Vendas hoje" value={String(todays.length)} />
+            <Metric icon={<Car />} label="Veículos na fila" value={String(queue.length)} />
+            <Metric icon={<Clock />} label="Tempo total fila" value={formatDuration(totalQueueWait(orders))} />
+            <Metric icon={<Users />} label="Clientes cadastrados" value={String(customers.length)} />
+            <Metric icon={<ListOrdered />} label="Serviços concluídos" value={String(completed)} />
+          </div>
         </div>
 
         {isAdmin && (
