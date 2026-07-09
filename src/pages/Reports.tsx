@@ -374,7 +374,15 @@ export default function Reports() {
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Stat({ label, value, accent, highlight }: { label: string; value: string; accent?: boolean; highlight?: boolean }) {
+  if (highlight) {
+    return (
+      <Card className="bg-gradient-gold border-0 p-4">
+        <div className="text-[11px] uppercase tracking-wider text-primary-foreground/80">{label}</div>
+        <div className="text-2xl font-bold text-primary-foreground">{value}</div>
+      </Card>
+    );
+  }
   return (
     <Card className="surface-card p-4">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
