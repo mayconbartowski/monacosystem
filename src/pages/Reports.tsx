@@ -245,6 +245,7 @@ export default function Reports() {
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
                     tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
                   <RTooltip
+                    cursor={{ fill: "#ffffff", fillOpacity: 0.05 }}
                     formatter={(v: number, name) => name === "total" ? brl(v) : String(v)}
                     contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                   />
