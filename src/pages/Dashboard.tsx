@@ -94,20 +94,22 @@ export default function Dashboard() {
           </Button>
         )}
       </header>
-      <div className="p-6 space-y-6 bg-surface-sunken flex-1 overflow-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Metric icon={<DollarSign />} label="Faturamento hoje" value={brl(revenue)} />
-          <Metric icon={<TrendingUp />} label="Vendas hoje" value={String(todays.length)} />
-          <Metric icon={<Car />} label="Veículos na fila" value={String(queue.length)} />
-          <Metric icon={<Clock />} label="Tempo total fila" value={formatDuration(totalQueueWait(orders))} />
-          <Metric icon={<Users />} label="Clientes cadastrados" value={String(customers.length)} />
-          <Metric icon={<ListOrdered />} label="Serviços concluídos" value={String(completed)} />
+      <div className="p-6 space-y-12 bg-surface-sunken flex-1 overflow-auto">
+        <div>
+          <h2 className="text-sm font-semibold mb-3">Resumo do Dia</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Metric icon={<DollarSign />} label="Faturamento hoje" value={brl(revenue)} highlight />
+            <Metric icon={<TrendingUp />} label="Vendas hoje" value={String(todays.length)} />
+            <Metric icon={<Car />} label="Veículos na fila" value={String(queue.length)} />
+            <Metric icon={<Clock />} label="Tempo total fila" value={formatDuration(totalQueueWait(orders))} />
+            <Metric icon={<Users />} label="Clientes cadastrados" value={String(customers.length)} />
+            <Metric icon={<ListOrdered />} label="Serviços concluídos" value={String(completed)} />
+          </div>
         </div>
 
         {isAdmin && (
           <div>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-primary" />
               Despesas da Loja
               <span className="text-muted-foreground font-normal">· caixa operacional</span>
             </h2>
@@ -118,7 +120,7 @@ export default function Dashboard() {
               <Metric icon={<ListOrdered />} label="Lançamentos no mês" value={String(expensesMonth.length)} />
             </div>
 
-            <Card className="surface-card p-5 mt-4">
+            <Card className="bg-card/25 border-border shadow-card rounded-xl p-5 mt-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold">Últimas despesas</div>
                 <Button size="sm" variant="outline" onClick={openNew} className="gap-2">
@@ -160,7 +162,6 @@ export default function Dashboard() {
 
         <div>
           <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
             Programa de Fidelidade <span className="text-muted-foreground font-normal">· por placa</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -205,7 +206,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <Card className="bg-card border-border p-5">
+        <Card className="bg-card/25 border-border shadow-card rounded-xl p-5">
           <h2 className="text-sm font-semibold mb-4">Últimas vendas</h2>
           {recent.length === 0 ? (
             <div className="text-sm text-muted-foreground py-8 text-center">Nenhuma venda registrada ainda.</div>
@@ -259,14 +260,22 @@ export default function Dashboard() {
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <Card className="surface-card p-4">
+    <Card className={highlight ? "bg-gradient-gold border-0 p-4" : "surface-card p-4"}>
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 grid place-items-center rounded-lg bg-primary/15 text-primary">{icon}</div>
+        <div className={
+          highlight
+            ? "h-10 w-10 grid place-items-center rounded-lg bg-primary-foreground/20 text-primary-foreground"
+            : "h-10 w-10 grid place-items-center rounded-lg bg-primary/15 text-primary"
+        }>{icon}</div>
         <div>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-          <div className="text-lg font-bold">{value}</div>
+          <div className={
+            highlight
+              ? "text-[11px] uppercase tracking-wider text-primary-foreground/80"
+              : "text-[11px] uppercase tracking-wider text-muted-foreground"
+          }>{label}</div>
+          <div className={highlight ? "text-lg font-bold text-primary-foreground" : "text-lg font-bold"}>{value}</div>
         </div>
       </div>
     </Card>
