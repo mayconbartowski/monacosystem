@@ -162,7 +162,6 @@ export default function Dashboard() {
 
         <div>
           <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-primary" />
             Programa de Fidelidade <span className="text-muted-foreground font-normal">· por placa</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
