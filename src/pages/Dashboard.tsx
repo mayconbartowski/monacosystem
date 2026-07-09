@@ -60,7 +60,7 @@ export default function Dashboard() {
   );
   const benefitsAvailable = vehicles.filter((v) => v.rewardAvailable);
 
-  const recent = [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+  const recent = [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30);
   const recentExpenses = activeExpenses.slice(0, 6);
 
   const openNew = () => { setEditing(null); setExpenseOpen(true); };
