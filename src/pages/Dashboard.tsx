@@ -233,31 +233,6 @@ export default function Dashboard() {
             </Card>
           )}
         </div>
-
-        <Card className="bg-card/25 border-border shadow-card rounded-xl p-5">
-          <h2 className="text-sm font-semibold mb-4">Últimas vendas</h2>
-          {recent.length === 0 ? (
-            <div className="text-sm text-muted-foreground py-8 text-center">Nenhuma venda registrada ainda.</div>
-          ) : (
-            <div className="divide-y divide-border">
-              {recent.map((o) => (
-                <div key={o.id} className="py-3 flex items-center gap-3">
-                  <div className="font-mono text-sm w-24">{o.vehiclePlate}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm truncate">{o.customerName}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {o.service} {o.extras.length ? `+ ${o.extras.join(", ")}` : ""}
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {o.status === "completed" ? "Concluído" : o.status === "queued" ? "Fila" : o.status === "in_progress" ? "Em andamento" : "Cancelado"}
-                  </Badge>
-                  <div className="w-28 text-right font-semibold text-primary">{brl(o.total)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
       </div>
 
       {isAdmin && (
