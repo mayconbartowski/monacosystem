@@ -321,7 +321,7 @@ export default function Sales() {
             )}
           </Panel>
 
-          <Panel title="Cliente" icon={<User className="h-4 w-4" />}
+          <Panel title="Cliente"
             right={<div className="w-64"><CustomerLiveSearch onSelect={fillFromMatch} placeholder="Buscar cliente…" /></div>}>
             <div className="space-y-3">
               <Field label="CPF *">
@@ -348,7 +348,7 @@ export default function Sales() {
         </section>
 
         <section className="lg:col-span-4 space-y-4">
-          <Panel title="Veículo" icon={<Car className="h-4 w-4" />}>
+          <Panel title="Veículo">
             <div className="space-y-3">
               <Field label="Placa *">
                 <Input value={formatPlate(plate)} onChange={(e) => setPlate(e.target.value)}
@@ -503,8 +503,7 @@ function Panel({ title, subtitle, icon, right, children }: { title: string; subt
     <div className="surface-card p-5 transition-shadow hover:shadow-elegant">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            {icon && <span className="text-primary">{icon}</span>}
+          <div className="flex items-center gap-2 text-lg font-normal text-foreground">
             {title}
           </div>
           {subtitle && <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>}
