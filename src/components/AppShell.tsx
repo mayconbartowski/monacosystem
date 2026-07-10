@@ -80,9 +80,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     cn(
                       "group flex items-center rounded-lg text-sm transition-all relative",
                       collapsed ? "mx-auto justify-center items-center h-10 w-10 p-0" : "gap-3 px-3 py-2.5",
-                    isActive
-                      ? "bg-primary/15 text-primary font-medium"
-                      : "text-white/80 hover:bg-sidebar-accent/60 hover:text-white"
+                      isActive
+                        ? "bg-primary/15 font-medium"
+                        : "hover:bg-sidebar-accent/60"
                     )
                   }
                 >
@@ -91,8 +91,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       {isActive && !collapsed && (
                         <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />
                       )}
-                      <it.icon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
-                      {!collapsed && <span className="truncate">{it.label}</span>}
+                      <it.icon
+                        className={cn(
+                          "h-4 w-4 shrink-0 transition-transform group-hover:scale-110",
+                          isActive ? "text-primary" : "text-white/80 group-hover:text-white"
+                        )}
+                      />
+                      {!collapsed && (
+                        <span
+                          className={cn(
+                            "truncate",
+                            isActive ? "text-primary" : "text-white/80 group-hover:text-white"
+                          )}
+                        >
+                          {it.label}
+                        </span>
+                      )}
                     </>
                   )}
 
