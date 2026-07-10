@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   {({ isActive }) => (
                     <>
-                      {isActive && !collapsed && (
+                      {isActive && (
                         <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />
                       )}
                       <it.icon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
