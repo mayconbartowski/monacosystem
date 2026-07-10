@@ -72,45 +72,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
             {items.map((it) => {
+              const isActive = it.to === "/" ? location.pathname === "/" : location.pathname.startsWith(it.to);
               const link = (
                 <NavLink
                   key={it.to}
                   to={it.to}
                   end={it.to === "/"}
-                  className={({ isActive }) =>
-                    cn(
-                      "group flex items-center rounded-lg text-sm transition-all relative",
-                      collapsed ? "mx-auto justify-center items-center h-10 w-10 p-0" : "gap-3 px-3 py-2.5",
-                      isActive
-                        ? "bg-primary/15 font-medium"
-                        : "hover:bg-sidebar-accent/60"
-                    )
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && !collapsed && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />
-                      )}
-                      <it.icon
-                        className={cn(
-                          "h-4 w-4 shrink-0 transition-transform group-hover:scale-110",
-                          isActive ? "text-primary" : "text-white/80 group-hover:text-white"
-                        )}
-                      />
-                      {!collapsed && (
-                        <span
-                          className={cn(
-                            "truncate",
-                            isActive ? "text-primary" : "text-white/80 group-hover:text-white"
-                          )}
-                        >
-                          {it.label}
-                        </span>
-                      )}
-                    </>
+                  className={cn(
+                    "group flex items-center rounded-lg text-sm transition-all relative",
+                    collapsed ? "mx-auto justify-center items-center h-10 w-10 p-0" : "gap-3 px-3 py-2.5",
+                    isActive
+                      ? "bg-primary/15 font-medium"
+                      : "hover:bg-sidebar-accent/60"
                   )}
-
+                >
+                  {isActive && !collapsed && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />
+                  )}
+                  <it.icon
+                    className={cn(
+                      "h-4 w-4 shrink-0 transition-transform group-hover:scale-110",
+                      isActive ? "text-primary" : "text-white/80 group-hover:text-white"
+                    )}
+                  />
+                  {!collapsed && (
+                    <span
+                      className={cn(
+                        "truncate",
+                        isActive ? "text-primary" : "text-white/80 group-hover:text-white"
+                      )}
+                    >
+                      {it.label}
+                    </span>
+                  )}
                 </NavLink>
               );
               if (!collapsed) return link;
