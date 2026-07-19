@@ -20,44 +20,10 @@ export interface ServiceDef {
 }
 
 export const SERVICES: ServiceDef[] = [
-  {
-    key: "Essencial",
-    name: "Lavagem Essencial",
-    durationMinutes: 60,
-    description: "Lavagem externa completa com produtos premium.",
-    included: ["Lavagem externa", "Pneus pretos", "Secagem com microfibra", "Aromatizante"],
-    icon: "droplets",
-  },
-  {
-    key: "Premium",
-    name: "Lavagem Premium",
-    durationMinutes: 120,
-    description: "Cuidado completo interno e externo para o dia a dia.",
-    included: ["Tudo da Essencial", "Aspiração completa", "Limpeza de painel e bancos", "Pretinho nos plásticos"],
-    icon: "sparkles",
-  },
-  {
-    key: "Golden",
-    name: "Lavagem Golden",
-    durationMinutes: 120,
-    description: "Detalhamento avançado com proteção de superfícies.",
-    included: ["Tudo da Premium", "Higienização de couro / tecido", "Cera líquida de proteção", "Limpeza de motor leve"],
-    icon: "shield",
-  },
-  {
-    key: "Platinum",
-    name: "Lavagem Platinum Monaco",
-    durationMinutes: 240,
-    description: "Experiência Monaco completa. Detalhamento profissional.",
-    included: [
-      "Tudo da Golden",
-      "Descontaminação de pintura",
-      "Polimento técnico leve",
-      "Cera de carnaúba premium",
-      "Cristalização de vidros",
-    ],
-    icon: "crown",
-  },
+  { key: "Essencial", name: "Lavagem Essencial", durationMinutes: 60, description: "Lavagem externa completa com produtos premium.", included: ["Lavagem externa", "Pneus pretos", "Secagem com microfibra", "Aromatizante"], icon: "droplets" },
+  { key: "Premium", name: "Lavagem Premium", durationMinutes: 120, description: "Cuidado completo interno e externo para o dia a dia.", included: ["Tudo da Essencial", "Aspiração completa", "Limpeza de painel e bancos", "Pretinho nos plásticos"], icon: "sparkles" },
+  { key: "Golden", name: "Lavagem Golden", durationMinutes: 120, description: "Detalhamento avançado com proteção de superfícies.", included: ["Tudo da Premium", "Higienização de couro / tecido", "Cera líquida de proteção", "Limpeza de motor leve"], icon: "shield" },
+  { key: "Platinum", name: "Lavagem Platinum Monaco", durationMinutes: 240, description: "Experiência Monaco completa. Detalhamento profissional.", included: ["Tudo da Golden", "Descontaminação de pintura", "Polimento técnico leve", "Cera de carnaúba premium", "Cristalização de vidros"], icon: "crown" },
 ];
 
 export const EXTRAS: Record<ExtraKey, { name: string; durationMinutes: number; description: string }> = {
@@ -78,7 +44,6 @@ export const DEFAULT_PRICES: PriceTable = {
 
 export interface ServiceOverride {
   key: ServiceKey;
-  /** UUID do registro em public.services */
   id?: string;
   name?: string;
   description?: string;
@@ -92,7 +57,6 @@ export interface Customer {
   id: string;
   name: string;
   cpf: string;
-  /** WhatsApp do cliente (obrigatório). */
   phone: string;
   totalOrders: number;
   createdAt: string;
@@ -113,15 +77,16 @@ export interface Vehicle {
 }
 
 export type PaymentMethod = "Crédito" | "Débito" | "Pix";
-
 export type OrderStatus = "queued" | "in_progress" | "completed" | "cancelled" | "delivered";
+export type PaymentStatus = "pending" | "paid" | "cancelled";
+export type OrderSource = "customer" | "partner";
 
 export interface Order {
   id: string;
-  customerId: string;
+  customerId: string | null;
   customerName: string;
   customerCpf: string;
-  vehicleId: string;
+  vehicleId: string | null;
   vehiclePlate: string;
   vehicleLabel: string;
   category: VehicleCategory;
@@ -130,10 +95,13 @@ export interface Order {
   extras: ExtraKey[];
   subtotal: number;
   discount: number;
+  discountPercentage: number;
   loyaltyDiscount: number;
   loyaltyRewardUsed: boolean;
   total: number;
   paymentMethod: PaymentMethod | null;
+  paymentStatus: PaymentStatus;
+  paidAt?: string;
   notes: string;
   queuePosition: number;
   durationMinutes: number;
@@ -141,6 +109,20 @@ export interface Order {
   startedAt?: string;
   completedAt?: string;
   status: OrderStatus;
+  orderSource: OrderSource;
+  partnerContractId: string | null;
+}
+
+export interface PartnerContract {
+  id: string;
+  companyName: string;
+  contactPhone: string;
+  cnpj: string;
+  monthlyVehicleLimit: number;
+  contractValue: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LoyaltyInfo {
@@ -151,52 +133,33 @@ export interface LoyaltyInfo {
 }
 
 export const LOYALTY_DISCOUNT: Record<ServiceKey, number> = {
-  Essencial: 1.0,
-  Premium: 0.5,
-  Golden: 0.25,
-  Platinum: 0,
+  Essencial: 1.0, Premium: 0.5, Golden: 0.25, Platinum: 0,
 };
 
 export const LOYALTY_QUALIFYING_SERVICES: ServiceKey[] = ["Essencial", "Premium", "Golden", "Platinum"];
-
 export const LOYALTY_CYCLE_SIZE = 10;
 
-// ---------------- Auth ----------------
-// Mantemos o nome 'gerente' no UI, mas internamente usamos 'gerencia' (enum do banco).
 export type Role = "atendimento" | "lavajato" | "gerencia";
 
 export interface AppAccount {
-  id: string;
-  role: Role;
-  username: string;
-  authUserId: string;
+  id: string; role: Role; username: string; authUserId: string;
 }
 
 export interface Session {
-  role: Role;
-  login: string;
-  userId: string;
-  loggedAt: string;
+  role: Role; login: string; userId: string; loggedAt: string;
 }
 
 export const ROLE_LABEL: Record<Role, string> = {
-  atendimento: "Atendimento",
-  lavajato: "Lava-jato",
-  gerencia: "Gerente",
+  atendimento: "Atendimento", lavajato: "Lava-jato", gerencia: "Gerente",
 };
 
 export interface Permissions {
-  pdv: boolean;
-  queue: boolean;
-  customersView: boolean;
-  customersEdit: boolean;
-  customersDelete: boolean;
-  historyView: boolean;
-  historyEdit: boolean;
-  reports: boolean;
-  dashboard: boolean;
-  services: boolean;
-  settings: boolean;
+  pdv: boolean; queue: boolean;
+  customersView: boolean; customersEdit: boolean; customersDelete: boolean;
+  historyView: boolean; historyEdit: boolean;
+  reports: boolean; dashboard: boolean; services: boolean; settings: boolean;
+  partners: boolean;
+  takePayment: boolean;
 }
 
 export function permissionsFor(role: Role): Permissions {
@@ -207,6 +170,7 @@ export function permissionsFor(role: Role): Permissions {
         customersView: true, customersEdit: true, customersDelete: true,
         historyView: true, historyEdit: true,
         reports: true, dashboard: true, services: true, settings: true,
+        partners: true, takePayment: true,
       };
     case "atendimento":
       return {
@@ -214,6 +178,7 @@ export function permissionsFor(role: Role): Permissions {
         customersView: true, customersEdit: false, customersDelete: false,
         historyView: true, historyEdit: false,
         reports: false, dashboard: false, services: false, settings: false,
+        partners: false, takePayment: true,
       };
     case "lavajato":
       return {
@@ -221,6 +186,7 @@ export function permissionsFor(role: Role): Permissions {
         customersView: false, customersEdit: false, customersDelete: false,
         historyView: false, historyEdit: false,
         reports: false, dashboard: false, services: false, settings: false,
+        partners: false, takePayment: false,
       };
   }
 }
