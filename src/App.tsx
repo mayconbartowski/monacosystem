@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import Queue from "./pages/Queue";
 import Services from "./pages/Services";
 import Settings from "./pages/Settings";
+import Partners from "./pages/Partners";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,9 @@ const App = () => (
               } />
               <Route path="/configuracoes" element={
                 <RequireRole allow={["gerencia"]}><Settings /></RequireRole>
+              } />
+              <Route path="/parceiros" element={
+                <RequireRole allow={["gerencia"]}><Partners /></RequireRole>
               } />
 
               <Route path="*" element={<Navigate to="/login" replace />} />

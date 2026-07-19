@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Car, LayoutDashboard, Users, ClipboardList, BarChart3,
-  LogOut, Settings as SettingsIcon, Wrench, ListOrdered,
+  LogOut, Settings as SettingsIcon, Wrench, ListOrdered, Building2,
   PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ const ALL_ITEMS = [
   { to: "/fila", label: "Fila", icon: ListOrdered, perm: "queue" as const },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "dashboard" as const },
   { to: "/clientes", label: "Clientes", icon: Users, perm: "customersView" as const },
+  { to: "/parceiros", label: "Parceiros", icon: Building2, perm: "partners" as const },
   { to: "/historico", label: "Histórico", icon: ClipboardList, perm: "historyView" as const },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3, perm: "reports" as const },
   { to: "/servicos", label: "Serviços", icon: Wrench, perm: "services" as const },

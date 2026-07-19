@@ -5,11 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import {
   Customer, Vehicle, Order, ServiceOverride, PriceTable, DEFAULT_PRICES,
-  ServiceKey, ServiceIconKey, SERVICES, VehicleCategory,
+  ServiceKey, ServiceIconKey, SERVICES, VehicleCategory, PartnerContract,
+  PaymentStatus, OrderSource,
 } from "@/lib/domain";
-import { fetchAll } from "@/services/data";
+import { fetchAll, mapOrder as mapOrderService } from "@/services/data";
 import { fetchExpenses, mapExpense } from "@/services/expenses";
 import { Expense } from "@/lib/expenses";
+import { mapContract } from "@/services/partners";
 import { useAuth } from "@/lib/authContext";
 import { normalizeCpf, normalizePlate } from "@/lib/storage";
 
@@ -20,6 +22,7 @@ interface DataState {
   services: ServiceOverride[];
   prices: PriceTable;
   expenses: Expense[];
+  partnerContracts: PartnerContract[];
   loading: boolean;
   refresh: () => Promise<void>;
   refreshExpenses: () => Promise<void>;
@@ -33,21 +36,12 @@ interface DataState {
 
 const Ctx = createContext<DataState | null>(null);
 
-/* -------- row → domain mappers (kept in sync with services/data.ts) -------- */
 type CustomerRow = { id: string; name: string; cpf: string; whatsapp: string; created_at: string; };
 type VehicleRow = {
   id: string; customer_id: string; plate: string; brand: string; model: string; color: string; year: string;
   category: VehicleCategory; wash_count: number; reward_available: boolean; last_reward_date: string | null;
 };
-type OrderRow = {
-  id: string; customer_id: string; customer_name: string; vehicle_id: string; vehicle_plate: string;
-  vehicle_label: string; category: VehicleCategory; service_id: string; service_key: string; extras: unknown;
-  subtotal: number; discount: number; loyalty_discount: number; loyalty_reward_used: boolean; total: number;
-  payment_method: "Crédito" | "Débito" | "Pix" | null;
-  notes: string; queue_position: number; duration_minutes: number;
-  status: "queued" | "in_progress" | "completed" | "cancelled" | "delivered";
-  created_at: string; started_at: string | null; completed_at: string | null;
-};
+type OrderRow = any; // shape mirrored by services/data.ts mapOrder
 type ServiceRow = {
   id: string; key: string; title: string; description: string;
   duration_minutes: number; position: number; active: boolean;
@@ -65,35 +59,14 @@ function mapVehicle(r: VehicleRow): Vehicle {
     lastRewardDate: r.last_reward_date ?? undefined,
   };
 }
-function mapOrder(r: OrderRow): Order {
-  return {
-    id: r.id, customerId: r.customer_id, customerName: r.customer_name, customerCpf: "",
-    vehicleId: r.vehicle_id, vehiclePlate: r.vehicle_plate, vehicleLabel: r.vehicle_label,
-    category: r.category, service: r.service_key as ServiceKey, serviceId: r.service_id,
-    extras: Array.isArray(r.extras) ? (r.extras as any) : [],
-    subtotal: Number(r.subtotal), discount: Number(r.discount),
-    loyaltyDiscount: Number(r.loyalty_discount), loyaltyRewardUsed: !!r.loyalty_reward_used,
-    total: Number(r.total), paymentMethod: r.payment_method,
-    notes: r.notes || "", queuePosition: r.queue_position, durationMinutes: r.duration_minutes,
-    createdAt: r.created_at,
-    startedAt: r.started_at ?? undefined, completedAt: r.completed_at ?? undefined,
-    status: r.status,
-  };
-}
 function mapService(s: ServiceRow): ServiceOverride {
   return {
-    id: s.id,
-    key: s.key as ServiceKey,
-    name: s.title,
-    description: s.description,
-    durationMinutes: s.duration_minutes,
-    active: s.active,
-    order: s.position,
+    id: s.id, key: s.key as ServiceKey, name: s.title, description: s.description,
+    durationMinutes: s.duration_minutes, active: s.active, order: s.position,
     icon: SERVICES.find((d) => d.key === s.key)?.icon as ServiceIconKey,
   };
 }
 
-/* upsert helper for lists keyed by id */
 function upsertById<T extends { id?: string }>(list: T[], row: T): T[] {
   const i = list.findIndex((x) => x.id === row.id);
   if (i < 0) return [row, ...list];
@@ -104,11 +77,9 @@ function upsertById<T extends { id?: string }>(list: T[], row: T): T[] {
 function removeById<T extends { id?: string }>(list: T[], id: string): T[] {
   return list.filter((x) => x.id !== id);
 }
-
-/* recompute totalOrders per customer from orders list */
 function recomputeTotals(customers: Customer[], orders: Order[]): Customer[] {
   const totals = new Map<string, number>();
-  orders.forEach((o) => totals.set(o.customerId, (totals.get(o.customerId) ?? 0) + 1));
+  orders.forEach((o) => { if (o.customerId) totals.set(o.customerId, (totals.get(o.customerId) ?? 0) + 1); });
   let changed = false;
   const next = customers.map((c) => {
     const t = totals.get(c.id) ?? 0;
@@ -127,6 +98,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [services, setServices] = useState<ServiceOverride[]>([]);
   const [prices, setPrices] = useState<PriceTable>(DEFAULT_PRICES);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [partnerContracts, setPartnerContracts] = useState<PartnerContract[]>([]);
   const [loading, setLoading] = useState(true);
   const channelsRef = useRef<RealtimeChannel[]>([]);
 
@@ -138,6 +110,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setOrders(all.orders);
       setServices(all.services);
       setPrices(all.prices);
+      setPartnerContracts(all.partnerContracts);
     } catch (e) {
       console.error("[Monaco] fetchAll error", e);
     } finally {
@@ -154,7 +127,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  /* refetch just the prices table (small, needs join with services) */
   const refetchPrices = useCallback(async () => {
     try {
       const { data: sps } = await supabase.from("service_prices").select("*");
@@ -179,6 +151,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setCustomers([]); setVehicles([]); setOrders([]); setServices([]);
       setPrices(DEFAULT_PRICES);
       setExpenses([]);
+      setPartnerContracts([]);
       return;
     }
 
@@ -186,13 +159,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     void doFetch();
     void refreshExpenses();
 
-    // Ensure realtime uses the current access token
     void supabase.auth.getSession().then(({ data }) => {
       const token = data.session?.access_token;
       if (token) supabase.realtime.setAuth(token);
     });
 
-    /* ---- Realtime handlers (granular, no polling / no refetch) ---- */
     const onCustomers = (p: RealtimePostgresChangesPayload<CustomerRow>) => {
       if (p.eventType === "DELETE") {
         const id = (p.old as any)?.id;
@@ -200,7 +171,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const row = p.new as CustomerRow & { active?: boolean };
-      // Soft delete: cliente inativo sai da listagem
       if (row && row.active === false) {
         setCustomers((prev) => removeById(prev, row.id));
         return;
@@ -231,7 +201,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         });
         return;
       }
-      const mapped = mapOrder(p.new as OrderRow);
+      const mapped = mapOrderService(p.new as OrderRow);
       setOrders((prev) => {
         const next = upsertById(prev, mapped);
         if (p.eventType === "INSERT") {
@@ -275,7 +245,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
-    /* One channel per table = more resilient than multiplexing */
+    const onPartners = (p: RealtimePostgresChangesPayload<any>) => {
+      if (p.eventType === "DELETE") {
+        const id = (p.old as any)?.id;
+        if (id) setPartnerContracts((prev) => removeById(prev, id));
+        return;
+      }
+      const mapped = mapContract(p.new as any);
+      setPartnerContracts((prev) => upsertById(prev, mapped)
+        .sort((a, b) => a.companyName.localeCompare(b.companyName)));
+    };
+
     const mk = (name: string, table: string, handler: (p: any) => void) =>
       supabase
         .channel(`monaco:${name}`)
@@ -293,6 +273,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       mk("services", "services", onServices),
       mk("service_prices", "service_prices", () => void refetchPrices()),
       mk("store_expenses", "store_expenses", onExpenses),
+      mk("partner_contracts", "partner_contracts", onPartners),
     ];
 
     return () => {
@@ -351,10 +332,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<DataState>(() => ({
-    customers, vehicles, orders, services, prices, expenses, loading,
+    customers, vehicles, orders, services, prices, expenses, partnerContracts, loading,
     refresh: doFetch, refreshExpenses,
     searchCustomers, findCustomerByCpf, findVehicleByPlate,
-  }), [customers, vehicles, orders, services, prices, expenses, loading, doFetch, refreshExpenses, searchCustomers, findCustomerByCpf, findVehicleByPlate]);
+  }), [customers, vehicles, orders, services, prices, expenses, partnerContracts, loading, doFetch, refreshExpenses, searchCustomers, findCustomerByCpf, findVehicleByPlate]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

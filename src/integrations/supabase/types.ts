@@ -81,16 +81,22 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
-          customer_id: string
+          customer_id: string | null
           customer_name: string
           discount: number
+          discount_percentage: number
           duration_minutes: number
           extras: Json
           id: string
           loyalty_discount: number
           loyalty_reward_used: boolean
           notes: string
+          order_source: Database["public"]["Enums"]["order_source"]
+          paid_at: string | null
+          paid_by: string | null
+          partner_contract_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           queue_position: number
           service_id: string
           service_key: string
@@ -99,7 +105,7 @@ export type Database = {
           subtotal: number
           total: number
           updated_at: string
-          vehicle_id: string
+          vehicle_id: string | null
           vehicle_label: string
           vehicle_plate: string
         }
@@ -109,16 +115,22 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
-          customer_id: string
+          customer_id?: string | null
           customer_name: string
           discount?: number
+          discount_percentage?: number
           duration_minutes?: number
           extras?: Json
           id?: string
           loyalty_discount?: number
           loyalty_reward_used?: boolean
           notes?: string
+          order_source?: Database["public"]["Enums"]["order_source"]
+          paid_at?: string | null
+          paid_by?: string | null
+          partner_contract_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           queue_position?: number
           service_id: string
           service_key: string
@@ -127,7 +139,7 @@ export type Database = {
           subtotal?: number
           total?: number
           updated_at?: string
-          vehicle_id: string
+          vehicle_id?: string | null
           vehicle_label: string
           vehicle_plate: string
         }
@@ -137,16 +149,22 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
-          customer_id?: string
+          customer_id?: string | null
           customer_name?: string
           discount?: number
+          discount_percentage?: number
           duration_minutes?: number
           extras?: Json
           id?: string
           loyalty_discount?: number
           loyalty_reward_used?: boolean
           notes?: string
+          order_source?: Database["public"]["Enums"]["order_source"]
+          paid_at?: string | null
+          paid_by?: string | null
+          partner_contract_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           queue_position?: number
           service_id?: string
           service_key?: string
@@ -155,7 +173,7 @@ export type Database = {
           subtotal?: number
           total?: number
           updated_at?: string
-          vehicle_id?: string
+          vehicle_id?: string | null
           vehicle_label?: string
           vehicle_plate?: string
         }
@@ -165,6 +183,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_partner_contract_id_fkey"
+            columns: ["partner_contract_id"]
+            isOneToOne: false
+            referencedRelation: "partner_contracts"
             referencedColumns: ["id"]
           },
           {
@@ -182,6 +207,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      partner_contracts: {
+        Row: {
+          active: boolean
+          cnpj: string
+          company_name: string
+          contact_phone: string
+          contract_value: number
+          created_at: string
+          created_by: string | null
+          id: string
+          monthly_vehicle_limit: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          cnpj: string
+          company_name: string
+          contact_phone?: string
+          contract_value?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          monthly_vehicle_limit: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          cnpj?: string
+          company_name?: string
+          contact_phone?: string
+          contract_value?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          monthly_vehicle_limit?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -425,9 +489,110 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_partner_order: {
+        Args: {
+          _brand: string
+          _category: Database["public"]["Enums"]["vehicle_category"]
+          _color: string
+          _duration_minutes: number
+          _extras: Json
+          _model: string
+          _notes: string
+          _partner_contract_id: string
+          _plate: string
+          _queue_position: number
+          _service_id: string
+          _service_key: string
+          _subtotal: number
+          _year: string
+        }
+        Returns: {
+          actual_minutes: number | null
+          category: Database["public"]["Enums"]["vehicle_category"]
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_name: string
+          discount: number
+          discount_percentage: number
+          duration_minutes: number
+          extras: Json
+          id: string
+          loyalty_discount: number
+          loyalty_reward_used: boolean
+          notes: string
+          order_source: Database["public"]["Enums"]["order_source"]
+          paid_at: string | null
+          paid_by: string | null
+          partner_contract_id: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          queue_position: number
+          service_id: string
+          service_key: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+          vehicle_id: string | null
+          vehicle_label: string
+          vehicle_plate: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_user_has_role: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
+      }
+      deliver_partner_order: {
+        Args: { _order_id: string }
+        Returns: {
+          actual_minutes: number | null
+          category: Database["public"]["Enums"]["vehicle_category"]
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_name: string
+          discount: number
+          discount_percentage: number
+          duration_minutes: number
+          extras: Json
+          id: string
+          loyalty_discount: number
+          loyalty_reward_used: boolean
+          notes: string
+          order_source: Database["public"]["Enums"]["order_source"]
+          paid_at: string | null
+          paid_by: string | null
+          partner_contract_id: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          queue_position: number
+          service_id: string
+          service_key: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+          vehicle_id: string | null
+          vehicle_label: string
+          vehicle_plate: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       has_role: {
         Args: {
@@ -435,6 +600,53 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      pay_order: {
+        Args: {
+          _discount_percentage: number
+          _order_id: string
+          _payment_method: Database["public"]["Enums"]["payment_method"]
+        }
+        Returns: {
+          actual_minutes: number | null
+          category: Database["public"]["Enums"]["vehicle_category"]
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_name: string
+          discount: number
+          discount_percentage: number
+          duration_minutes: number
+          extras: Json
+          id: string
+          loyalty_discount: number
+          loyalty_reward_used: boolean
+          notes: string
+          order_source: Database["public"]["Enums"]["order_source"]
+          paid_at: string | null
+          paid_by: string | null
+          partner_contract_id: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          queue_position: number
+          service_id: string
+          service_key: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+          vehicle_id: string | null
+          vehicle_label: string
+          vehicle_plate: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       record_service_actual_minutes: {
         Args: { _minutes: number; _service_id: string }
@@ -444,6 +656,7 @@ export type Database = {
     }
     Enums: {
       app_role: "atendimento" | "lavajato" | "gerencia"
+      order_source: "customer" | "partner"
       order_status:
         | "queued"
         | "in_progress"
@@ -451,6 +664,7 @@ export type Database = {
         | "cancelled"
         | "delivered"
       payment_method: "Crédito" | "Débito" | "Pix"
+      payment_status: "pending" | "paid" | "cancelled"
       vehicle_category: "Hatch" | "Sedan" | "SUV" | "Picape" | "Luxo"
     }
     CompositeTypes: {
@@ -580,6 +794,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["atendimento", "lavajato", "gerencia"],
+      order_source: ["customer", "partner"],
       order_status: [
         "queued",
         "in_progress",
@@ -588,6 +803,7 @@ export const Constants = {
         "delivered",
       ],
       payment_method: ["Crédito", "Débito", "Pix"],
+      payment_status: ["pending", "paid", "cancelled"],
       vehicle_category: ["Hatch", "Sedan", "SUV", "Picape", "Luxo"],
     },
   },

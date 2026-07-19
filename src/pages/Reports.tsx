@@ -18,6 +18,7 @@ import { brl } from "@/lib/storage";
 import { PaymentMethod, VEHICLE_CATEGORIES, VehicleCategory } from "@/lib/domain";
 import { EXPENSE_CATEGORIES, EXPENSE_PAYMENTS } from "@/lib/expenses";
 import { useData } from "@/lib/DataContext";
+import { isOrderPaid, orderFinancialDate } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 
 type Preset = "7" | "30" | "365" | "custom";
@@ -29,7 +30,7 @@ const PAYMENT_COLORS: Record<PaymentMethod, string> = {
 };
 
 export default function Reports() {
-  const { orders, customers, services, expenses } = useData();
+  const { orders, customers, services, expenses, partnerContracts } = useData();
   const [preset, setPreset] = useState<Preset>("7");
   const [range, setRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 6),
@@ -44,6 +45,7 @@ export default function Reports() {
     return { from: startOfDay(subDays(new Date(), days)), to: endOfDay(new Date()) };
   }, [preset, range]);
 
+  // Ordens operacionais (por data de criação) — para volume/categoria/partner
   const rangeOrders = useMemo(() => {
     const f = from.getTime(); const t = to.getTime();
     return orders.filter((o) => {
@@ -53,14 +55,26 @@ export default function Reports() {
     });
   }, [orders, from, to]);
 
+  // Ordens PAGAS (particular) — para receita e forma de pagamento (usa data financeira)
+  const paidOrders = useMemo(() => {
+    const f = from.getTime(); const t = to.getTime();
+    return orders.filter((o) => {
+      if (!isOrderPaid(o) || o.orderSource === "partner") return false;
+      const d = orderFinancialDate(o);
+      if (!d) return false;
+      const ts = new Date(d).getTime();
+      return ts >= f && ts <= t;
+    });
+  }, [orders, from, to]);
+
   const rangeExpenses = useMemo(() => {
     const fStr = format(from, "yyyy-MM-dd");
     const tStr = format(to, "yyyy-MM-dd");
     return expenses.filter((e) => e.active && e.expenseDate >= fStr && e.expenseDate <= tStr);
   }, [expenses, from, to]);
 
-  const revenue = rangeOrders.reduce((a, o) => a + o.total, 0);
-  const discounts = rangeOrders.reduce((a, o) => a + o.discount + o.loyaltyDiscount, 0);
+  const revenue = paidOrders.reduce((a, o) => a + o.total, 0);
+  const discounts = paidOrders.reduce((a, o) => a + o.discount + o.loyaltyDiscount, 0);
   const totalExpenses = rangeExpenses.reduce((a, e) => a + e.amount, 0);
   const netResult = revenue - totalExpenses;
 
