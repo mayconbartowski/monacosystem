@@ -3,25 +3,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  ListOrdered, Clock, CheckCircle2, Play, Car, LogOut, Trophy, Sparkles, PackageCheck,
+  ListOrdered, Clock, CheckCircle2, Play, Car, LogOut, Trophy, Sparkles, PackageCheck, Building2,
 } from "lucide-react";
 import { Order, OrderStatus } from "@/lib/domain";
 import { formatDuration } from "@/lib/storage";
 import { useAuth } from "@/lib/authContext";
 import { useData } from "@/lib/DataContext";
-import { finishOrder, startOrder, deliverOrder } from "@/services/data";
+import { finishOrder, startOrder } from "@/services/data";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { AppShell } from "@/components/AppShell";
+import { PickupPaymentDialog } from "@/components/PickupPaymentDialog";
 import { cn } from "@/lib/utils";
 
 export default function Queue() {
-  const { logout, role } = useAuth();
+  const { logout, role, perms } = useAuth();
   const navigate = useNavigate();
-  const { orders } = useData();
+  const { orders, partnerContracts } = useData();
   const [, force] = useState(0);
   const [tab, setTab] = useState<OrderStatus>("queued");
+  const [picking, setPicking] = useState<Order | null>(null);
+  const canPickup = !!perms?.takePayment;
 
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +49,24 @@ export default function Queue() {
     };
   }, [orders]);
 
+  const contractById = useMemo(() => {
+    const m = new Map<string, typeof partnerContracts[number]>();
+    partnerContracts.forEach((c) => m.set(c.id, c));
+    return m;
+  }, [partnerContracts]);
+
+  const usageFor = (contractId: string) => {
+    const c = contractById.get(contractId);
+    if (!c) return { used: 0, limit: 0 };
+    const monthPrefix = new Date().toISOString().slice(0, 7);
+    const used = orders.filter((o) =>
+      o.partnerContractId === contractId &&
+      o.status !== "cancelled" &&
+      o.createdAt.slice(0, 7) === monthPrefix
+    ).length;
+    return { used, limit: c.monthlyVehicleLimit };
+  };
+
   const start = async (o: Order) => {
     try { await startOrder(o.id); toast.success(`Lavagem iniciada — ${o.vehiclePlate}`); setTab("in_progress"); }
     catch (e: any) { toast.error(e.message ?? "Erro ao iniciar"); }
@@ -53,10 +74,6 @@ export default function Queue() {
   const finish = async (o: Order) => {
     try { await finishOrder(o); toast.success(`Finalizado — ${o.vehiclePlate}`); setTab("completed"); }
     catch (e: any) { toast.error(e.message ?? "Erro ao finalizar"); }
-  };
-  const deliver = async (o: Order) => {
-    try { await deliverOrder(o.id); toast.success(`Entregue — ${o.vehiclePlate}`); }
-    catch (e: any) { toast.error(e.message ?? "Erro ao concluir"); }
   };
 
   const doLogout = async () => { await logout(); navigate("/login"); };
@@ -75,7 +92,14 @@ export default function Queue() {
             {i + 1}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-mono text-lg font-semibold leading-tight">{o.vehiclePlate}</div>
+            <div className="font-mono text-lg font-semibold leading-tight flex items-center gap-2">
+              {o.vehiclePlate}
+              {o.orderSource === "partner" && (
+                <Badge variant="outline" className="border-primary/40 text-primary gap-1 text-[10px]">
+                  <Building2 className="h-2.5 w-2.5" /> Contrato
+                </Badge>
+              )}
+            </div>
             <div className="text-sm text-foreground/90 truncate">{o.vehicleLabel}</div>
             <div className="text-xs text-muted-foreground truncate">{o.customerName} · {o.category}</div>
           </div>
@@ -106,6 +130,9 @@ export default function Queue() {
               <Play className="h-3 w-3" /> {elapsed}min
             </Badge>
           )}
+          {phase === "completed" && o.paymentStatus !== "paid" && (
+            <Badge variant="outline" className="border-yellow-500/40 text-yellow-500">Pagamento pendente</Badge>
+          )}
         </div>
 
         <div className="mt-3">
@@ -121,10 +148,10 @@ export default function Queue() {
               <CheckCircle2 className="h-5 w-5" /> Finalizar lavagem
             </Button>
           )}
-          {phase === "completed" && (
-            <Button size="lg" onClick={() => deliver(o)}
-              className="w-full h-12 gap-2 bg-emerald-600 text-white hover:bg-emerald-500 font-semibold">
-              <PackageCheck className="h-5 w-5" /> Concluir (cliente retirou)
+          {phase === "completed" && canPickup && o.paymentStatus !== "paid" && (
+            <Button size="lg" onClick={() => setPicking(o)}
+              className="w-full h-12 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+              <PackageCheck className="h-5 w-5" /> Iniciar Retirada
             </Button>
           )}
         </div>
@@ -169,10 +196,17 @@ export default function Queue() {
           </TabsContent>
         ))}
       </Tabs>
+
+      <PickupPaymentDialog
+        order={picking}
+        open={!!picking}
+        onOpenChange={(o) => !o && setPicking(null)}
+        partnerLabel={picking?.partnerContractId ? contractById.get(picking.partnerContractId)?.companyName : undefined}
+        partnerUsage={picking?.partnerContractId ? usageFor(picking.partnerContractId) : undefined}
+      />
     </>
   );
 
-  // Gerente: mantém o menu lateral esquerdo visível.
   if (role === "gerencia") {
     return (
       <AppShell>
@@ -192,13 +226,12 @@ export default function Queue() {
         </div>
         <footer className="border-t border-border px-4 py-3 text-[11px] text-muted-foreground text-center">
           <Trophy className="h-3 w-3 inline mr-1 text-primary" />
-          Cada lavagem principal acumula +1 para a placa.
+          Fidelidade da placa é consolidada no pagamento.
         </footer>
       </AppShell>
     );
   }
 
-  // Lava-jato (mobile): layout enxuto.
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-20 bg-gradient-surface border-b border-border px-4 py-3 flex items-center gap-3 backdrop-blur">
@@ -219,7 +252,7 @@ export default function Queue() {
       <main className="flex-1 p-3 sm:p-4 max-w-2xl w-full mx-auto">{content}</main>
       <footer className="border-t border-border px-4 py-3 text-[11px] text-muted-foreground text-center">
         <Trophy className="h-3 w-3 inline mr-1 text-primary" />
-        Cada lavagem principal acumula +1 para a placa.
+        Fidelidade consolidada no pagamento.
       </footer>
     </div>
   );

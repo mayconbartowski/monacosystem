@@ -1,21 +1,23 @@
+import { useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Car, ListOrdered, Sparkles, Play, CheckCircle2 } from "lucide-react";
-import { Order } from "@/lib/domain";
+import { Clock, Car, ListOrdered, Sparkles, Play, CheckCircle2, PackageCheck, Building2 } from "lucide-react";
+import { Order, PartnerContract } from "@/lib/domain";
 import { brl, formatDuration } from "@/lib/storage";
 import { useAuth } from "@/lib/authContext";
+import { PickupPaymentDialog } from "@/components/PickupPaymentDialog";
 
 interface Props {
   orders: Order[];
+  contracts?: PartnerContract[];
 }
 
-/**
- * Drawer somente-leitura da fila (visível na aba lateral direita do PDV).
- * Sem ações de concluir / remover — essas ficam no módulo Fila.
- */
-export function QueueDrawer({ orders }: Props) {
-  const { role } = useAuth();
+export function QueueDrawer({ orders, contracts = [] }: Props) {
+  const { role, perms } = useAuth();
+  const canPickup = !!perms?.takePayment;
+  const [picking, setPicking] = useState<Order | null>(null);
+
   const visible = orders
     .filter((o) => o.status === "queued" || o.status === "in_progress" || o.status === "completed")
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -26,87 +28,133 @@ export function QueueDrawer({ orders }: Props) {
     { key: "completed", label: "Finalizados", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
   ];
 
+  const contractById = useMemo(() => {
+    const m = new Map<string, PartnerContract>();
+    contracts.forEach((c) => m.set(c.id, c));
+    return m;
+  }, [contracts]);
+
+  const usageFor = (contractId: string): { used: number; limit: number } => {
+    const c = contractById.get(contractId);
+    if (!c) return { used: 0, limit: 0 };
+    const monthPrefix = new Date().toISOString().slice(0, 7);
+    const used = orders.filter((o) =>
+      o.partnerContractId === contractId &&
+      o.status !== "cancelled" &&
+      o.createdAt.slice(0, 7) === monthPrefix
+    ).length;
+    return { used, limit: c.monthlyVehicleLimit };
+  };
+
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" className="gap-2 h-14 px-4 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
-          <ListOrdered className="h-4 w-4" />
-          Ver Fila
-          <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
-            {visible.length}
-          </Badge>
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md bg-card border-border">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2 text-foreground">
-            <ListOrdered className="h-5 w-5 text-primary" />
-            Fila de Atendimento
-          </SheetTitle>
-          {role === "atendimento" && (
-            <p className="text-[11px] text-muted-foreground text-left">
-              Visualização apenas · ações na tela de Fila.
-            </p>
-          )}
-        </SheetHeader>
+    <>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" className="gap-2 h-14 px-4 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
+            <ListOrdered className="h-4 w-4" />
+            Ver Fila
+            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
+              {visible.length}
+            </Badge>
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-full sm:max-w-md bg-card border-border">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2 text-foreground">
+              <ListOrdered className="h-5 w-5 text-primary" />
+              Fila de Atendimento
+            </SheetTitle>
+            {role === "atendimento" && (
+              <p className="text-[11px] text-muted-foreground text-left">
+                Retirada e pagamento ficam liberados na aba Finalizados.
+              </p>
+            )}
+          </SheetHeader>
 
-        <div className="mt-6 space-y-5 overflow-y-auto max-h-[calc(100vh-8rem)] pr-1">
-          {visible.length === 0 && (
-            <div className="text-center py-16 text-muted-foreground text-sm">
-              <Car className="mx-auto h-10 w-10 mb-3 opacity-40" />
-              Nenhum veículo na fila.
-            </div>
-          )}
+          <div className="mt-6 space-y-5 overflow-y-auto max-h-[calc(100vh-8rem)] pr-1">
+            {visible.length === 0 && (
+              <div className="text-center py-16 text-muted-foreground text-sm">
+                <Car className="mx-auto h-10 w-10 mb-3 opacity-40" />
+                Nenhum veículo na fila.
+              </div>
+            )}
 
-          {visible.length > 0 && groups.map((g) => {
-            const items = visible.filter((o) => o.status === g.key);
-            if (items.length === 0) return null;
-            return (
-              <div key={g.key}>
-                <div className="flex items-center gap-2 mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                  {g.icon} {g.label} <span className="ml-auto">{items.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {items.map((o, i) => (
-                    <div key={o.id} className="surface-card p-3 animate-fade-in">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="h-5 w-5 grid place-items-center rounded-md bg-primary/15 text-primary text-[11px] font-bold">
-                              {i + 1}
-                            </span>
-                            <span className="font-mono text-sm font-semibold">{o.vehiclePlate}</span>
+            {visible.length > 0 && groups.map((g) => {
+              const items = visible.filter((o) => o.status === g.key);
+              if (items.length === 0) return null;
+              return (
+                <div key={g.key}>
+                  <div className="flex items-center gap-2 mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    {g.icon} {g.label} <span className="ml-auto">{items.length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {items.map((o, i) => (
+                      <div key={o.id} className="surface-card p-3 animate-fade-in">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="h-5 w-5 grid place-items-center rounded-md bg-primary/15 text-primary text-[11px] font-bold">
+                                {i + 1}
+                              </span>
+                              <span className="font-mono text-sm font-semibold">{o.vehiclePlate}</span>
+                              {o.orderSource === "partner" && (
+                                <Badge variant="outline" className="border-primary/40 text-primary gap-1 text-[10px]">
+                                  <Building2 className="h-2.5 w-2.5" /> Contrato
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="mt-1 text-sm text-foreground truncate">{o.customerName}</div>
+                            <div className="text-xs text-muted-foreground truncate">{o.vehicleLabel} · {o.category}</div>
                           </div>
-                          <div className="mt-1 text-sm text-foreground truncate">{o.customerName}</div>
-                          <div className="text-xs text-muted-foreground truncate">{o.vehicleLabel} · {o.category}</div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                            <Clock className="h-3 w-3" />
-                            {formatDuration(o.durationMinutes)}
+                          <div className="text-right shrink-0">
+                            <div className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                              <Clock className="h-3 w-3" />
+                              {formatDuration(o.durationMinutes)}
+                            </div>
+                            <div className="mt-1 text-sm font-semibold text-primary">
+                              {o.orderSource === "partner" ? "Contrato" : brl(o.total)}
+                            </div>
                           </div>
-                          <div className="mt-1 text-sm font-semibold text-primary">{brl(o.total)}</div>
                         </div>
-                      </div>
-                      <div className="mt-2 flex items-center gap-2 text-xs flex-wrap">
-                        <Badge variant="outline" className="border-border bg-muted/30">{o.service}</Badge>
-                        {o.extras.map((e) => (
-                          <Badge key={e} variant="outline" className="border-border bg-muted/30">{e}</Badge>
-                        ))}
-                        {o.loyaltyRewardUsed && (
-                          <Badge className="bg-primary/15 text-primary border border-primary/30 gap-1">
-                            <Sparkles className="h-3 w-3" /> Recompensa
-                          </Badge>
+                        <div className="mt-2 flex items-center gap-2 text-xs flex-wrap">
+                          <Badge variant="outline" className="border-border bg-muted/30">{o.service}</Badge>
+                          {o.extras.map((e) => (
+                            <Badge key={e} variant="outline" className="border-border bg-muted/30">{e}</Badge>
+                          ))}
+                          {o.loyaltyRewardUsed && (
+                            <Badge className="bg-primary/15 text-primary border border-primary/30 gap-1">
+                              <Sparkles className="h-3 w-3" /> Recompensa
+                            </Badge>
+                          )}
+                          {o.paymentStatus === "pending" && o.status === "completed" && (
+                            <Badge variant="outline" className="border-yellow-500/40 text-yellow-500">Pagamento pendente</Badge>
+                          )}
+                        </div>
+                        {g.key === "completed" && canPickup && o.paymentStatus !== "paid" && (
+                          <div className="mt-3">
+                            <Button size="sm" onClick={() => setPicking(o)}
+                              className="w-full h-9 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+                              <PackageCheck className="h-4 w-4" /> Iniciar Retirada
+                            </Button>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </SheetContent>
-    </Sheet>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <PickupPaymentDialog
+        order={picking}
+        open={!!picking}
+        onOpenChange={(o) => !o && setPicking(null)}
+        partnerLabel={picking?.partnerContractId ? contractById.get(picking.partnerContractId)?.companyName : undefined}
+        partnerUsage={picking?.partnerContractId ? usageFor(picking.partnerContractId) : undefined}
+      />
+    </>
   );
 }

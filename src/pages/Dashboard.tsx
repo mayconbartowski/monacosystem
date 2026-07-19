@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -12,13 +13,17 @@ import {
   Trophy, Sparkles, Target, Plus, Pencil, Trash2, Receipt, Wallet,
 } from "lucide-react";
 import { brl, formatDuration, formatPlate } from "@/lib/storage";
-import { activeQueue, totalQueueWait } from "@/lib/pricing";
+import {
+  activeQueue, totalQueueWait, computeGoals, isOrderPaid, orderFinancialDate,
+} from "@/lib/pricing";
 import { useData } from "@/lib/DataContext";
 import { useAuth } from "@/lib/authContext";
 import { ExpenseFormDialog } from "@/components/ExpenseFormDialog";
 import { softDeleteExpense } from "@/services/expenses";
 import { Expense } from "@/lib/expenses";
 import { toast } from "sonner";
+
+const MONTHLY_GOALS = [10000, 20000];
 
 export default function Dashboard() {
   const { orders, customers, vehicles, expenses } = useData();
@@ -33,14 +38,18 @@ export default function Dashboard() {
   const today = new Date().toISOString().slice(0, 10);
   const monthPrefix = today.slice(0, 7);
 
-  const todays = useMemo(
-    () => orders.filter((o) => o.createdAt.slice(0, 10) === today && o.status !== "cancelled"),
+  // Receita: apenas pagamentos confirmados hoje (usando data financeira)
+  const paidToday = useMemo(
+    () => orders.filter((o) => {
+      if (!isOrderPaid(o) || o.orderSource === "partner") return false;
+      const d = orderFinancialDate(o);
+      return d ? d.slice(0, 10) === today : false;
+    }),
     [orders, today]
   );
-  const revenue = todays.reduce((a, o) => a + o.total, 0);
-  const completed = orders.filter((o) => o.status === "completed").length;
+  const revenue = paidToday.reduce((a, o) => a + o.total, 0);
+  const completed = orders.filter((o) => o.status === "completed" || o.status === "delivered").length;
 
-  // Expenses metrics
   const activeExpenses = useMemo(() => expenses.filter((e) => e.active), [expenses]);
   const expensesToday = activeExpenses.filter((e) => e.expenseDate === today);
   const expensesMonth = activeExpenses.filter((e) => e.expenseDate.startsWith(monthPrefix));
@@ -50,8 +59,8 @@ export default function Dashboard() {
 
   const rewardsThisMonth = useMemo(
     () => orders.filter((o) =>
-      o.status === "completed" && o.loyaltyRewardUsed &&
-      (o.completedAt || o.createdAt).slice(0, 7) === monthPrefix
+      isOrderPaid(o) && o.loyaltyRewardUsed &&
+      (orderFinancialDate(o) ?? "").slice(0, 7) === monthPrefix
     ).length,
     [orders, monthPrefix]
   );
@@ -63,6 +72,9 @@ export default function Dashboard() {
   const recent = [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30);
   const recentExpenses = activeExpenses.slice(0, 6);
 
+  // Metas
+  const goalsGrids = MONTHLY_GOALS.map((g) => ({ monthly: g, data: computeGoals(orders, g) }));
+
   const openNew = () => { setEditing(null); setExpenseOpen(true); };
   const openEdit = (e: Expense) => { setEditing(e); setExpenseOpen(true); };
   const confirmDelete = async () => {
@@ -72,9 +84,7 @@ export default function Dashboard() {
       toast.success("Despesa removida");
     } catch (err: any) {
       toast.error(err.message ?? "Erro ao remover");
-    } finally {
-      setDeleting(null);
-    }
+    } finally { setDeleting(null); }
   };
 
   return (
@@ -85,11 +95,7 @@ export default function Dashboard() {
           <p className="text-xs text-muted-foreground">Visão operacional Monaco System · sincronizada em tempo real</p>
         </div>
         {isAdmin && (
-          <Button
-            onClick={openNew}
-            className="ml-auto bg-gradient-gold text-primary-foreground border-0 gap-2"
-            size="sm"
-          >
+          <Button onClick={openNew} className="ml-auto bg-gradient-gold text-primary-foreground border-0 gap-2" size="sm">
             <Plus className="h-4 w-4" /> Adicionar Despesa
           </Button>
         )}
@@ -98,12 +104,12 @@ export default function Dashboard() {
         <div>
           <h2 className="text-sm font-semibold mb-3">Resumo do Dia</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Metric icon={<DollarSign />} label="Faturamento hoje" value={brl(revenue)} highlight />
-            <Metric icon={<TrendingUp />} label="Vendas hoje" value={String(todays.length)} />
+            <Metric icon={<DollarSign />} label="Faturamento hoje (pago)" value={brl(revenue)} highlight />
+            <Metric icon={<TrendingUp />} label="Vendas pagas hoje" value={String(paidToday.length)} />
             <Metric icon={<Car />} label="Veículos na fila" value={String(queue.length)} />
             <Metric icon={<Clock />} label="Tempo total fila" value={formatDuration(totalQueueWait(orders))} />
             <Metric icon={<Users />} label="Clientes cadastrados" value={String(customers.length)} />
-            <Metric icon={<ListOrdered />} label="Serviços concluídos" value={String(completed)} />
+            <Metric icon={<ListOrdered />} label="Serviços finalizados" value={String(completed)} />
           </div>
 
           <Card className="bg-card/25 border-border shadow-card rounded-xl p-5 mt-4">
@@ -123,9 +129,9 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <Badge variant="outline" className="text-xs">
-                        {o.status === "completed" ? "Concluído" : o.status === "queued" ? "Fila" : o.status === "in_progress" ? "Em andamento" : "Cancelado"}
+                        {o.paymentStatus === "paid" ? "Pago" : o.status === "completed" ? "Aguarda retirada" : o.status === "queued" ? "Fila" : o.status === "in_progress" ? "Em andamento" : o.status === "cancelled" ? "Cancelado" : "Entregue"}
                       </Badge>
-                      <div className="w-28 text-right font-semibold text-primary">{brl(o.total)}</div>
+                      <div className="w-28 text-right font-semibold text-primary">{o.orderSource === "partner" ? "Contrato" : brl(o.total)}</div>
                     </div>
                   ))}
                 </div>
@@ -133,6 +139,23 @@ export default function Dashboard() {
               </div>
             )}
           </Card>
+
+          {/* Metas financeiras */}
+          <div className="mt-6 space-y-6">
+            {goalsGrids.map(({ monthly, data }) => (
+              <div key={monthly}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold">Meta {brl(monthly)}/mês</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <GoalCardView g={data.day} />
+                  <GoalCardView g={data.week} />
+                  <GoalCardView g={data.month} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {isAdmin && (
@@ -156,9 +179,7 @@ export default function Dashboard() {
                 </Button>
               </div>
               {recentExpenses.length === 0 ? (
-                <div className="text-sm text-muted-foreground py-8 text-center">
-                  Nenhuma despesa registrada ainda.
-                </div>
+                <div className="text-sm text-muted-foreground py-8 text-center">Nenhuma despesa registrada ainda.</div>
               ) : (
                 <div className="divide-y divide-border">
                   {recentExpenses.map((e) => (
@@ -236,11 +257,7 @@ export default function Dashboard() {
       </div>
 
       {isAdmin && (
-        <ExpenseFormDialog
-          open={expenseOpen}
-          onOpenChange={setExpenseOpen}
-          editing={editing}
-        />
+        <ExpenseFormDialog open={expenseOpen} onOpenChange={setExpenseOpen} editing={editing} />
       )}
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
@@ -248,14 +265,12 @@ export default function Dashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover despesa?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleting ? `"${deleting.name}" — ${brl(deleting.amount)} será marcada como inativa e sairá dos relatórios ativos. O histórico é preservado.` : ""}
+              {deleting ? `"${deleting.name}" — ${brl(deleting.amount)} será marcada como inativa.` : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
-              Remover
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">Remover</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -280,6 +295,28 @@ function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; labe
           }>{label}</div>
           <div className={highlight ? "text-lg font-bold text-primary-foreground" : "text-lg font-bold"}>{value}</div>
         </div>
+      </div>
+    </Card>
+  );
+}
+
+function GoalCardView({ g }: { g: ReturnType<typeof computeGoals>["day"] }) {
+  const surpassed = g.surpassedBy > 0;
+  const pct = (g.progress * 100).toFixed(2);
+  return (
+    <Card className="surface-card p-4">
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">{g.period}</div>
+        <div className={surpassed ? "text-xs text-primary font-semibold" : "text-xs text-muted-foreground"}>{pct}%</div>
+      </div>
+      <div className="text-base font-semibold">
+        {brl(g.earned)} <span className="text-xs text-muted-foreground font-normal">de {brl(g.goal)}</span>
+      </div>
+      <Progress value={g.progress * 100} className="h-2 mt-2" />
+      <div className="mt-2 text-xs">
+        {surpassed
+          ? <span className="text-primary font-medium">Meta superada em {brl(g.surpassedBy)}</span>
+          : <span className="text-muted-foreground">Faltam <span className="text-foreground font-medium">{brl(g.remaining)}</span></span>}
       </div>
     </Card>
   );
