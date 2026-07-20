@@ -30,14 +30,6 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
     if (open) { setPct(0); setMethod(""); setSaving(false); }
   }, [open, order?.id]);
 
-  const [feeOpen, setFeeOpen] = useState(false);
-  const [feeStr, setFeeStr] = useState("");
-  const [feeNote, setFeeNote] = useState("");
-
-  useEffect(() => {
-    if (open) { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }
-  }, [open, order?.id]);
-
   const isPartner = order?.orderSource === "partner";
 
   const totals = useMemo(() => {
@@ -45,10 +37,10 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
     const base = Math.max(0, order.subtotal - order.loyaltyDiscount);
     const clamped = Math.min(100, Math.max(0, Number.isFinite(pct) ? pct : 0));
     const disc = +(base * (clamped / 100)).toFixed(2);
-    const fee = feeOpen ? parseMoney(feeStr) : 0;
+    const fee = order.serviceFee ?? 0;
     const total = Math.max(0, base - disc) + fee;
     return { base, disc, fee, total };
-  }, [order, pct, feeOpen, feeStr]);
+  }, [order, pct]);
 
   if (!order) return null;
 
