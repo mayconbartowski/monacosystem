@@ -5,13 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BadgePercent, CreditCard, PackageCheck } from "lucide-react";
+import { BadgePercent, CreditCard, PackageCheck, Plus, X, Receipt } from "lucide-react";
 import { Order, PaymentMethod } from "@/lib/domain";
 import { brl } from "@/lib/storage";
 import { payOrderRpc, deliverPartnerOrderRpc } from "@/services/partners";
 import { toast } from "sonner";
 
 const PAYMENTS: PaymentMethod[] = ["Crédito", "Débito", "Pix"];
+
+function parseMoney(v: string): number {
+  const digits = (v || "").replace(/\D/g, "");
+  return digits ? Number(digits) / 100 : 0;
+}
+function formatMoneyInput(v: string): string {
+  return brl(parseMoney(v));
+}
 
 interface Props {
   order: Order | null;
