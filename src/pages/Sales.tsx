@@ -160,6 +160,7 @@ export default function Sales() {
     setCpf(""); setName(""); setPhone(""); setExistingCustomer(null);
     setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setContractId("");
+    setFeeOpen(false); setFeeStr(""); setFeeNote("");
   };
 
   const fillFromMatch = (m: { customer: Customer; vehicles: Vehicle[]; matchedPlate?: string; }) => {
