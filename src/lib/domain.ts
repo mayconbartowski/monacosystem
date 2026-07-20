@@ -98,6 +98,8 @@ export interface Order {
   discountPercentage: number;
   loyaltyDiscount: number;
   loyaltyRewardUsed: boolean;
+  serviceFee: number;
+  serviceFeeNote: string;
   total: number;
   paymentMethod: PaymentMethod | null;
   paymentStatus: PaymentStatus;

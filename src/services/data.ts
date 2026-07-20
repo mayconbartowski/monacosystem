@@ -21,7 +21,8 @@ type OrderRow = {
   category: VehicleCategory; service_id: string; service_key: string;
   extras: unknown;
   subtotal: number; discount: number; loyalty_discount: number;
-  loyalty_reward_used: boolean; total: number;
+  loyalty_reward_used: boolean; service_fee: number; service_fee_note: string | null;
+  total: number;
   payment_method: "Crédito" | "Débito" | "Pix" | null;
   payment_status?: PaymentStatus | null;
   paid_at?: string | null;
@@ -79,6 +80,8 @@ export function mapOrder(r: OrderRow): Order {
     discountPercentage: Number(r.discount_percentage ?? 0),
     loyaltyDiscount: Number(r.loyalty_discount),
     loyaltyRewardUsed: !!r.loyalty_reward_used,
+    serviceFee: Number(r.service_fee ?? 0),
+    serviceFeeNote: r.service_fee_note ?? "",
     total: Number(r.total),
     paymentMethod: pm,
     paymentStatus: ps,
@@ -196,9 +199,11 @@ export async function createOrder(input: {
   vehiclePlate: string; vehicleLabel: string; category: VehicleCategory;
   serviceId: string; serviceKey: ServiceKey; extras: ExtraKey[];
   subtotal: number; loyaltyDiscount: number; loyaltyRewardUsed: boolean;
+  serviceFee?: number; serviceFeeNote?: string;
   notes: string; queuePosition: number; durationMinutes: number;
 }): Promise<Order> {
   const auth = await supabase.auth.getUser();
+  const serviceFee = Math.max(0, input.serviceFee ?? 0);
   const row: any = {
     customer_id: input.customerId,
     customer_name: input.customerName,
@@ -214,7 +219,9 @@ export async function createOrder(input: {
     discount_percentage: 0,
     loyalty_discount: input.loyaltyDiscount,
     loyalty_reward_used: input.loyaltyRewardUsed,
-    total: Math.max(0, input.subtotal - input.loyaltyDiscount),
+    service_fee: serviceFee,
+    service_fee_note: input.serviceFeeNote?.trim() || null,
+    total: Math.max(0, input.subtotal - input.loyaltyDiscount + serviceFee),
     payment_method: null,
     payment_status: "pending",
     notes: input.notes,

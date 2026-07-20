@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Clock, Car, Sparkles, Trophy, CheckCircle2, Trash2, ChevronRight, BadgePercent,
-  MessageCircle, Building2, User,
+  MessageCircle, Building2, User, Plus, X, Receipt,
 } from "lucide-react";
 import {
   EXTRA_KEYS, ExtraKey, ServiceKey, VEHICLE_CATEGORIES, VehicleCategory, Customer, Vehicle,
@@ -37,6 +37,14 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 type Mode = "customer" | "partner";
+
+function parseMoney(v: string): number {
+  const digits = (v || "").replace(/\D/g, "");
+  return digits ? Number(digits) / 100 : 0;
+}
+function formatMoneyInput(v: string): string {
+  return brl(parseMoney(v));
+}
 
 export default function Sales() {
   const { orders, services, prices, partnerContracts, findCustomerByCpf, findVehicleByPlate } = useData();
@@ -66,6 +74,10 @@ export default function Sales() {
 
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [feeOpen, setFeeOpen] = useState(false);
+  const [feeStr, setFeeStr] = useState("");
+  const [feeNote, setFeeNote] = useState("");
 
   const activeServices = useMemo(
     () => [...services].filter((s) => s.active).sort((a, b) => a.order - b.order)
@@ -127,6 +139,11 @@ export default function Sales() {
     () => calcTotals(prices, category, service, extras, 0, loyalty),
     [prices, category, service, extras, loyalty]
   );
+  const serviceFee = feeOpen ? parseMoney(feeStr) : 0;
+  const previewTotal = useMemo(
+    () => Math.max(0, totals.total + serviceFee),
+    [totals.total, serviceFee]
+  );
 
   const duration = useMemo(() => calcDuration(service, extras), [service, extras]);
   const newWait = useMemo(() => estimatedNewWait(orders), [orders]);
@@ -143,6 +160,7 @@ export default function Sales() {
     setCpf(""); setName(""); setPhone(""); setExistingCustomer(null);
     setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setContractId("");
+    setFeeOpen(false); setFeeStr(""); setFeeNote("");
   };
 
   const fillFromMatch = (m: { customer: Customer; vehicles: Vehicle[]; matchedPlate?: string; }) => {
@@ -211,6 +229,8 @@ export default function Sales() {
           subtotal: totals.subtotal,
           loyaltyDiscount: totals.loyaltyDiscount,
           loyaltyRewardUsed: totals.loyaltyDiscount > 0,
+          serviceFee,
+          serviceFeeNote: feeNote,
           notes, queuePosition: queueCount + 1, durationMinutes: duration,
         });
         toast.success("Triagem iniciada", {
@@ -499,7 +519,7 @@ export default function Sales() {
 
       <footer className="border-t border-border bg-gradient-surface px-6 py-4 sticky bottom-0 z-20">
         <div className="grid lg:grid-cols-12 gap-4 items-end">
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-3">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Resumo (prévia)</div>
             <div className="mt-1 text-xs text-muted-foreground flex flex-col justify-end min-h-10">
               <span>Subtotal: <span className="text-foreground">{brl(totals.subtotal)}</span></span>
@@ -511,11 +531,42 @@ export default function Sales() {
               <span className="text-[11px]">Desconto manual é aplicado apenas na retirada.</span>
             </div>
           </div>
+
+          <div className="lg:col-span-3">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Taxa de serviço</div>
+            <div className="mt-1 min-h-10 flex items-end">
+              {!feeOpen ? (
+                <Button type="button" variant="outline" size="sm"
+                  className="w-full h-10 gap-2 border-border text-muted-foreground hover:text-primary hover:border-primary/40"
+                  onClick={() => setFeeOpen(true)}>
+                  <Plus className="h-4 w-4" /> Adicionar taxa
+                </Button>
+              ) : (
+                <div className="w-full rounded-lg border border-primary/30 bg-primary/5 p-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium flex items-center gap-1 text-primary"><Receipt className="h-3 w-3" /> Taxa</span>
+                    <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground"
+                      onClick={() => { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    <Input inputMode="numeric" value={feeStr} onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
+                      placeholder="R$ 0,00" className="col-span-2 h-8 text-xs" />
+                    <Input value={feeNote} onChange={(e) => setFeeNote(e.target.value)}
+                      placeholder="Descrição" maxLength={120} className="col-span-3 h-8 text-xs" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="lg:col-span-3 flex flex-col items-end">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Total previsto</div>
-            <div className="text-2xl font-bold gold-text leading-tight">{brl(totals.total)}</div>
+            <div className="text-2xl font-bold gold-text leading-tight">{brl(previewTotal)}</div>
           </div>
-          <div className="lg:col-span-5 flex gap-2 justify-end">
+
+          <div className="lg:col-span-3 flex gap-2 justify-end items-end">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="h-10 gap-2 border-border text-muted-foreground hover:text-destructive hover:border-destructive/50">

@@ -5,21 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BadgePercent, CreditCard, PackageCheck, Plus, X, Receipt } from "lucide-react";
+import { BadgePercent, CreditCard, PackageCheck, Receipt } from "lucide-react";
 import { Order, PaymentMethod } from "@/lib/domain";
 import { brl } from "@/lib/storage";
 import { payOrderRpc, deliverPartnerOrderRpc } from "@/services/partners";
 import { toast } from "sonner";
 
 const PAYMENTS: PaymentMethod[] = ["Crédito", "Débito", "Pix"];
-
-function parseMoney(v: string): number {
-  const digits = (v || "").replace(/\D/g, "");
-  return digits ? Number(digits) / 100 : 0;
-}
-function formatMoneyInput(v: string): string {
-  return brl(parseMoney(v));
-}
 
 interface Props {
   order: Order | null;
@@ -38,14 +30,6 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
     if (open) { setPct(0); setMethod(""); setSaving(false); }
   }, [open, order?.id]);
 
-  const [feeOpen, setFeeOpen] = useState(false);
-  const [feeStr, setFeeStr] = useState("");
-  const [feeNote, setFeeNote] = useState("");
-
-  useEffect(() => {
-    if (open) { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }
-  }, [open, order?.id]);
-
   const isPartner = order?.orderSource === "partner";
 
   const totals = useMemo(() => {
@@ -53,10 +37,10 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
     const base = Math.max(0, order.subtotal - order.loyaltyDiscount);
     const clamped = Math.min(100, Math.max(0, Number.isFinite(pct) ? pct : 0));
     const disc = +(base * (clamped / 100)).toFixed(2);
-    const fee = feeOpen ? parseMoney(feeStr) : 0;
+    const fee = order.serviceFee ?? 0;
     const total = Math.max(0, base - disc) + fee;
     return { base, disc, fee, total };
-  }, [order, pct, feeOpen, feeStr]);
+  }, [order, pct]);
 
   if (!order) return null;
 
@@ -68,7 +52,7 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
         toast.success(`Retirada confirmada — ${order.vehiclePlate}`);
       } else {
         if (!method) return;
-        await payOrderRpc(order.id, method, pct, totals.fee, feeNote.trim());
+        await payOrderRpc(order.id, method, pct, totals.fee, order.serviceFeeNote?.trim() ?? "");
         toast.success(`Pagamento confirmado — ${brl(totals.total)}`, {
           description: `Veículo ${order.vehiclePlate} entregue.`,
         });
@@ -122,8 +106,8 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
                   <div className="flex justify-between text-primary"><span className="flex items-center gap-1"><BadgePercent className="h-3 w-3" />Fidelidade</span><span>−{brl(order.loyaltyDiscount)}</span></div>
                 )}
                 <div className="flex justify-between"><span className="text-muted-foreground">Desconto manual ({pct || 0}%)</span><span>−{brl(totals.disc)}</span></div>
-                {feeOpen && totals.fee > 0 && (
-                  <div className="flex justify-between text-primary"><span className="flex items-center gap-1"><Receipt className="h-3 w-3" />Taxa de serviço{feeNote ? ` (${feeNote})` : ""}</span><span>+{brl(totals.fee)}</span></div>
+                {totals.fee > 0 && (
+                  <div className="flex justify-between text-primary"><span className="flex items-center gap-1"><Receipt className="h-3 w-3" />Taxa de serviço{order.serviceFeeNote ? ` (${order.serviceFeeNote})` : ""}</span><span>+{brl(totals.fee)}</span></div>
                 )}
                 <div className="flex justify-between text-base font-semibold pt-1 border-t border-border mt-1"><span>Total</span><span className="gold-text">{brl(totals.total)}</span></div>
               </div>
@@ -139,39 +123,6 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
                   }}
                   placeholder="0" className="mt-1" />
               </div>
-
-              {!feeOpen ? (
-                <Button type="button" variant="outline" size="sm" className="w-full gap-2"
-                  onClick={() => setFeeOpen(true)}>
-                  <Plus className="h-4 w-4" /> Adicionar taxa de serviço
-                </Button>
-              ) : (
-                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold flex items-center gap-1"><Receipt className="h-3 w-3" /> Taxa de serviço</Label>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground"
-                      onClick={() => { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }}>
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input
-                      inputMode="numeric"
-                      value={feeStr}
-                      onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
-                      placeholder="R$ 0,00"
-                      className="col-span-1"
-                    />
-                    <Input
-                      value={feeNote}
-                      onChange={(e) => setFeeNote(e.target.value)}
-                      placeholder="Descrição (ex.: leva e traz)"
-                      maxLength={120}
-                      className="col-span-2"
-                    />
-                  </div>
-                </div>
-              )}
 
               <div>
                 <Label className="text-xs text-muted-foreground">Forma de pagamento</Label>
