@@ -98,6 +98,8 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           queue_position: number
+          service_fee: number
+          service_fee_note: string | null
           service_id: string
           service_key: string
           started_at: string | null
@@ -132,6 +134,8 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           queue_position?: number
+          service_fee?: number
+          service_fee_note?: string | null
           service_id: string
           service_key: string
           started_at?: string | null
@@ -166,6 +170,8 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           queue_position?: number
+          service_fee?: number
+          service_fee_note?: string | null
           service_id?: string
           service_key?: string
           started_at?: string | null
@@ -529,6 +535,8 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           queue_position: number
+          service_fee: number
+          service_fee_note: string | null
           service_id: string
           service_key: string
           started_at: string | null
@@ -576,6 +584,8 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           queue_position: number
+          service_fee: number
+          service_fee_note: string | null
           service_id: string
           service_key: string
           started_at: string | null
@@ -601,53 +611,111 @@ export type Database = {
         }
         Returns: boolean
       }
-      pay_order: {
-        Args: {
-          _discount_percentage: number
-          _order_id: string
-          _payment_method: Database["public"]["Enums"]["payment_method"]
-        }
-        Returns: {
-          actual_minutes: number | null
-          category: Database["public"]["Enums"]["vehicle_category"]
-          completed_at: string | null
-          created_at: string
-          created_by: string | null
-          customer_id: string | null
-          customer_name: string
-          discount: number
-          discount_percentage: number
-          duration_minutes: number
-          extras: Json
-          id: string
-          loyalty_discount: number
-          loyalty_reward_used: boolean
-          notes: string
-          order_source: Database["public"]["Enums"]["order_source"]
-          paid_at: string | null
-          paid_by: string | null
-          partner_contract_id: string | null
-          payment_method: Database["public"]["Enums"]["payment_method"] | null
-          payment_status: Database["public"]["Enums"]["payment_status"]
-          queue_position: number
-          service_id: string
-          service_key: string
-          started_at: string | null
-          status: Database["public"]["Enums"]["order_status"]
-          subtotal: number
-          total: number
-          updated_at: string
-          vehicle_id: string | null
-          vehicle_label: string
-          vehicle_plate: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "orders"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      pay_order:
+        | {
+            Args: {
+              _discount_percentage: number
+              _order_id: string
+              _payment_method: Database["public"]["Enums"]["payment_method"]
+            }
+            Returns: {
+              actual_minutes: number | null
+              category: Database["public"]["Enums"]["vehicle_category"]
+              completed_at: string | null
+              created_at: string
+              created_by: string | null
+              customer_id: string | null
+              customer_name: string
+              discount: number
+              discount_percentage: number
+              duration_minutes: number
+              extras: Json
+              id: string
+              loyalty_discount: number
+              loyalty_reward_used: boolean
+              notes: string
+              order_source: Database["public"]["Enums"]["order_source"]
+              paid_at: string | null
+              paid_by: string | null
+              partner_contract_id: string | null
+              payment_method:
+                | Database["public"]["Enums"]["payment_method"]
+                | null
+              payment_status: Database["public"]["Enums"]["payment_status"]
+              queue_position: number
+              service_fee: number
+              service_fee_note: string | null
+              service_id: string
+              service_key: string
+              started_at: string | null
+              status: Database["public"]["Enums"]["order_status"]
+              subtotal: number
+              total: number
+              updated_at: string
+              vehicle_id: string | null
+              vehicle_label: string
+              vehicle_plate: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "orders"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              _discount_percentage: number
+              _order_id: string
+              _payment_method: Database["public"]["Enums"]["payment_method"]
+              _service_fee?: number
+              _service_fee_note?: string
+            }
+            Returns: {
+              actual_minutes: number | null
+              category: Database["public"]["Enums"]["vehicle_category"]
+              completed_at: string | null
+              created_at: string
+              created_by: string | null
+              customer_id: string | null
+              customer_name: string
+              discount: number
+              discount_percentage: number
+              duration_minutes: number
+              extras: Json
+              id: string
+              loyalty_discount: number
+              loyalty_reward_used: boolean
+              notes: string
+              order_source: Database["public"]["Enums"]["order_source"]
+              paid_at: string | null
+              paid_by: string | null
+              partner_contract_id: string | null
+              payment_method:
+                | Database["public"]["Enums"]["payment_method"]
+                | null
+              payment_status: Database["public"]["Enums"]["payment_status"]
+              queue_position: number
+              service_fee: number
+              service_fee_note: string | null
+              service_id: string
+              service_key: string
+              started_at: string | null
+              status: Database["public"]["Enums"]["order_status"]
+              subtotal: number
+              total: number
+              updated_at: string
+              vehicle_id: string | null
+              vehicle_label: string
+              vehicle_plate: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "orders"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       record_service_actual_minutes: {
         Args: { _minutes: number; _service_id: string }
         Returns: undefined
