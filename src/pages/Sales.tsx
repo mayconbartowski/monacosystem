@@ -38,6 +38,14 @@ import { toast } from "sonner";
 
 type Mode = "customer" | "partner";
 
+function parseMoney(v: string): number {
+  const digits = (v || "").replace(/\D/g, "");
+  return digits ? Number(digits) / 100 : 0;
+}
+function formatMoneyInput(v: string): string {
+  return brl(parseMoney(v));
+}
+
 export default function Sales() {
   const { orders, services, prices, partnerContracts, findCustomerByCpf, findVehicleByPlate } = useData();
 
