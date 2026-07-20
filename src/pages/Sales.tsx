@@ -139,6 +139,11 @@ export default function Sales() {
     () => calcTotals(prices, category, service, extras, 0, loyalty),
     [prices, category, service, extras, loyalty]
   );
+  const serviceFee = feeOpen ? parseMoney(feeStr) : 0;
+  const previewTotal = useMemo(
+    () => Math.max(0, totals.total + serviceFee),
+    [totals.total, serviceFee]
+  );
 
   const duration = useMemo(() => calcDuration(service, extras), [service, extras]);
   const newWait = useMemo(() => estimatedNewWait(orders), [orders]);
