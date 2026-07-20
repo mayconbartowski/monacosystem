@@ -385,6 +385,67 @@ export default function Reports() {
             )}
           </Card>
         </div>
+
+        {/* ============ PARCEIROS ============ */}
+        <div className="pt-2">
+          <div className="flex items-center gap-3 mb-3">
+            <h2 className="text-base font-semibold">Parceiros</h2>
+            <div className="text-xs text-muted-foreground">Atendimentos no período · uso do contrato no mês corrente</div>
+          </div>
+
+          {partnerContracts.length === 0 ? (
+            <Card className="surface-card p-6 text-sm text-muted-foreground text-center">
+              Nenhum contrato de parceiro cadastrado.
+            </Card>
+          ) : (() => {
+            const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+            const partnerOrdersRange = orders.filter((o) => o.orderSource === "partner" && o.status !== "cancelled"
+              && new Date(o.createdAt) >= from && new Date(o.createdAt) <= to);
+            const totalPartnerAttendances = partnerOrdersRange.length;
+            const totalContractValue = partnerContracts.filter((c) => c.active).reduce((a, c) => a + c.contractValue, 0);
+            return (
+              <>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Stat label="Atendimentos (período)" value={String(totalPartnerAttendances)} />
+                  <Stat label="Contratos ativos" value={String(partnerContracts.filter((c) => c.active).length)} />
+                  <Stat label="Valor mensal contratado" value={brl(totalContractValue)} accent />
+                  <Stat label="Contratos totais" value={String(partnerContracts.length)} />
+                </div>
+
+                <Card className="surface-card p-5 mt-4">
+                  <h3 className="text-sm font-semibold mb-4">Uso por contrato</h3>
+                  <div className="divide-y divide-border">
+                    {partnerContracts.map((c) => {
+                      const monthUsage = orders.filter((o) => o.partnerContractId === c.id
+                        && o.status !== "cancelled" && new Date(o.createdAt) >= monthStart).length;
+                      const periodUsage = partnerOrdersRange.filter((o) => o.partnerContractId === c.id).length;
+                      const pct = c.monthlyVehicleLimit > 0 ? Math.min(100, (monthUsage / c.monthlyVehicleLimit) * 100) : 0;
+                      return (
+                        <div key={c.id} className="py-3 flex items-center gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{c.companyName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {periodUsage} no período · {monthUsage}/{c.monthlyVehicleLimit} este mês
+                            </div>
+                            <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full bg-gradient-gold" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-sm font-semibold text-primary">{brl(c.contractValue)}</div>
+                            <Badge variant={c.active ? "outline" : "secondary"} className="text-[10px] mt-1">
+                              {c.active ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              </>
+            );
+          })()}
+        </div>
       </div>
     </AppShell>
   );
