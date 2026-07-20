@@ -79,6 +79,8 @@ export function mapOrder(r: OrderRow): Order {
     discountPercentage: Number(r.discount_percentage ?? 0),
     loyaltyDiscount: Number(r.loyalty_discount),
     loyaltyRewardUsed: !!r.loyalty_reward_used,
+    serviceFee: Number(r.service_fee ?? 0),
+    serviceFeeNote: r.service_fee_note ?? "",
     total: Number(r.total),
     paymentMethod: pm,
     paymentStatus: ps,
