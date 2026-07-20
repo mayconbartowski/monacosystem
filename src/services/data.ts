@@ -21,7 +21,8 @@ type OrderRow = {
   category: VehicleCategory; service_id: string; service_key: string;
   extras: unknown;
   subtotal: number; discount: number; loyalty_discount: number;
-  loyalty_reward_used: boolean; total: number;
+  loyalty_reward_used: boolean; service_fee: number; service_fee_note: string | null;
+  total: number;
   payment_method: "Crédito" | "Débito" | "Pix" | null;
   payment_status?: PaymentStatus | null;
   paid_at?: string | null;
