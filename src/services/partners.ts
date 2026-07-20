@@ -98,11 +98,19 @@ export async function createPartnerOrderRpc(input: {
   if (error) throw error;
 }
 
-export async function payOrderRpc(orderId: string, method: string, discountPct: number): Promise<void> {
+export async function payOrderRpc(
+  orderId: string,
+  method: string,
+  discountPct: number,
+  serviceFee: number = 0,
+  serviceFeeNote: string = "",
+): Promise<void> {
   const { error } = await (supabase.rpc as any)("pay_order", {
     _order_id: orderId,
     _payment_method: method,
     _discount_percentage: discountPct,
+    _service_fee: serviceFee,
+    _service_fee_note: serviceFeeNote,
   });
   if (error) throw error;
 }
