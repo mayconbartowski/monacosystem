@@ -52,7 +52,7 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
         toast.success(`Retirada confirmada — ${order.vehiclePlate}`);
       } else {
         if (!method) return;
-        await payOrderRpc(order.id, method, pct, totals.fee, feeNote.trim());
+        await payOrderRpc(order.id, method, pct, totals.fee, order.serviceFeeNote?.trim() ?? "");
         toast.success(`Pagamento confirmado — ${brl(totals.total)}`, {
           description: `Veículo ${order.vehiclePlate} entregue.`,
         });
