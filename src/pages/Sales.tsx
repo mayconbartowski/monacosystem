@@ -67,6 +67,10 @@ export default function Sales() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [feeOpen, setFeeOpen] = useState(false);
+  const [feeStr, setFeeStr] = useState("");
+  const [feeNote, setFeeNote] = useState("");
+
   const activeServices = useMemo(
     () => [...services].filter((s) => s.active).sort((a, b) => a.order - b.order)
       .map((o) => ({ override: o, def: getServiceDef(o.key) })),
