@@ -106,8 +106,8 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
                   <div className="flex justify-between text-primary"><span className="flex items-center gap-1"><BadgePercent className="h-3 w-3" />Fidelidade</span><span>−{brl(order.loyaltyDiscount)}</span></div>
                 )}
                 <div className="flex justify-between"><span className="text-muted-foreground">Desconto manual ({pct || 0}%)</span><span>−{brl(totals.disc)}</span></div>
-                {feeOpen && totals.fee > 0 && (
-                  <div className="flex justify-between text-primary"><span className="flex items-center gap-1"><Receipt className="h-3 w-3" />Taxa de serviço{feeNote ? ` (${feeNote})` : ""}</span><span>+{brl(totals.fee)}</span></div>
+                {totals.fee > 0 && (
+                  <div className="flex justify-between text-primary"><span className="flex items-center gap-1"><Receipt className="h-3 w-3" />Taxa de serviço{order.serviceFeeNote ? ` (${order.serviceFeeNote})` : ""}</span><span>+{brl(totals.fee)}</span></div>
                 )}
                 <div className="flex justify-between text-base font-semibold pt-1 border-t border-border mt-1"><span>Total</span><span className="gold-text">{brl(totals.total)}</span></div>
               </div>
@@ -123,39 +123,6 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
                   }}
                   placeholder="0" className="mt-1" />
               </div>
-
-              {!feeOpen ? (
-                <Button type="button" variant="outline" size="sm" className="w-full gap-2"
-                  onClick={() => setFeeOpen(true)}>
-                  <Plus className="h-4 w-4" /> Adicionar taxa de serviço
-                </Button>
-              ) : (
-                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold flex items-center gap-1"><Receipt className="h-3 w-3" /> Taxa de serviço</Label>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground"
-                      onClick={() => { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }}>
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input
-                      inputMode="numeric"
-                      value={feeStr}
-                      onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
-                      placeholder="R$ 0,00"
-                      className="col-span-1"
-                    />
-                    <Input
-                      value={feeNote}
-                      onChange={(e) => setFeeNote(e.target.value)}
-                      placeholder="Descrição (ex.: leva e traz)"
-                      maxLength={120}
-                      className="col-span-2"
-                    />
-                  </div>
-                </div>
-              )}
 
               <div>
                 <Label className="text-xs text-muted-foreground">Forma de pagamento</Label>
