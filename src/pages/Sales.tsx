@@ -229,6 +229,8 @@ export default function Sales() {
           subtotal: totals.subtotal,
           loyaltyDiscount: totals.loyaltyDiscount,
           loyaltyRewardUsed: totals.loyaltyDiscount > 0,
+          serviceFee,
+          serviceFeeNote: feeNote,
           notes, queuePosition: queueCount + 1, durationMinutes: duration,
         });
         toast.success("Triagem iniciada", {
