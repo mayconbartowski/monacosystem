@@ -199,9 +199,11 @@ export async function createOrder(input: {
   vehiclePlate: string; vehicleLabel: string; category: VehicleCategory;
   serviceId: string; serviceKey: ServiceKey; extras: ExtraKey[];
   subtotal: number; loyaltyDiscount: number; loyaltyRewardUsed: boolean;
+  serviceFee?: number; serviceFeeNote?: string;
   notes: string; queuePosition: number; durationMinutes: number;
 }): Promise<Order> {
   const auth = await supabase.auth.getUser();
+  const serviceFee = Math.max(0, input.serviceFee ?? 0);
   const row: any = {
     customer_id: input.customerId,
     customer_name: input.customerName,
@@ -217,7 +219,9 @@ export async function createOrder(input: {
     discount_percentage: 0,
     loyalty_discount: input.loyaltyDiscount,
     loyalty_reward_used: input.loyaltyRewardUsed,
-    total: Math.max(0, input.subtotal - input.loyaltyDiscount),
+    service_fee: serviceFee,
+    service_fee_note: input.serviceFeeNote?.trim() || null,
+    total: Math.max(0, input.subtotal - input.loyaltyDiscount + serviceFee),
     payment_method: null,
     payment_status: "pending",
     notes: input.notes,
