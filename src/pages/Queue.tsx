@@ -168,23 +168,23 @@ export default function Queue() {
   const content = (
     <>
       <Tabs value={tab} onValueChange={(v) => setTab(v as OrderStatus)} className="w-full">
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="queued" className="gap-1.5">
+        <TabsList className="grid grid-cols-3 w-full h-[50px] p-1">
+          <TabsTrigger value="queued" className="h-full w-full flex items-center justify-center gap-1.5 leading-none">
             <ListOrdered className="h-3.5 w-3.5" /> Aguardando
             <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">{buckets.queued.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="in_progress" className="gap-1.5">
+          <TabsTrigger value="in_progress" className="h-full w-full flex items-center justify-center gap-1.5 leading-none">
             <Play className="h-3.5 w-3.5" /> Lavando
             <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">{buckets.in_progress.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="gap-1.5">
+          <TabsTrigger value="completed" className="h-full w-full flex items-center justify-center gap-1.5 leading-none">
             <CheckCircle2 className="h-3.5 w-3.5" /> Finalizados
             <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">{buckets.completed.length}</Badge>
           </TabsTrigger>
         </TabsList>
 
         {(["queued", "in_progress", "completed"] as OrderStatus[]).map((phase) => (
-          <TabsContent key={phase} value={phase} className="mt-4 space-y-3">
+          <TabsContent key={phase} value={phase} className="mt-3 space-y-1.5">
             {buckets[phase as "queued" | "in_progress" | "completed"].length === 0 ? (
               <div className="text-center text-muted-foreground py-16 animate-fade-in">
                 <Car className="h-12 w-12 mx-auto mb-3 opacity-40" />

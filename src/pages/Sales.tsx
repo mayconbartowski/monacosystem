@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Clock, Car, Trophy, CheckCircle2, Trash2, ChevronRight, ChevronLeft,
-  MessageCircle, Building2, User, Plus, X, Receipt,
+  MessageCircle, Building2, User, Plus, X, Receipt, BadgePercent,
 } from "lucide-react";
 
 import {
@@ -76,6 +76,9 @@ export default function Sales() {
 
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [discOpen, setDiscOpen] = useState(false);
+  const [discPct, setDiscPct] = useState(0);
 
   const [feeOpen, setFeeOpen] = useState(false);
   const [feeStr, setFeeStr] = useState("");
@@ -146,9 +149,20 @@ export default function Sales() {
     [existingVehicle, mode]
   );
 
-  const totals = useMemo(
+  const baseTotals = useMemo(
     () => calcTotals(prices, category, service, extras, 0, loyalty),
     [prices, category, service, extras, loyalty]
+  );
+  // Mesma ordem do pay_order: base = subtotal - fidelidade; desconto manual sobre a base; taxa depois.
+  const discPctEff = mode === "partner" || !discOpen
+    ? 0 : Math.min(100, Math.max(0, Number.isFinite(discPct) ? discPct : 0));
+  const manualDiscount = useMemo(() => {
+    const base = Math.max(0, baseTotals.subtotal - baseTotals.loyaltyDiscount);
+    return +(base * (discPctEff / 100)).toFixed(2);
+  }, [baseTotals.subtotal, baseTotals.loyaltyDiscount, discPctEff]);
+  const totals = useMemo(
+    () => calcTotals(prices, category, service, extras, manualDiscount, loyalty),
+    [prices, category, service, extras, manualDiscount, loyalty]
   );
   const serviceFee = feeOpen ? parseMoney(feeStr) : 0;
   const previewTotal = useMemo(
@@ -171,6 +185,7 @@ export default function Sales() {
     setCpf(""); setName(""); setPhone(""); setExistingCustomer(null);
     setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setContractId("");
+    setDiscOpen(false); setDiscPct(0);
     setFeeOpen(false); setFeeStr(""); setFeeNote("");
   };
 
@@ -272,6 +287,8 @@ export default function Sales() {
           subtotal: totals.subtotal,
           loyaltyDiscount: totals.loyaltyDiscount,
           loyaltyRewardUsed: totals.loyaltyDiscount > 0,
+          discount: totals.manualDiscount,
+          discountPercentage: discPctEff,
           serviceFee,
           serviceFeeNote: feeNote,
           notes, queuePosition: queueCount + 1, durationMinutes: duration,
@@ -307,9 +324,9 @@ export default function Sales() {
         </div>
       </header>
 
-      <div className="flex-1 p-4 md:p-6 grid gap-4 md:gap-5 lg:grid-cols-12 items-stretch overflow-auto">
+      <div className="flex-1 p-4 md:p-6 grid gap-2 md:gap-2.5 lg:grid-cols-12 items-stretch overflow-auto">
         {/* COLUNA 1 — Categoria + Serviços unificados */}
-        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
+        <section className="lg:col-span-4 flex flex-col gap-2 md:gap-2.5 min-h-0">
           <Panel title="Serviços" subtitle={`Preços para ${category}`} className="flex-1">
             <div className="flex flex-wrap gap-1.5 p-1 rounded-control bg-surface-3 mb-4">
               {VEHICLE_CATEGORIES.map((c) => (
@@ -376,7 +393,7 @@ export default function Sales() {
         </section>
 
         {/* COLUNA 2 — Detalhes + Cliente/Parceiro */}
-        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
+        <section className="lg:col-span-4 flex flex-col gap-2 md:gap-2.5 min-h-0">
           <Panel title="Detalhes do Serviço">
             {selectedServiceDef ? (
               <div className="space-y-3 animate-fade-in">
@@ -499,7 +516,7 @@ export default function Sales() {
         </section>
 
         {/* COLUNA 3 — Veículo + Observações */}
-        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
+        <section className="lg:col-span-4 flex flex-col gap-2 md:gap-2.5 min-h-0">
           <Panel
             title="Veículo"
             right={
@@ -573,61 +590,96 @@ export default function Sales() {
             </div>
           </Panel>
 
-          <Panel title="Observações do Atendente" className="flex-1">
+          <Panel title="Observações do Atendente" className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="Detalhes do atendimento, instruções específicas, condição do veículo..."
-              className="min-h-[100px] h-full resize-none" />
+              className="flex-1 min-h-[100px] w-full resize-none" />
           </Panel>
         </section>
       </div>
 
-      <footer className="bg-surface-2 px-4 md:px-6 py-4 sticky bottom-0 z-20 space-y-3">
-        {!feeOpen ? (
-          <Button type="button" variant="ghost" size="sm"
-            className="h-10 gap-2 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-foreground"
-            onClick={() => setFeeOpen(true)}>
-            <Plus className="h-4 w-4" /> Adicionar taxa de serviço
-          </Button>
-        ) : (
-          <div className="surface-inset p-2 flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-primary shrink-0" />
-            <Input inputMode="numeric" value={feeStr} onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
-              placeholder="R$ 0,00" className="h-9 w-32 text-xs" />
-            <Input value={feeNote} onChange={(e) => setFeeNote(e.target.value)}
-              placeholder="Descrição" maxLength={120} className="h-9 flex-1 text-xs" />
-            <Button type="button" variant="ghost" size="icon" aria-label="Remover taxa"
-              className="h-9 w-9 shrink-0 text-muted-foreground"
-              onClick={() => { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }}>
-              <X className="h-4 w-4" />
-            </Button>
+      <footer className="bg-surface-2 px-3 md:px-6 py-3 sticky bottom-0 z-20">
+        {(discOpen || feeOpen) && (
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            {discOpen && (
+              <div className="surface-inset p-1.5 flex items-center gap-2">
+                <BadgePercent className="h-4 w-4 text-primary shrink-0" />
+                <Input inputMode="numeric" type="number" min={0} max={100} step={1}
+                  value={discPct || ""}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    setDiscPct(Number.isNaN(n) ? 0 : Math.min(100, Math.max(0, n)));
+                  }}
+                  placeholder="0" className="h-9 w-20 text-xs" />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">% · −{brl(manualDiscount)}</span>
+                <Button type="button" variant="ghost" size="icon" aria-label="Remover desconto"
+                  className="h-9 w-9 shrink-0 text-muted-foreground"
+                  onClick={() => { setDiscOpen(false); setDiscPct(0); }}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            {feeOpen && (
+              <div className="surface-inset p-1.5 flex items-center gap-2 flex-1 min-w-[220px]">
+                <Receipt className="h-4 w-4 text-primary shrink-0" />
+                <Input inputMode="numeric" value={feeStr} onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
+                  placeholder="R$ 0,00" className="h-9 w-28 text-xs" />
+                <Input value={feeNote} onChange={(e) => setFeeNote(e.target.value)}
+                  placeholder="Descrição" maxLength={120} className="h-9 flex-1 min-w-0 text-xs" />
+                <Button type="button" variant="ghost" size="icon" aria-label="Remover taxa"
+                  className="h-9 w-9 shrink-0 text-muted-foreground"
+                  onClick={() => { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
-        <div className="flex items-center gap-3">
-          <div className="text-2xl font-bold gold-text tabular-nums leading-none mr-auto">{brl(previewTotal)}</div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" className="h-11 gap-2 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-destructive">
-                <Trash2 className="h-4 w-4" /> Limpar
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Limpar formulário?</AlertDialogTitle>
-                <AlertDialogDescription>Todas as informações desta triagem serão descartadas.</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Voltar</AlertDialogCancel>
-                <AlertDialogAction onClick={clearAll} className="bg-destructive hover:bg-destructive/90">Sim, limpar</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Button onClick={handleSubmit} disabled={!canSubmit}
-            className="h-11 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
-            <Car className="h-4 w-4" />
-            <span className="hidden md:inline">{submitting ? "Iniciando…" : "Iniciar Triagem"}</span>
-            <span className="md:hidden">{submitting ? "…" : "Iniciar"}</span>
-          </Button>
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+            <Button type="button" variant="ghost" disabled={mode === "partner"}
+              className="h-11 px-2.5 md:px-4 gap-1.5 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-foreground text-xs md:text-sm"
+              onClick={() => setDiscOpen((v) => !v)}>
+              <BadgePercent className="hidden md:inline h-4 w-4" />
+              <span className="hidden md:inline">Desconto manual</span>
+              <span className="md:hidden">Desconto</span>
+            </Button>
+            <Button type="button" variant="ghost"
+              className="h-11 px-2.5 md:px-4 gap-1.5 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-foreground text-xs md:text-sm"
+              onClick={() => setFeeOpen((v) => !v)}>
+              <Plus className="hidden md:inline h-4 w-4" />
+              <span className="hidden md:inline">Adicionar taxa de serviço</span>
+              <span className="md:hidden">Taxa</span>
+            </Button>
+          </div>
+
+          <div className="ml-auto flex items-center gap-1.5 md:gap-3 min-w-0">
+            <div className="text-lg md:text-2xl font-bold gold-text tabular-nums leading-none whitespace-nowrap">{brl(previewTotal)}</div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" className="h-11 px-2.5 md:px-4 gap-1.5 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-destructive text-xs md:text-sm">
+                  <Trash2 className="hidden md:inline h-4 w-4" /> Limpar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Limpar formulário?</AlertDialogTitle>
+                  <AlertDialogDescription>Todas as informações desta triagem serão descartadas.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction onClick={clearAll} className="bg-destructive hover:bg-destructive/90">Sim, limpar</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button onClick={handleSubmit} disabled={!canSubmit}
+              className="h-11 px-2.5 md:px-4 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs md:text-sm">
+              <Car className="hidden md:inline h-4 w-4" />
+              <span className="hidden md:inline">{submitting ? "Iniciando…" : "Iniciar Triagem"}</span>
+              <span className="md:hidden">{submitting ? "…" : "Iniciar"}</span>
+            </Button>
+          </div>
         </div>
       </footer>
     </AppShell>

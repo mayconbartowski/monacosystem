@@ -209,7 +209,7 @@ export default function Reports() {
       </header>
 
       <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <Stat label="Receita bruta" value={brl(revenue)} highlight />
           <Stat label="Despesas" value={brl(totalExpenses)} />
           <Stat label="Resultado líquido" value={brl(netResult)} accent={netResult >= 0} />
@@ -220,8 +220,8 @@ export default function Reports() {
           <Stat label="Clientes cadastrados no período" value={String(registeredInPeriod)} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="surface-card p-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <Card className="surface-card border-0 shadow-none p-5">
             <h3 className="text-sm font-semibold mb-4">Faturamento por forma de pagamento</h3>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -249,7 +249,7 @@ export default function Reports() {
             </div>
           </Card>
 
-          <Card className="surface-card p-5">
+          <Card className="surface-card border-0 shadow-none p-5">
             <h3 className="text-sm font-semibold mb-4">Faturamento por serviço</h3>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -263,7 +263,7 @@ export default function Reports() {
                     formatter={(v: number, name) => name === "total" ? brl(v) : String(v)}
                     contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                   />
-                  <Bar dataKey="total" name="Faturamento" fill="hsl(38 100% 55%)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="total" name="Faturamento" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -275,11 +275,11 @@ export default function Reports() {
           </Card>
         </div>
 
-        <Card className="surface-card p-5">
+        <Card className="surface-card border-0 shadow-none p-5">
           <h3 className="text-sm font-semibold mb-4">Por categoria de veículo</h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
             {categoryStats.map((c) => (
-              <div key={c.label as string} className="rounded-lg border border-border bg-muted/20 p-4">
+              <div key={c.label as string} className="rounded-card bg-surface-3 p-4">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{c.label}</div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
                   <div className="text-2xl font-bold">{c.qty}</div>
@@ -298,15 +298,15 @@ export default function Reports() {
             <div className="text-xs text-muted-foreground">{rangeLabel}</div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             <Stat label="Total de despesas" value={brl(totalExpenses)} />
             <Stat label="Lançamentos" value={String(rangeExpenses.length)} />
             <Stat label="Ticket médio" value={brl(rangeExpenses.length ? totalExpenses / rangeExpenses.length : 0)} />
             <Stat label="Saldo (receita − despesas)" value={brl(netResult)} accent={netResult >= 0} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-            <Card className="surface-card p-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-2">
+            <Card className="surface-card border-0 shadow-none p-5">
               <h3 className="text-sm font-semibold mb-4">Despesas por categoria</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -320,13 +320,13 @@ export default function Reports() {
                       formatter={(v: number) => brl(v)}
                       contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                     />
-                    <Bar dataKey="total" name="Despesas" fill="hsl(0 75% 60%)" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="total" name="Despesas" fill="hsl(0 75% 60%)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </Card>
 
-            <Card className="surface-card p-5">
+            <Card className="surface-card border-0 shadow-none p-5">
               <h3 className="text-sm font-semibold mb-4">Despesas ao longo do tempo</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -347,11 +347,11 @@ export default function Reports() {
             </Card>
           </div>
 
-          <Card className="surface-card p-5 mt-4">
+          <Card className="surface-card border-0 shadow-none p-5 mt-2">
             <h3 className="text-sm font-semibold mb-4">Despesas por forma de pagamento</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
               {expenseByPayment.map((e) => (
-                <div key={e.label} className="rounded-lg border border-border bg-muted/20 p-4">
+                <div key={e.label} className="rounded-card bg-surface-3 p-4">
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{e.label}</div>
                   <div className="mt-1 text-lg font-bold text-primary">{brl(e.total)}</div>
                 </div>
@@ -359,7 +359,7 @@ export default function Reports() {
             </div>
           </Card>
 
-          <Card className="surface-card p-5 mt-4">
+          <Card className="surface-card border-0 shadow-none p-5 mt-2">
             <h3 className="text-sm font-semibold mb-4">Lançamentos no período</h3>
             {rangeExpenses.length === 0 ? (
               <div className="text-sm text-muted-foreground py-6 text-center">
@@ -394,7 +394,7 @@ export default function Reports() {
           </div>
 
           {partnerContracts.length === 0 ? (
-            <Card className="surface-card p-6 text-sm text-muted-foreground text-center">
+            <Card className="surface-card border-0 shadow-none p-6 text-sm text-muted-foreground text-center">
               Nenhum contrato de parceiro cadastrado.
             </Card>
           ) : (() => {
@@ -405,14 +405,14 @@ export default function Reports() {
             const totalContractValue = partnerContracts.filter((c) => c.active).reduce((a, c) => a + c.contractValue, 0);
             return (
               <>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   <Stat label="Atendimentos (período)" value={String(totalPartnerAttendances)} />
                   <Stat label="Contratos ativos" value={String(partnerContracts.filter((c) => c.active).length)} />
                   <Stat label="Valor mensal contratado" value={brl(totalContractValue)} accent />
                   <Stat label="Contratos totais" value={String(partnerContracts.length)} />
                 </div>
 
-                <Card className="surface-card p-5 mt-4">
+                <Card className="surface-card border-0 shadow-none p-5 mt-2">
                   <h3 className="text-sm font-semibold mb-4">Uso por contrato</h3>
                   <div className="divide-y divide-border">
                     {partnerContracts.map((c) => {
@@ -454,14 +454,14 @@ export default function Reports() {
 function Stat({ label, value, accent, highlight }: { label: string; value: string; accent?: boolean; highlight?: boolean }) {
   if (highlight) {
     return (
-      <Card className="surface-card border-primary/30 bg-primary/[0.07] p-4">
-        <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium">{label}</div>
-        <div className="text-2xl font-bold text-primary tabular-nums">{value}</div>
+      <Card className="surface-card border-0 shadow-none p-4 bg-primary text-primary-foreground">
+        <div className="text-[11px] uppercase tracking-[0.14em] text-primary-foreground/80 font-medium">{label}</div>
+        <div className="text-2xl font-bold text-primary-foreground tabular-nums">{value}</div>
       </Card>
     );
   }
   return (
-    <Card className="surface-card p-4">
+    <Card className="surface-card border-0 shadow-none p-4">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={`text-2xl font-bold ${accent ? "gold-text" : ""}`}>{value}</div>
     </Card>
@@ -470,7 +470,7 @@ function Stat({ label, value, accent, highlight }: { label: string; value: strin
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30 border border-border text-sm">
+    <div className="flex items-center justify-between py-2 px-3 rounded-card bg-surface-3 text-sm">
       <span className="truncate">{label}</span>
       <span className="font-semibold text-primary shrink-0">{value}</span>
     </div>

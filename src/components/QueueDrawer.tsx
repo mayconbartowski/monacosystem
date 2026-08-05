@@ -77,7 +77,7 @@ export function QueueDrawer({ orders, contracts = [] }: Props) {
             )}
           </SheetHeader>
 
-          <div className="mt-6 space-y-5 overflow-y-auto max-h-[calc(100vh-8rem)] pr-1">
+          <div className="mt-6 space-y-2.5 overflow-y-auto max-h-[calc(100vh-8rem)] pr-1">
             {visible.length === 0 && (
               <div className="text-center py-16 text-muted-foreground text-sm">
                 <Car className="mx-auto h-10 w-10 mb-3 opacity-40" />
