@@ -50,14 +50,20 @@ export function QueueDrawer({ orders, contracts = [] }: Props) {
     <>
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" className="gap-2 h-14 px-4 border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
-            <ListOrdered className="h-4 w-4" />
-            Ver Fila
-            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
+          <Button
+            variant="outline"
+            aria-label="Ver fila"
+            className="w-full h-16 md:h-14 px-3 md:px-4 gap-2 rounded-control border-0 bg-surface-3 text-foreground hover:bg-surface-4 hover:text-foreground flex-col md:flex-row justify-center md:justify-start"
+          >
+            <ListOrdered className="h-5 w-5 md:h-4 md:w-4 text-primary" />
+            <span className="hidden md:inline">Ver Fila</span>
+            <span className="text-base font-semibold md:hidden">{visible.length}</span>
+            <Badge variant="secondary" className="ml-1 hidden md:inline-flex bg-primary text-primary-foreground border-0">
               {visible.length}
             </Badge>
           </Button>
         </SheetTrigger>
+
         <SheetContent className="w-full sm:max-w-md bg-card border-border">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2 text-foreground">
