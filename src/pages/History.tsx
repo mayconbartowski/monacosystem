@@ -43,7 +43,7 @@ export default function History() {
         </div>
       </header>
 
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto">
         <Card className="surface-card p-0 overflow-hidden">
           <div className="grid grid-cols-12 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border px-5 py-3">
             <div className="col-span-2">Data</div>

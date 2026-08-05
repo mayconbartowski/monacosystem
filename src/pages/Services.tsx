@@ -66,7 +66,7 @@ export default function Services() {
           <Save className="h-4 w-4" /> {saving ? "Salvando…" : "Salvar tudo"}
         </Button>
       </header>
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto space-y-4">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-4">
         {services.map((s, i) => (
           <Card key={s.key} className={cn("surface-card p-5", !s.active && "opacity-60")}>
             <div className="flex items-start gap-4">

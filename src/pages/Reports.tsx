@@ -208,7 +208,7 @@ export default function Reports() {
         </div>
       </header>
 
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Stat label="Receita bruta" value={brl(revenue)} highlight />
           <Stat label="Despesas" value={brl(totalExpenses)} />

@@ -83,7 +83,7 @@ export default function Customers() {
         </div>
       </header>
 
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto">
         {filtered.length === 0 ? (
           <div className="text-center text-muted-foreground py-20 text-sm animate-fade-in">
             <User className="h-10 w-10 mx-auto mb-3 opacity-40" />

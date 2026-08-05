@@ -100,7 +100,7 @@ export default function Dashboard() {
           </Button>
         )}
       </header>
-      <div className="p-6 space-y-12 bg-surface-sunken flex-1 overflow-auto">
+      <div className="p-4 md:p-6 space-y-12 bg-surface-sunken flex-1 overflow-auto">
         <div>
           <h2 className="text-sm font-semibold mb-3">Resumo do Dia</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
