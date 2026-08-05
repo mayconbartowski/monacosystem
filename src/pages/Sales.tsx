@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Clock, Car, Trophy, CheckCircle2, Trash2, ChevronRight, ChevronLeft,
-  MessageCircle, Building2, User, Plus, X, Receipt,
+  MessageCircle, Building2, User, Plus, X, Receipt, BadgePercent,
 } from "lucide-react";
 
 import {
@@ -76,6 +76,9 @@ export default function Sales() {
 
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [discOpen, setDiscOpen] = useState(false);
+  const [discPct, setDiscPct] = useState(0);
 
   const [feeOpen, setFeeOpen] = useState(false);
   const [feeStr, setFeeStr] = useState("");
@@ -146,9 +149,20 @@ export default function Sales() {
     [existingVehicle, mode]
   );
 
-  const totals = useMemo(
+  const baseTotals = useMemo(
     () => calcTotals(prices, category, service, extras, 0, loyalty),
     [prices, category, service, extras, loyalty]
+  );
+  // Mesma ordem do pay_order: base = subtotal - fidelidade; desconto manual sobre a base; taxa depois.
+  const discPctEff = mode === "partner" || !discOpen
+    ? 0 : Math.min(100, Math.max(0, Number.isFinite(discPct) ? discPct : 0));
+  const manualDiscount = useMemo(() => {
+    const base = Math.max(0, baseTotals.subtotal - baseTotals.loyaltyDiscount);
+    return +(base * (discPctEff / 100)).toFixed(2);
+  }, [baseTotals.subtotal, baseTotals.loyaltyDiscount, discPctEff]);
+  const totals = useMemo(
+    () => calcTotals(prices, category, service, extras, manualDiscount, loyalty),
+    [prices, category, service, extras, manualDiscount, loyalty]
   );
   const serviceFee = feeOpen ? parseMoney(feeStr) : 0;
   const previewTotal = useMemo(
@@ -171,6 +185,7 @@ export default function Sales() {
     setCpf(""); setName(""); setPhone(""); setExistingCustomer(null);
     setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setContractId("");
+    setDiscOpen(false); setDiscPct(0);
     setFeeOpen(false); setFeeStr(""); setFeeNote("");
   };
 
@@ -272,6 +287,8 @@ export default function Sales() {
           subtotal: totals.subtotal,
           loyaltyDiscount: totals.loyaltyDiscount,
           loyaltyRewardUsed: totals.loyaltyDiscount > 0,
+          discount: totals.manualDiscount,
+          discountPercentage: discPctEff,
           serviceFee,
           serviceFeeNote: feeNote,
           notes, queuePosition: queueCount + 1, durationMinutes: duration,
