@@ -71,19 +71,19 @@ export default function Customers() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+      <header className="border-b border-border px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div>
           <h1 className="text-xl font-semibold">Clientes</h1>
           <p className="text-xs text-muted-foreground">{customers.length} cadastrados · fidelidade por placa</p>
         </div>
-        <div className="ml-auto relative w-80 max-w-full">
+        <div className="ml-auto relative w-full sm:w-80 max-w-full">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar por nome, CPF, WhatsApp ou placa" className="pl-9" />
         </div>
       </header>
 
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto">
         {filtered.length === 0 ? (
           <div className="text-center text-muted-foreground py-20 text-sm animate-fade-in">
             <User className="h-10 w-10 mx-auto mb-3 opacity-40" />

@@ -133,7 +133,7 @@ export function QueueDrawer({ orders, contracts = [] }: Props) {
                         {g.key === "completed" && canPickup && o.paymentStatus !== "paid" && (
                           <div className="mt-3">
                             <Button size="sm" onClick={() => setPicking(o)}
-                              className="w-full h-9 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+                              className="w-full h-9 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
                               <PackageCheck className="h-4 w-4" /> Iniciar Retirada
                             </Button>
                           </div>

@@ -36,7 +36,7 @@ export default function Settings() {
         <h1 className="text-xl font-semibold">Configurações</h1>
         <p className="text-xs text-muted-foreground">Editar credenciais das contas operacionais</p>
       </header>
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto space-y-4">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-4">
         <Card className="surface-card p-4 flex items-start gap-3">
           <ShieldAlert className="h-4 w-4 text-primary mt-0.5" />
           <div className="text-xs text-muted-foreground">

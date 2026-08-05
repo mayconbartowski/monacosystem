@@ -183,14 +183,14 @@ export default function Reports() {
           {(["7", "30", "365"] as Preset[]).map((p) => (
             <Button key={p} size="sm" variant={preset === p ? "default" : "outline"}
               onClick={() => setPreset(p)}
-              className={cn(preset === p && "bg-gradient-gold text-primary-foreground border-0")}>
+              className={cn(preset === p && "bg-primary text-primary-foreground border-0")}>
               {p === "7" ? "Últimos 7 dias" : p === "30" ? "Últimos 30 dias" : "Últimos 365 dias"}
             </Button>
           ))}
           <Popover>
             <PopoverTrigger asChild>
               <Button size="sm" variant={preset === "custom" ? "default" : "outline"}
-                className={cn("gap-2", preset === "custom" && "bg-gradient-gold text-primary-foreground border-0")}>
+                className={cn("gap-2", preset === "custom" && "bg-primary text-primary-foreground border-0")}>
                 <CalendarIcon className="h-3.5 w-3.5" /> Período específico
               </Button>
             </PopoverTrigger>
@@ -208,7 +208,7 @@ export default function Reports() {
         </div>
       </header>
 
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Stat label="Receita bruta" value={brl(revenue)} highlight />
           <Stat label="Despesas" value={brl(totalExpenses)} />
@@ -428,7 +428,7 @@ export default function Reports() {
                               {periodUsage} no período · {monthUsage}/{c.monthlyVehicleLimit} este mês
                             </div>
                             <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
-                              <div className="h-full bg-gradient-gold" style={{ width: `${pct}%` }} />
+                              <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
                             </div>
                           </div>
                           <div className="text-right shrink-0">
@@ -454,9 +454,9 @@ export default function Reports() {
 function Stat({ label, value, accent, highlight }: { label: string; value: string; accent?: boolean; highlight?: boolean }) {
   if (highlight) {
     return (
-      <Card className="bg-gradient-gold border-0 p-4">
-        <div className="text-[11px] uppercase tracking-wider text-primary-foreground/80">{label}</div>
-        <div className="text-2xl font-bold text-primary-foreground">{value}</div>
+      <Card className="surface-card border-primary/30 bg-primary/[0.07] p-4">
+        <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium">{label}</div>
+        <div className="text-2xl font-bold text-primary tabular-nums">{value}</div>
       </Card>
     );
   }

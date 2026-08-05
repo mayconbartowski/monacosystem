@@ -32,18 +32,18 @@ export default function History() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+      <header className="border-b border-border px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div>
           <h1 className="text-xl font-semibold">Histórico</h1>
           <p className="text-xs text-muted-foreground">{orders.length} ordens registradas</p>
         </div>
-        <div className="ml-auto relative w-80 max-w-full">
+        <div className="ml-auto relative w-full sm:w-80 max-w-full">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por placa ou nome" className="pl-9" />
         </div>
       </header>
 
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto">
         <Card className="surface-card p-0 overflow-hidden">
           <div className="grid grid-cols-12 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border px-5 py-3">
             <div className="col-span-2">Data</div>

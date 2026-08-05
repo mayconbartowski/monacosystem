@@ -3,12 +3,13 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Car, LayoutDashboard, Users, ClipboardList, BarChart3,
   LogOut, Settings as SettingsIcon, Wrench, ListOrdered, Building2,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/authContext";
 import { ROLE_LABEL } from "@/lib/domain";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ALL_ITEMS = [
@@ -25,11 +26,28 @@ const ALL_ITEMS = [
 
 const STORAGE_KEY = "monaco:sidebar:collapsed";
 
+function Brand({ compact = false }: { compact?: boolean }) {
+  return (
+    <>
+      <div className="h-10 w-10 rounded-2xl bg-primary grid place-items-center text-primary-foreground font-extrabold shrink-0">
+        M
+      </div>
+      {!compact && (
+        <div className="leading-tight min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Monaco</div>
+          <div className="font-semibold text-sidebar-foreground">Concierge</div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { perms, session, role, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const items = ALL_ITEMS.filter((i) => perms?.[i.perm]);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
@@ -40,51 +58,44 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     try { window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0"); } catch {}
   }, [collapsed]);
 
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+
   const doLogout = async () => { await logout(); navigate("/login"); };
+  const homeTo = role === "lavajato" ? "/fila" : "/";
+  const isActivePath = (to: string) => (to === "/" ? location.pathname === "/" : location.pathname.startsWith(to));
 
   return (
     <TooltipProvider delayDuration={200}>
       <div className="min-h-screen flex w-full bg-background">
         <aside
           className={cn(
-            "hidden lg:flex flex-col border-r border-border bg-sidebar transition-[width] duration-200 ease-out h-screen sticky top-0",
-            collapsed ? "w-16" : "w-60"
+            "hidden lg:flex flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-out h-screen sticky top-0",
+            collapsed ? "w-[72px]" : "w-64"
           )}
         >
           <div className={cn(
-            "px-3 py-4 flex items-center border-b border-sidebar-border gap-2",
-            collapsed ? "justify-center" : "px-6 py-6 gap-3"
+            "flex items-center border-b border-sidebar-border",
+            collapsed ? "justify-center px-3 py-5" : "px-5 py-5 gap-3"
           )}>
-            <Link
-              to={role === "lavajato" ? "/fila" : "/"}
-              className="flex items-center gap-3 min-w-0"
-            >
-              <div className="h-10 w-10 rounded-xl bg-gradient-gold grid place-items-center text-primary-foreground font-bold shadow-glow shrink-0">
-                M
-              </div>
-              {!collapsed && (
-                <div className="leading-tight min-w-0">
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>
-                  <div className="font-semibold text-sidebar-foreground">System</div>
-                </div>
-              )}
+            <Link to={homeTo} className="flex items-center gap-3 min-w-0">
+              <Brand compact={collapsed} />
             </Link>
           </div>
 
-          <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
             {items.map((it) => {
-              const isActive = it.to === "/" ? location.pathname === "/" : location.pathname.startsWith(it.to);
+              const isActive = isActivePath(it.to);
               const link = (
                 <NavLink
                   key={it.to}
                   to={it.to}
                   end={it.to === "/"}
                   className={cn(
-                    "group flex items-center rounded-lg text-sm transition-all relative",
-                    collapsed ? "mx-auto justify-center items-center h-10 w-10 p-0" : "gap-3 px-3 py-2.5",
+                    "group flex items-center rounded-xl text-sm transition-all duration-200 relative border border-transparent",
+                    collapsed ? "mx-auto justify-center items-center h-11 w-11 p-0" : "gap-3 px-3 py-2.5",
                     isActive
-                      ? "bg-primary/15 font-medium"
-                      : "hover:bg-sidebar-accent/60"
+                      ? "bg-primary/10 border-primary/25 font-medium"
+                      : "hover:bg-sidebar-accent/70 hover:border-border"
                   )}
                 >
                   {isActive && !collapsed && (
@@ -92,17 +103,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                   <it.icon
                     className={cn(
-                      "h-4 w-4 shrink-0 transition-transform group-hover:scale-110",
-                      isActive ? "text-primary" : "text-white/80 group-hover:text-white"
+                      "h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110",
+                      isActive ? "text-primary" : "text-sidebar-foreground/75 group-hover:text-sidebar-foreground"
                     )}
                   />
                   {!collapsed && (
-                    <span
-                      className={cn(
-                        "truncate",
-                        isActive ? "text-primary" : "text-white/80 group-hover:text-white"
-                      )}
-                    >
+                    <span className={cn("truncate", isActive ? "text-primary" : "text-sidebar-foreground/80 group-hover:text-sidebar-foreground")}>
                       {it.label}
                     </span>
                   )}
@@ -118,14 +124,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="border-t border-sidebar-border p-2 space-y-2">
+          <div className="border-t border-sidebar-border p-3 space-y-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setCollapsed((v) => !v)}
               className={cn(
                 "w-full text-muted-foreground hover:text-foreground",
-                collapsed ? "justify-center h-10 px-0" : "justify-start gap-2"
+                collapsed ? "justify-center h-11 px-0" : "justify-start gap-2"
               )}
               aria-label={collapsed ? "Expandir menu" : "Retrair menu"}
             >
@@ -133,8 +139,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
 
             {session && !collapsed && (
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/30">
-                <div className="h-8 w-8 rounded-full bg-primary/20 text-primary grid place-items-center text-xs font-bold shrink-0">
+              <div className="flex items-center gap-2 px-2 py-2 rounded-xl border border-border bg-muted/25">
+                <div className="h-8 w-8 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold shrink-0">
                   {session.login.slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0 leading-tight">
@@ -150,7 +156,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     variant="ghost"
                     size="sm"
                     onClick={doLogout}
-                    className="w-full h-10 px-0 justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    className="w-full h-11 px-0 justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     aria-label="Sair"
                   >
                     <LogOut className="h-4 w-4" />
@@ -170,11 +176,90 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Button>
             )}
             {!collapsed && (
-              <div className="text-[10px] text-muted-foreground/70 text-center">v1.2 · Premium Auto Care</div>
+              <div className="text-[11px] text-muted-foreground/70 text-center">v1.2 · Premium Auto Care</div>
             )}
           </div>
         </aside>
-        <main className="flex-1 min-w-0 flex flex-col">{children}</main>
+
+        <main className="flex-1 min-w-0 flex flex-col">
+          {/* Mobile / tablet topbar */}
+          <div className="lg:hidden sticky top-0 z-40 flex items-center gap-3 px-4 py-2 border-b border-border bg-background/90 backdrop-blur-xl pt-[max(0.5rem,env(safe-area-inset-top))]">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Abrir menu de navegação"
+                  className="h-11 w-11 rounded-xl border border-border"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[86vw] max-w-xs bg-sidebar border-sidebar-border p-0 flex flex-col">
+                <SheetTitle className="sr-only">Navegação</SheetTitle>
+                <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
+                  <Brand />
+                </div>
+                <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+                  {items.map((it) => {
+                    const isActive = isActivePath(it.to);
+                    return (
+                      <NavLink
+                        key={it.to}
+                        to={it.to}
+                        end={it.to === "/"}
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl px-3 min-h-[48px] text-sm border border-transparent transition-colors duration-200",
+                          isActive
+                            ? "bg-primary/10 border-primary/25 text-primary font-medium"
+                            : "text-sidebar-foreground/85 hover:bg-sidebar-accent/70"
+                        )}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        <it.icon className={cn("h-[18px] w-[18px]", isActive ? "text-primary" : "text-sidebar-foreground/70")} />
+                        {it.label}
+                      </NavLink>
+                    );
+                  })}
+                </nav>
+                <div className="border-t border-sidebar-border p-3 space-y-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                  {session && (
+                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-muted/25">
+                      <div className="h-9 w-9 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold">
+                        {session.login.slice(0, 1).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 leading-tight">
+                        <div className="text-sm font-medium truncate">{session.login}</div>
+                        <div className="text-xs text-muted-foreground">{ROLE_LABEL[session.role]}</div>
+                      </div>
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    onClick={doLogout}
+                    className="w-full justify-start gap-2 min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" /> Sair
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <Link to={homeTo} className="flex items-center gap-2 min-w-0">
+              <div className="h-8 w-8 rounded-xl bg-primary grid place-items-center text-primary-foreground text-sm font-extrabold">M</div>
+              <span className="font-semibold truncate">Monaco</span>
+            </Link>
+
+            {session && (
+              <div className="ml-auto h-9 w-9 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold shrink-0">
+                {session.login.slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          {children}
+        </main>
       </div>
     </TooltipProvider>
   );

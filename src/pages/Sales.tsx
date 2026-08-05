@@ -250,21 +250,21 @@ export default function Sales() {
 
   return (
     <AppShell>
-      <header className="border-b border-border bg-gradient-surface px-6 py-4 flex items-center gap-6 sticky top-0 z-20 backdrop-blur">
+      <header className="border-b border-border bg-gradient-surface px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-6 sticky top-0 z-20 backdrop-blur">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
             Tela de <span className="gold-text">Vendas</span>
           </h1>
           <p className="text-xs text-muted-foreground">Iniciar triagem · pagamento na retirada</p>
         </div>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="w-full md:w-auto md:ml-auto flex flex-wrap items-center gap-2 md:gap-3">
           <StatChip icon={<Clock className="h-4 w-4" />} label="Espera estimada" value={formatDuration(newWait)} />
           <StatChip icon={<Car className="h-4 w-4" />} label="Veículos na fila" value={String(queueCount)} />
           <QueueDrawer orders={orders} contracts={partnerContracts} />
         </div>
       </header>
 
-      <div className="flex-1 p-6 grid gap-6 lg:grid-cols-12 bg-surface-sunken overflow-auto">
+      <div className="flex-1 p-4 md:p-6 grid gap-4 md:gap-6 lg:grid-cols-12 bg-surface-sunken overflow-auto">
         <section className="lg:col-span-4 space-y-4">
           <Panel title="Categoria do Veículo" subtitle="Selecione antes do serviço">
             <div className="grid grid-cols-3 gap-2">
@@ -293,7 +293,7 @@ export default function Sales() {
                       !category && "opacity-50 cursor-not-allowed"
                     )}>
                     <div className={cn("h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-all",
-                      active ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-secondary-foreground")}>
+                      active ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground")}>
                       <ServiceIcon iconKey={override.icon} serviceKey={override.key} className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -347,7 +347,7 @@ export default function Sales() {
                       <div className="text-xs text-muted-foreground">{selectedOverride?.description ?? selectedServiceDef.description}</div>
                     </div>
                   </div>
-                  <Badge className="bg-gradient-gold text-primary-foreground border-0 shrink-0">
+                  <Badge className="bg-primary text-primary-foreground border-0 shrink-0">
                     {category ? brl(prices[category][selectedServiceDef.key]) : "—"}
                   </Badge>
                 </div>
@@ -377,12 +377,12 @@ export default function Sales() {
             right={
               <div className="flex items-center gap-2">
                 <Button size="sm" variant={mode === "customer" ? "default" : "outline"}
-                  className={cn("h-8", mode === "customer" && "bg-gradient-gold text-primary-foreground border-0")}
+                  className={cn("h-8", mode === "customer" && "bg-primary text-primary-foreground border-0")}
                   onClick={() => { setMode("customer"); setContractId(""); }}>
                   <User className="h-3.5 w-3.5 mr-1" /> Cliente
                 </Button>
                 <Button size="sm" variant={mode === "partner" ? "default" : "outline"}
-                  className={cn("h-8", mode === "partner" && "bg-gradient-gold text-primary-foreground border-0")}
+                  className={cn("h-8", mode === "partner" && "bg-primary text-primary-foreground border-0")}
                   onClick={() => { setMode("partner"); setCpf(""); setName(""); setPhone(""); setExistingCustomer(null); }}>
                   <Building2 className="h-3.5 w-3.5 mr-1" /> Parceiro
                 </Button>
@@ -585,7 +585,7 @@ export default function Sales() {
               </AlertDialogContent>
             </AlertDialog>
             <Button onClick={handleSubmit} disabled={!canSubmit}
-              className="h-10 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
+              className="h-10 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
               <Car className="h-4 w-4" />
               {submitting ? "Iniciando…" : "Iniciar Triagem"}
               <ChevronRight className="h-4 w-4" />

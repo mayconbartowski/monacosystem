@@ -83,7 +83,7 @@ export default function Partners() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+      <header className="border-b border-border px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" /> Contratos de Parceiros
@@ -92,12 +92,12 @@ export default function Partners() {
             {partnerContracts.filter(c => c.active).length} ativo(s) · {partnerContracts.length} total
           </p>
         </div>
-        <Button onClick={() => open(null)} className="ml-auto bg-gradient-gold text-primary-foreground border-0 gap-2" size="sm">
+        <Button onClick={() => open(null)} className="ml-auto bg-primary text-primary-foreground border-0 gap-2" size="sm">
           <Plus className="h-4 w-4" /> Novo contrato
         </Button>
       </header>
 
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto">
         <Card className="surface-card p-0 overflow-hidden">
           <div className="grid grid-cols-12 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border px-5 py-3">
             <div className="col-span-3">Empresa</div>
@@ -171,7 +171,7 @@ export default function Partners() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>Cancelar</Button>
-            <Button onClick={save} disabled={!canSave || saving} className="bg-gradient-gold text-primary-foreground border-0">
+            <Button onClick={save} disabled={!canSave || saving} className="bg-primary text-primary-foreground border-0">
               {saving ? "Salvando…" : "Salvar"}
             </Button>
           </DialogFooter>

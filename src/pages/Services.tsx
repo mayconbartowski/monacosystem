@@ -57,16 +57,16 @@ export default function Services() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+      <header className="border-b border-border px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div>
           <h1 className="text-xl font-semibold">Serviços</h1>
           <p className="text-xs text-muted-foreground">Gerencie título, tempo, preços e visibilidade · alterações sincronizam para todas as estações</p>
         </div>
-        <Button onClick={saveAll} disabled={saving} className="ml-auto gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow">
+        <Button onClick={saveAll} disabled={saving} className="ml-auto gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow">
           <Save className="h-4 w-4" /> {saving ? "Salvando…" : "Salvar tudo"}
         </Button>
       </header>
-      <div className="p-6 bg-surface-sunken flex-1 overflow-auto space-y-4">
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-4">
         {services.map((s, i) => (
           <Card key={s.key} className={cn("surface-card p-5", !s.active && "opacity-60")}>
             <div className="flex items-start gap-4">

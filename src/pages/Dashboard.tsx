@@ -89,18 +89,18 @@ export default function Dashboard() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+      <header className="border-b border-border px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div>
           <h1 className="text-xl font-semibold">Dashboard</h1>
           <p className="text-xs text-muted-foreground">Visão operacional Monaco System · sincronizada em tempo real</p>
         </div>
         {isAdmin && (
-          <Button onClick={openNew} className="ml-auto bg-gradient-gold text-primary-foreground border-0 gap-2" size="sm">
+          <Button onClick={openNew} className="ml-auto bg-primary text-primary-foreground border-0 gap-2" size="sm">
             <Plus className="h-4 w-4" /> Adicionar Despesa
           </Button>
         )}
       </header>
-      <div className="p-6 space-y-12 bg-surface-sunken flex-1 overflow-auto">
+      <div className="p-4 md:p-6 space-y-12 bg-surface-sunken flex-1 overflow-auto">
         <div>
           <h2 className="text-sm font-semibold mb-3">Resumo do Dia</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -120,18 +120,18 @@ export default function Dashboard() {
               <div className="relative">
                 <div className="divide-y divide-border max-h-[380px] overflow-y-auto pr-1">
                   {recent.map((o) => (
-                    <div key={o.id} className="py-3 flex items-center gap-3">
-                      <div className="font-mono text-sm w-24">{o.vehiclePlate}</div>
-                      <div className="flex-1 min-w-0">
+                    <div key={o.id} className="py-3 grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 md:flex md:items-center">
+                      <div className="font-mono text-sm md:w-24">{o.vehiclePlate}</div>
+                      <div className="min-w-0 md:flex-1">
                         <div className="text-sm truncate">{o.customerName}</div>
                         <div className="text-xs text-muted-foreground truncate">
                           {o.service} {o.extras.length ? `+ ${o.extras.join(", ")}` : ""}
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-xs">
+                      <div className="text-right font-semibold text-primary md:order-last md:w-28">{o.orderSource === "partner" ? "Contrato" : brl(o.total)}</div>
+                      <Badge variant="outline" className="text-xs justify-self-start col-span-3 md:col-span-1">
                         {o.paymentStatus === "paid" ? "Pago" : o.status === "completed" ? "Aguarda retirada" : o.status === "queued" ? "Fila" : o.status === "in_progress" ? "Em andamento" : o.status === "cancelled" ? "Cancelado" : "Entregue"}
                       </Badge>
-                      <div className="w-28 text-right font-semibold text-primary">{o.orderSource === "partner" ? "Contrato" : brl(o.total)}</div>
                     </div>
                   ))}
                 </div>
@@ -280,20 +280,20 @@ export default function Dashboard() {
 
 function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <Card className={highlight ? "bg-gradient-gold border-0 p-4" : "surface-card p-4"}>
+    <Card className={highlight ? "surface-card border-primary/30 bg-primary/[0.07] p-4" : "surface-card p-4"}>
       <div className="flex items-center gap-3">
         <div className={
           highlight
-            ? "h-10 w-10 grid place-items-center rounded-lg bg-primary-foreground/20 text-primary-foreground"
+            ? "h-10 w-10 grid place-items-center rounded-xl bg-primary/20 text-primary"
             : "h-10 w-10 grid place-items-center rounded-lg bg-primary/15 text-primary"
         }>{icon}</div>
         <div>
           <div className={
             highlight
-              ? "text-[11px] uppercase tracking-wider text-primary-foreground/80"
+              ? "text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium"
               : "text-[11px] uppercase tracking-wider text-muted-foreground"
           }>{label}</div>
-          <div className={highlight ? "text-lg font-bold text-primary-foreground" : "text-lg font-bold"}>{value}</div>
+          <div className={highlight ? "text-lg font-bold text-primary tabular-nums" : "text-lg font-bold tabular-nums"}>{value}</div>
         </div>
       </div>
     </Card>
