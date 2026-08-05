@@ -183,14 +183,14 @@ export default function Reports() {
           {(["7", "30", "365"] as Preset[]).map((p) => (
             <Button key={p} size="sm" variant={preset === p ? "default" : "outline"}
               onClick={() => setPreset(p)}
-              className={cn(preset === p && "bg-gradient-gold text-primary-foreground border-0")}>
+              className={cn(preset === p && "bg-primary text-primary-foreground border-0")}>
               {p === "7" ? "Últimos 7 dias" : p === "30" ? "Últimos 30 dias" : "Últimos 365 dias"}
             </Button>
           ))}
           <Popover>
             <PopoverTrigger asChild>
               <Button size="sm" variant={preset === "custom" ? "default" : "outline"}
-                className={cn("gap-2", preset === "custom" && "bg-gradient-gold text-primary-foreground border-0")}>
+                className={cn("gap-2", preset === "custom" && "bg-primary text-primary-foreground border-0")}>
                 <CalendarIcon className="h-3.5 w-3.5" /> Período específico
               </Button>
             </PopoverTrigger>

@@ -41,7 +41,7 @@ export default function Login() {
       <div className="absolute inset-0 pointer-events-none opacity-60 [background:radial-gradient(60%_50%_at_50%_0%,hsl(38_100%_55%/0.12),transparent_70%)]" />
       <div className="relative z-10 m-auto w-full max-w-md px-6 py-12">
         <div className="text-center mb-8">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-gold grid place-items-center text-primary-foreground font-bold shadow-glow text-xl">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary grid place-items-center text-primary-foreground font-bold shadow-glow text-xl">
             M
           </div>
           <div className="mt-4 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Monaco</div>
@@ -77,7 +77,7 @@ export default function Login() {
           <Button
             type="submit"
             disabled={busy || !user || !pass}
-            className="w-full h-11 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold"
+            className="w-full h-11 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
             Entrar

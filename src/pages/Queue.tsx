@@ -144,13 +144,13 @@ export default function Queue() {
           )}
           {phase === "in_progress" && (
             <Button size="lg" onClick={() => finish(o)}
-              className="w-full h-12 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
               <CheckCircle2 className="h-5 w-5" /> Finalizar lavagem
             </Button>
           )}
           {phase === "completed" && canPickup && o.paymentStatus !== "paid" && (
             <Button size="lg" onClick={() => setPicking(o)}
-              className="w-full h-12 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
               <PackageCheck className="h-5 w-5" /> Iniciar Retirada
             </Button>
           )}
@@ -235,7 +235,7 @@ export default function Queue() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-20 bg-gradient-surface border-b border-border px-4 py-3 flex items-center gap-3 backdrop-blur">
-        <div className="h-9 w-9 rounded-lg bg-gradient-gold grid place-items-center text-primary-foreground font-bold">M</div>
+        <div className="h-9 w-9 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">M</div>
         <div className="leading-tight min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>
           <div className="text-sm font-semibold flex items-center gap-1.5">

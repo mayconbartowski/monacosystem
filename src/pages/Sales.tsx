@@ -293,7 +293,7 @@ export default function Sales() {
                       !category && "opacity-50 cursor-not-allowed"
                     )}>
                     <div className={cn("h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-all",
-                      active ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-secondary-foreground")}>
+                      active ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground")}>
                       <ServiceIcon iconKey={override.icon} serviceKey={override.key} className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -347,7 +347,7 @@ export default function Sales() {
                       <div className="text-xs text-muted-foreground">{selectedOverride?.description ?? selectedServiceDef.description}</div>
                     </div>
                   </div>
-                  <Badge className="bg-gradient-gold text-primary-foreground border-0 shrink-0">
+                  <Badge className="bg-primary text-primary-foreground border-0 shrink-0">
                     {category ? brl(prices[category][selectedServiceDef.key]) : "—"}
                   </Badge>
                 </div>
@@ -377,12 +377,12 @@ export default function Sales() {
             right={
               <div className="flex items-center gap-2">
                 <Button size="sm" variant={mode === "customer" ? "default" : "outline"}
-                  className={cn("h-8", mode === "customer" && "bg-gradient-gold text-primary-foreground border-0")}
+                  className={cn("h-8", mode === "customer" && "bg-primary text-primary-foreground border-0")}
                   onClick={() => { setMode("customer"); setContractId(""); }}>
                   <User className="h-3.5 w-3.5 mr-1" /> Cliente
                 </Button>
                 <Button size="sm" variant={mode === "partner" ? "default" : "outline"}
-                  className={cn("h-8", mode === "partner" && "bg-gradient-gold text-primary-foreground border-0")}
+                  className={cn("h-8", mode === "partner" && "bg-primary text-primary-foreground border-0")}
                   onClick={() => { setMode("partner"); setCpf(""); setName(""); setPhone(""); setExistingCustomer(null); }}>
                   <Building2 className="h-3.5 w-3.5 mr-1" /> Parceiro
                 </Button>
@@ -585,7 +585,7 @@ export default function Sales() {
               </AlertDialogContent>
             </AlertDialog>
             <Button onClick={handleSubmit} disabled={!canSubmit}
-              className="h-10 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
+              className="h-10 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
               <Car className="h-4 w-4" />
               {submitting ? "Iniciando…" : "Iniciar Triagem"}
               <ChevronRight className="h-4 w-4" />

@@ -189,7 +189,7 @@ export function ExpenseFormDialog({ open, onOpenChange, editing, onSaved }: Prop
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
           <Button onClick={submit} disabled={saving}
-            className="bg-gradient-gold text-primary-foreground border-0">
+            className="bg-primary text-primary-foreground border-0">
             {saving ? "Salvando…" : editing ? "Salvar alterações" : "Registrar despesa"}
           </Button>
         </DialogFooter>

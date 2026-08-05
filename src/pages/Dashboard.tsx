@@ -95,7 +95,7 @@ export default function Dashboard() {
           <p className="text-xs text-muted-foreground">Visão operacional Monaco System · sincronizada em tempo real</p>
         </div>
         {isAdmin && (
-          <Button onClick={openNew} className="ml-auto bg-gradient-gold text-primary-foreground border-0 gap-2" size="sm">
+          <Button onClick={openNew} className="ml-auto bg-primary text-primary-foreground border-0 gap-2" size="sm">
             <Plus className="h-4 w-4" /> Adicionar Despesa
           </Button>
         )}
