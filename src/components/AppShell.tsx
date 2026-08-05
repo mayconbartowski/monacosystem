@@ -205,14 +205,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         end={it.to === "/"}
                         onClick={() => setMobileOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 rounded-xl px-3 min-h-[48px] text-sm border border-transparent transition-colors duration-200",
+                          "flex items-center gap-3 rounded-control px-3 min-h-[48px] text-sm transition-colors duration-200",
                           isActive
-                            ? "bg-primary/10 border-primary/25 text-primary font-medium"
-                            : "text-sidebar-foreground/85 hover:bg-sidebar-accent/70"
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-sidebar-foreground/85 hover:bg-surface-3"
                         )}
                         aria-current={isActive ? "page" : undefined}
                       >
-                        <it.icon className={cn("h-[18px] w-[18px]", isActive ? "text-primary" : "text-sidebar-foreground/70")} />
+                        <it.icon className="h-[18px] w-[18px] text-current" />
+
                         {it.label}
                       </NavLink>
                     );
