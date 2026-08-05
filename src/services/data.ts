@@ -131,30 +131,58 @@ export async function fetchAll() {
   return { customers, vehicles, orders, services, prices, partnerContracts };
 }
 
+// ---------- duplicidade ----------
+export class DuplicateError extends Error {
+  field: "cpf" | "whatsapp" | "plate";
+  constructor(field: "cpf" | "whatsapp" | "plate", message: string) {
+    super(message);
+    this.name = "DuplicateError";
+    this.field = field;
+  }
+}
+
+/** Traduz conflitos de unicidade do Postgres (SQLSTATE 23505) para português. */
+function translateConflict(error: any): never {
+  const code = error?.code ?? "";
+  const detail = `${error?.message ?? ""} ${error?.details ?? ""}`.toLowerCase();
+  if (code === "23505") {
+    if (detail.includes("cpf")) throw new DuplicateError("cpf", "Este CPF já está cadastrado para outro cliente.");
+    if (detail.includes("whatsapp")) throw new DuplicateError("whatsapp", "Este WhatsApp já está cadastrado para outro cliente.");
+    if (detail.includes("plate")) throw new DuplicateError("plate", "Esta placa já está cadastrada para outro veículo.");
+    throw new DuplicateError("cpf", "Registro duplicado: verifique CPF, WhatsApp ou placa.");
+  }
+  throw error;
+}
+
 // ---------- customers ----------
+async function assertCustomerUnique(cpf: string, whatsapp: string, ignoreId?: string) {
+  const { data } = await supabase.from("customers").select("id,cpf,whatsapp")
+    .or(`cpf.eq.${cpf},whatsapp.eq.${whatsapp}`);
+  const clash = (data ?? []).filter((r: any) => r.id !== ignoreId);
+  const byCpf = clash.find((r: any) => r.cpf === cpf);
+  if (byCpf) throw new DuplicateError("cpf", "Este CPF já está cadastrado para outro cliente.");
+  const byZap = clash.find((r: any) => r.whatsapp === whatsapp);
+  if (byZap) throw new DuplicateError("whatsapp", "Este WhatsApp já está cadastrado para outro cliente.");
+}
+
 export async function upsertCustomer(c: { id?: string; name: string; cpf: string; phone: string; }): Promise<Customer> {
   const row = { name: c.name.trim(), cpf: normalizeCpf(c.cpf), whatsapp: (c.phone || "").replace(/\D/g, "") };
+  await assertCustomerUnique(row.cpf, row.whatsapp, c.id);
   if (c.id) {
     const { data, error } = await supabase.from("customers").update(row).eq("id", c.id).select().single();
-    if (error) throw error;
-    return mapCustomer(data as CustomerRow);
-  }
-  const existing = await supabase.from("customers").select("*").eq("cpf", row.cpf).maybeSingle();
-  if (existing.data) {
-    const { data, error } = await supabase.from("customers")
-      .update({ ...row, active: true }).eq("id", (existing.data as CustomerRow).id).select().single();
-    if (error) throw error;
+    if (error) translateConflict(error);
     return mapCustomer(data as CustomerRow);
   }
   const { data, error } = await supabase.from("customers").insert(row).select().single();
-  if (error) throw error;
+  if (error) translateConflict(error);
   return mapCustomer(data as CustomerRow);
 }
 
 export async function updateCustomer(id: string, patch: { name: string; cpf: string; phone: string; }): Promise<Customer> {
   const row = { name: patch.name.trim(), cpf: normalizeCpf(patch.cpf), whatsapp: (patch.phone || "").replace(/\D/g, "") };
+  await assertCustomerUnique(row.cpf, row.whatsapp, id);
   const { data, error } = await supabase.from("customers").update(row).eq("id", id).select().single();
-  if (error) throw error;
+  if (error) translateConflict(error);
   return mapCustomer(data as CustomerRow);
 }
 
@@ -173,19 +201,29 @@ export async function upsertVehicle(v: {
     brand: v.brand || "", model: v.model || "",
     color: v.color || "", year: v.year || "", category: v.category,
   };
+  const { data: found } = await supabase.from("vehicles").select("*").eq("plate", row.plate).maybeSingle();
+  const other = found as VehicleRow | null;
+
   if (v.id) {
+    if (other && other.id !== v.id) {
+      throw new DuplicateError("plate", "Esta placa já está cadastrada em outro veículo.");
+    }
     const { data, error } = await supabase.from("vehicles").update(row).eq("id", v.id).select().single();
-    if (error) throw error;
+    if (error) translateConflict(error);
     return mapVehicle(data as VehicleRow);
   }
-  const existing = await supabase.from("vehicles").select("*").eq("plate", row.plate).maybeSingle();
-  if (existing.data) {
-    const { data, error } = await supabase.from("vehicles").update(row).eq("id", (existing.data as VehicleRow).id).select().single();
-    if (error) throw error;
-    return mapVehicle(data as VehicleRow);
+
+  if (other) {
+    throw new DuplicateError(
+      "plate",
+      other.customer_id === v.customerId
+        ? "Esta placa já está cadastrada para este cliente."
+        : "Esta placa já está cadastrada para outro cliente e não pode ser reatribuída."
+    );
   }
+
   const { data, error } = await supabase.from("vehicles").insert(row).select().single();
-  if (error) throw error;
+  if (error) translateConflict(error);
   return mapVehicle(data as VehicleRow);
 }
 
