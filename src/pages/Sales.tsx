@@ -643,10 +643,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex flex-col md:flex-row items-center md:gap-3 justify-center md:justify-start h-16 md:h-14 px-2 md:px-4 rounded-control bg-surface-3 min-w-0">
+    <div className="flex flex-col md:flex-row items-center md:gap-3 justify-center md:justify-start h-16 md:h-14 px-2 md:px-5 rounded-control bg-surface-3 min-w-0 md:min-w-[168px]">
       <span className="text-primary shrink-0">{icon}</span>
       <div className="leading-tight min-w-0 text-center md:text-left">
-        <div className="hidden md:block text-[10px] uppercase tracking-wider text-muted-foreground truncate">{label}</div>
+        <div className="hidden md:block text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">{label}</div>
         <div className="text-base md:text-sm font-semibold truncate">{value}</div>
       </div>
     </div>
