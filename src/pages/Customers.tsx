@@ -90,7 +90,7 @@ export default function Customers() {
             Nenhum cliente encontrado.
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-2">
             {filtered.map((c) => {
               const cOrders = orders.filter((o) => o.customerId === c.id);
               const cVehicles = vehicles.filter((v) => v.customerId === c.id);
