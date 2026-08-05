@@ -721,6 +721,39 @@ export type Database = {
         Returns: undefined
       }
       resolve_login: { Args: { _username: string }; Returns: string }
+      update_vehicle_without_ownership_change: {
+        Args: {
+          _brand: string
+          _category: Database["public"]["Enums"]["vehicle_category"]
+          _color: string
+          _expected_customer_id: string
+          _model: string
+          _plate: string
+          _vehicle_id: string
+          _year: string
+        }
+        Returns: {
+          brand: string
+          category: Database["public"]["Enums"]["vehicle_category"]
+          color: string
+          created_at: string
+          customer_id: string
+          id: string
+          last_reward_date: string | null
+          model: string
+          plate: string
+          reward_available: boolean
+          updated_at: string
+          wash_count: number
+          year: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vehicles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "atendimento" | "lavajato" | "gerencia"
