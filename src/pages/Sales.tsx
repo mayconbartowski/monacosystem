@@ -250,7 +250,7 @@ export default function Sales() {
 
   return (
     <AppShell>
-      <header className="border-b border-border bg-gradient-surface px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-6 sticky top-0 z-20 backdrop-blur">
+      <header className="border-b border-border bg-[hsl(var(--surface-2))] px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-6 sticky top-0 z-20 backdrop-blur">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
             Tela de <span className="gold-text">Vendas</span>
@@ -275,7 +275,7 @@ export default function Sales() {
                   className={cn(
                     "px-3 py-3 rounded-lg border text-sm font-medium transition-all active:scale-[0.98]",
                     category === c
-                      ? "border-primary bg-primary/15 text-primary shadow-glow"
+                      ? "border-primary bg-primary/15 text-primary"
                       : "border-border bg-muted/30 text-foreground hover:border-primary/40 hover:bg-muted/50"
                   )}>{c}</button>
               ))}
@@ -291,7 +291,7 @@ export default function Sales() {
                   <button key={override.key} onClick={() => setService(override.key)} disabled={!category}
                     className={cn(
                       "w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3 active:scale-[0.99]",
-                      active ? "border-primary bg-primary/10 shadow-glow" : "border-border bg-muted/20 hover:border-primary/40 hover:bg-muted/30",
+                      active ? "border-primary bg-primary/10" : "border-border bg-muted/20 hover:border-primary/40 hover:bg-muted/30",
                       !category && "opacity-50 cursor-not-allowed"
                     )}>
                     <div className={cn("h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-all",
@@ -472,7 +472,7 @@ export default function Sales() {
                 <div className={cn(
                   "mt-2 p-3 rounded-lg border transition-all",
                   loyalty.rewardAvailable
-                    ? "border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-glow"
+                    ? "border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5"
                     : existingVehicle ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
                 )}>
                   <div className="flex items-center justify-between mb-2">
@@ -519,7 +519,7 @@ export default function Sales() {
         </section>
       </div>
 
-      <footer className="border-t border-border bg-gradient-surface px-6 py-4 sticky bottom-0 z-20">
+      <footer className="border-t border-border bg-[hsl(var(--surface-2))] px-6 py-4 sticky bottom-0 z-20">
         <div className="grid lg:grid-cols-12 gap-4 items-end">
           <div className="lg:col-span-3">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Resumo (prévia)</div>
@@ -587,7 +587,7 @@ export default function Sales() {
               </AlertDialogContent>
             </AlertDialog>
             <Button onClick={handleSubmit} disabled={!canSubmit}
-              className="h-10 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
+              className="h-10 gap-2 bg-primary text-primary-foreground hover:opacity-90 font-semibold transition-all active:scale-[0.98]">
               <Car className="h-4 w-4" />
               {submitting ? "Iniciando…" : "Iniciar Triagem"}
               <ChevronRight className="h-4 w-4" />
