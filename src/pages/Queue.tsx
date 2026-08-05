@@ -210,7 +210,7 @@ export default function Queue() {
   if (role === "gerencia") {
     return (
       <AppShell>
-        <header className="border-b border-border bg-gradient-surface px-6 py-4 flex items-center gap-4 sticky top-0 z-20 backdrop-blur">
+        <header className="border-b border-border bg-gradient-surface px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 backdrop-blur">
           <div>
             <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
               <ListOrdered className="h-5 w-5 text-primary" /> Fila de Lavagem

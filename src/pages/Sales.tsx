@@ -250,7 +250,7 @@ export default function Sales() {
 
   return (
     <AppShell>
-      <header className="border-b border-border bg-gradient-surface px-6 py-4 flex items-center gap-6 sticky top-0 z-20 backdrop-blur">
+      <header className="border-b border-border bg-gradient-surface px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-6 sticky top-0 z-20 backdrop-blur">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
             Tela de <span className="gold-text">Vendas</span>

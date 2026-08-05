@@ -83,7 +83,7 @@ export default function Partners() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+      <header className="border-b border-border px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" /> Contratos de Parceiros

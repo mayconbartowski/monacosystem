@@ -428,7 +428,7 @@ export default function Reports() {
                               {periodUsage} no período · {monthUsage}/{c.monthlyVehicleLimit} este mês
                             </div>
                             <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
-                              <div className="h-full bg-gradient-gold" style={{ width: `${pct}%` }} />
+                              <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
                             </div>
                           </div>
                           <div className="text-right shrink-0">
@@ -454,7 +454,7 @@ export default function Reports() {
 function Stat({ label, value, accent, highlight }: { label: string; value: string; accent?: boolean; highlight?: boolean }) {
   if (highlight) {
     return (
-      <Card className="bg-gradient-gold border-0 p-4">
+      <Card className="surface-card border-primary/30 bg-primary/[0.07] p-4">
         <div className="text-[11px] uppercase tracking-wider text-primary-foreground/80">{label}</div>
         <div className="text-2xl font-bold text-primary-foreground">{value}</div>
       </Card>

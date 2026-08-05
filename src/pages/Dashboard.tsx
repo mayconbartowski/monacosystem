@@ -89,7 +89,7 @@ export default function Dashboard() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex items-center gap-4">
+      <header className="border-b border-border px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div>
           <h1 className="text-xl font-semibold">Dashboard</h1>
           <p className="text-xs text-muted-foreground">Visão operacional Monaco System · sincronizada em tempo real</p>
@@ -280,7 +280,7 @@ export default function Dashboard() {
 
 function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <Card className={highlight ? "bg-gradient-gold border-0 p-4" : "surface-card p-4"}>
+    <Card className={highlight ? "surface-card border-primary/30 bg-primary/[0.07] p-4" : "surface-card p-4"}>
       <div className="flex items-center gap-3">
         <div className={
           highlight
