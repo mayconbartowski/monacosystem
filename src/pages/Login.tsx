@@ -38,52 +38,56 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full flex bg-background relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-60 [background:radial-gradient(60%_50%_at_50%_0%,hsl(38_100%_55%/0.12),transparent_70%)]" />
-      <div className="relative z-10 m-auto w-full max-w-md px-6 py-12">
-        <div className="text-center mb-8">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary grid place-items-center text-primary-foreground font-bold shadow-glow text-xl">
+      <div className="absolute inset-0 pointer-events-none opacity-70 [background:radial-gradient(70%_45%_at_50%_-5%,hsl(67_100%_55%/0.10),transparent_70%)]" />
+      <div className="absolute inset-x-0 top-0 h-px bg-primary/30" />
+
+      <div className="relative z-10 m-auto w-full max-w-lg px-4 sm:px-6 py-12">
+        <div className="mb-8">
+          <div className="h-12 w-12 rounded-2xl bg-primary grid place-items-center text-primary-foreground font-extrabold text-lg">
             M
           </div>
-          <div className="mt-4 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Monaco</div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            <span className="gold-text">System</span>
+          <div className="mt-6 label-xs">Monaco · acesso interno</div>
+          <h1 className="mt-2 text-4xl sm:text-5xl font-bold tracking-tight leading-[1.05]">
+            Concierge<span className="text-primary">.</span>
           </h1>
-          <p className="text-xs text-muted-foreground mt-2">Acesso restrito a contas operacionais</p>
+          <p className="text-sm text-muted-foreground mt-3 max-w-sm">
+            Operação, fila e faturamento em um único painel. Acesso restrito a contas operacionais.
+          </p>
         </div>
 
-        <form onSubmit={submit} className="surface-card p-6 space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Usuário</Label>
+        <form onSubmit={submit} className="surface-card p-5 sm:p-7 space-y-5">
+          <div className="space-y-2">
+            <Label className="label-xs">Usuário</Label>
             <Input
               value={user}
               onChange={(e) => setUser(e.target.value)}
               placeholder="Seu login"
               autoFocus
               autoComplete="username"
-              className="h-11"
+              className="h-12"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Senha</Label>
+          <div className="space-y-2">
+            <Label className="label-xs">Senha</Label>
             <Input
               value={pass}
               onChange={(e) => setPass(e.target.value)}
               placeholder="••••••••"
               type="password"
               autoComplete="current-password"
-              className="h-11"
+              className="h-12"
             />
           </div>
           <Button
             type="submit"
             disabled={busy || !user || !pass}
-            className="w-full h-11 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold"
+            className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
             Entrar
           </Button>
 
-          <div className="pt-2 text-[11px] text-muted-foreground/80 flex items-center gap-2 justify-center">
+          <div className="pt-1 text-xs text-muted-foreground/80 flex items-center gap-2 justify-center">
             <ShieldCheck className="h-3.5 w-3.5" />
             Sistema interno · sem cadastro público
           </div>
