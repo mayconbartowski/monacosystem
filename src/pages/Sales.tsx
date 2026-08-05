@@ -34,7 +34,6 @@ import {
   User,
   Plus,
   X,
-  Receipt,
   BadgePercent,
 } from "lucide-react";
 
