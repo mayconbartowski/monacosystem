@@ -27,8 +27,8 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) { setPct(0); setMethod(""); setSaving(false); }
-  }, [open, order?.id]);
+    if (open) { setPct(order?.discountPercentage ?? 0); setMethod(""); setSaving(false); }
+  }, [open, order?.id, order?.discountPercentage]);
 
   const isPartner = order?.orderSource === "partner";
 
@@ -85,7 +85,7 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm space-y-1">
+          <div className="rounded-card bg-surface-3 p-3 text-sm space-y-1">
             <div className="flex justify-between"><span className="text-muted-foreground">{isPartner ? "Empresa" : "Cliente"}</span><span className="font-medium truncate ml-3">{order.customerName}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Placa</span><span className="font-mono">{order.vehiclePlate}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Veículo</span><span className="truncate ml-3">{order.vehicleLabel}</span></div>
@@ -100,7 +100,7 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
 
           {!isPartner && (
             <>
-              <div className="rounded-lg border border-border bg-muted/20 p-3 text-sm space-y-1">
+              <div className="rounded-card bg-surface-3 p-3 text-sm space-y-1">
                 <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{brl(order.subtotal)}</span></div>
                 {order.loyaltyDiscount > 0 && (
                   <div className="flex justify-between text-primary"><span className="flex items-center gap-1"><BadgePercent className="h-3 w-3" />Fidelidade</span><span>−{brl(order.loyaltyDiscount)}</span></div>
