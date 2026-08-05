@@ -284,16 +284,16 @@ function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; labe
       <div className="flex items-center gap-3">
         <div className={
           highlight
-            ? "h-10 w-10 grid place-items-center rounded-lg bg-primary-foreground/20 text-primary-foreground"
+            ? "h-10 w-10 grid place-items-center rounded-xl bg-primary/20 text-primary"
             : "h-10 w-10 grid place-items-center rounded-lg bg-primary/15 text-primary"
         }>{icon}</div>
         <div>
           <div className={
             highlight
-              ? "text-[11px] uppercase tracking-wider text-primary-foreground/80"
+              ? "text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium"
               : "text-[11px] uppercase tracking-wider text-muted-foreground"
           }>{label}</div>
-          <div className={highlight ? "text-lg font-bold text-primary-foreground" : "text-lg font-bold"}>{value}</div>
+          <div className={highlight ? "text-lg font-bold text-primary tabular-nums" : "text-lg font-bold tabular-nums"}>{value}</div>
         </div>
       </div>
     </Card>

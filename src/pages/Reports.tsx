@@ -455,8 +455,8 @@ function Stat({ label, value, accent, highlight }: { label: string; value: strin
   if (highlight) {
     return (
       <Card className="surface-card border-primary/30 bg-primary/[0.07] p-4">
-        <div className="text-[11px] uppercase tracking-wider text-primary-foreground/80">{label}</div>
-        <div className="text-2xl font-bold text-primary-foreground">{value}</div>
+        <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium">{label}</div>
+        <div className="text-2xl font-bold text-primary tabular-nums">{value}</div>
       </Card>
     );
   }
