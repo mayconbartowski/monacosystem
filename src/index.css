@@ -33,7 +33,7 @@
     --success: 152 62% 45%;
     --success-foreground: 220 15% 6%;
 
-    --border: 220 10% 100% / 0.10;
+    --border: 220 8% 17%;
     --input: 220 8% 13%;
     --ring: 67 100% 55%;
 
@@ -56,7 +56,7 @@
     --sidebar-primary-foreground: 220 15% 6%;
     --sidebar-accent: 220 8% 12%;
     --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 220 10% 100% / 0.08;
+    --sidebar-border: 220 8% 15%;
     --sidebar-ring: 67 100% 55%;
   }
 }
