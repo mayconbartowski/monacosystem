@@ -17,9 +17,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Clock, Car, Sparkles, Trophy, CheckCircle2, Trash2, ChevronRight, BadgePercent,
+  Clock, Car, Trophy, CheckCircle2, Trash2, ChevronRight, ChevronLeft,
   MessageCircle, Building2, User, Plus, X, Receipt,
 } from "lucide-react";
+
 import {
   EXTRA_KEYS, ExtraKey, ServiceKey, VEHICLE_CATEGORIES, VehicleCategory, Customer, Vehicle,
 } from "@/lib/domain";
