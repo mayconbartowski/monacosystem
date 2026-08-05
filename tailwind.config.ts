@@ -57,6 +57,10 @@ export default {
         surface: {
           DEFAULT: "hsl(var(--surface-elevated))",
           sunken: "hsl(var(--surface-sunken))",
+          1: "hsl(var(--surface-1))",
+          2: "hsl(var(--surface-2))",
+          3: "hsl(var(--surface-3))",
+          4: "hsl(var(--surface-4))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -71,8 +75,10 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "var(--radius-control)",
+        sm: "calc(var(--radius-control) - 2px)",
+        card: "var(--radius)",
+        control: "var(--radius-control)",
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',

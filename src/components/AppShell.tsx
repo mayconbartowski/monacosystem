@@ -3,8 +3,9 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Car, LayoutDashboard, Users, ClipboardList, BarChart3,
   LogOut, Settings as SettingsIcon, Wrench, ListOrdered, Building2,
-  PanelLeftClose, PanelLeftOpen, Menu,
+  PanelLeftClose, PanelLeftOpen, Menu, Crown,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/authContext";
 import { ROLE_LABEL } from "@/lib/domain";
@@ -91,27 +92,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   to={it.to}
                   end={it.to === "/"}
                   className={cn(
-                    "group flex items-center rounded-xl text-sm transition-all duration-200 relative border border-transparent",
+                    "group flex items-center rounded-control text-sm transition-colors duration-200 relative",
                     collapsed ? "mx-auto justify-center items-center h-11 w-11 p-0" : "gap-3 px-3 py-2.5",
                     isActive
-                      ? "bg-primary/10 border-primary/25 font-medium"
-                      : "hover:bg-sidebar-accent/70 hover:border-border"
+                      ? "bg-primary text-primary-foreground font-semibold"
+                      : "text-sidebar-foreground/80 hover:bg-surface-3 hover:text-sidebar-foreground"
                   )}
                 >
-                  {isActive && !collapsed && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />
-                  )}
                   <it.icon
                     className={cn(
-                      "h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110",
-                      isActive ? "text-primary" : "text-sidebar-foreground/75 group-hover:text-sidebar-foreground"
+                      "h-[18px] w-[18px] shrink-0",
+                      isActive ? "text-primary-foreground" : "text-current"
                     )}
                   />
-                  {!collapsed && (
-                    <span className={cn("truncate", isActive ? "text-primary" : "text-sidebar-foreground/80 group-hover:text-sidebar-foreground")}>
-                      {it.label}
-                    </span>
-                  )}
+                  {!collapsed && <span className="truncate">{it.label}</span>}
+
                 </NavLink>
               );
               if (!collapsed) return link;
@@ -210,14 +205,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         end={it.to === "/"}
                         onClick={() => setMobileOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 rounded-xl px-3 min-h-[48px] text-sm border border-transparent transition-colors duration-200",
+                          "flex items-center gap-3 rounded-control px-3 min-h-[48px] text-sm transition-colors duration-200",
                           isActive
-                            ? "bg-primary/10 border-primary/25 text-primary font-medium"
-                            : "text-sidebar-foreground/85 hover:bg-sidebar-accent/70"
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-sidebar-foreground/85 hover:bg-surface-3"
                         )}
                         aria-current={isActive ? "page" : undefined}
                       >
-                        <it.icon className={cn("h-[18px] w-[18px]", isActive ? "text-primary" : "text-sidebar-foreground/70")} />
+                        <it.icon className="h-[18px] w-[18px] text-current" />
+
                         {it.label}
                       </NavLink>
                     );
@@ -246,16 +242,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <Link to={homeTo} className="flex items-center gap-2 min-w-0">
-              <div className="h-8 w-8 rounded-xl bg-primary grid place-items-center text-primary-foreground text-sm font-extrabold">M</div>
-              <span className="font-semibold truncate">Monaco</span>
+            <Link to={homeTo} className="ml-auto flex items-center" aria-label="Início">
+              <Crown className="h-6 w-6 text-primary" />
             </Link>
 
-            {session && (
-              <div className="ml-auto h-9 w-9 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold shrink-0">
-                {session.login.slice(0, 1).toUpperCase()}
-              </div>
-            )}
           </div>
 
           {children}

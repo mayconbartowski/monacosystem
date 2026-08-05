@@ -143,7 +143,7 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Voltar</Button>
           <Button onClick={doConfirm} disabled={!canConfirm}
-            className="gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+            className="gap-2 bg-primary text-primary-foreground hover:opacity-90 font-semibold">
             {isPartner ? <><PackageCheck className="h-4 w-4" /> Confirmar Retirada</> : <><CreditCard className="h-4 w-4" /> Efetuar Pagamento</>}
           </Button>
         </DialogFooter>

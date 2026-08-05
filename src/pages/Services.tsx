@@ -62,7 +62,7 @@ export default function Services() {
           <h1 className="text-xl font-semibold">Serviços</h1>
           <p className="text-xs text-muted-foreground">Gerencie título, tempo, preços e visibilidade · alterações sincronizam para todas as estações</p>
         </div>
-        <Button onClick={saveAll} disabled={saving} className="ml-auto gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow">
+        <Button onClick={saveAll} disabled={saving} className="ml-auto gap-2 bg-primary text-primary-foreground hover:opacity-90">
           <Save className="h-4 w-4" /> {saving ? "Salvando…" : "Salvar tudo"}
         </Button>
       </header>

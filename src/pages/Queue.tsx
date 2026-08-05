@@ -84,7 +84,7 @@ export default function Queue() {
     return (
       <div key={o.id} className={cn(
         "surface-card p-4 animate-fade-in",
-        phase === "in_progress" && "border-primary/50 shadow-glow",
+        phase === "in_progress" && "border-primary/50",
         phase === "completed" && "border-emerald-500/40",
       )}>
         <div className="flex items-start gap-3">
@@ -144,13 +144,13 @@ export default function Queue() {
           )}
           {phase === "in_progress" && (
             <Button size="lg" onClick={() => finish(o)}
-              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 font-semibold">
               <CheckCircle2 className="h-5 w-5" /> Finalizar lavagem
             </Button>
           )}
           {phase === "completed" && canPickup && o.paymentStatus !== "paid" && (
             <Button size="lg" onClick={() => setPicking(o)}
-              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold">
+              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 font-semibold">
               <PackageCheck className="h-5 w-5" /> Iniciar Retirada
             </Button>
           )}
@@ -210,7 +210,7 @@ export default function Queue() {
   if (role === "gerencia") {
     return (
       <AppShell>
-        <header className="border-b border-border bg-gradient-surface px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 backdrop-blur">
+        <header className="border-b border-border bg-[hsl(var(--surface-2))] px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 backdrop-blur">
           <div>
             <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
               <ListOrdered className="h-5 w-5 text-primary" /> Fila de Lavagem
@@ -234,7 +234,7 @@ export default function Queue() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="sticky top-0 z-20 bg-gradient-surface border-b border-border px-4 py-3 flex items-center gap-3 backdrop-blur">
+      <header className="sticky top-0 z-20 bg-[hsl(var(--surface-2))] border-b border-border px-4 py-3 flex items-center gap-3 backdrop-blur">
         <div className="h-9 w-9 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">M</div>
         <div className="leading-tight min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>

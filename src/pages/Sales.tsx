@@ -17,9 +17,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Clock, Car, Sparkles, Trophy, CheckCircle2, Trash2, ChevronRight, BadgePercent,
+  Clock, Car, Trophy, CheckCircle2, Trash2, ChevronRight, ChevronLeft,
   MessageCircle, Building2, User, Plus, X, Receipt,
 } from "lucide-react";
+
 import {
   EXTRA_KEYS, ExtraKey, ServiceKey, VEHICLE_CATEGORIES, VehicleCategory, Customer, Vehicle,
 } from "@/lib/domain";
@@ -47,12 +48,13 @@ function formatMoneyInput(v: string): string {
 }
 
 export default function Sales() {
-  const { orders, services, prices, partnerContracts, findCustomerByCpf, findVehicleByPlate } = useData();
+  const { orders, services, prices, partnerContracts, vehicles, findCustomerByCpf, findVehicleByPlate } = useData();
 
   const [mode, setMode] = useState<Mode>("customer");
 
-  const [category, setCategory] = useState<VehicleCategory | null>(null);
+  const [category, setCategory] = useState<VehicleCategory>("Hatch");
   const [service, setService] = useState<ServiceKey | null>(null);
+
   const [extras, setExtras] = useState<ExtraKey[]>([]);
 
   // customer fields
@@ -156,11 +158,40 @@ export default function Sales() {
     setExtras((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
 
   const clearAll = () => {
-    setCategory(null); setService(null); setExtras([]);
+    setCategory("Hatch"); setService(null); setExtras([]);
     setCpf(""); setName(""); setPhone(""); setExistingCustomer(null);
     setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setContractId("");
     setFeeOpen(false); setFeeStr(""); setFeeNote("");
+  };
+
+  // ----- múltiplos veículos do mesmo cliente -----
+  const customerVehicles = useMemo(
+    () => existingCustomer ? vehicles.filter((v) => v.customerId === existingCustomer.id) : [],
+    [vehicles, existingCustomer]
+  );
+  const activeVehicleIndex = existingVehicle
+    ? customerVehicles.findIndex((v) => v.id === existingVehicle.id)
+    : -1;
+
+  const applyVehicle = (v: Vehicle) => {
+    setExistingVehicle(v); setPlate(v.plate);
+    setBrand(v.brand); setModel(v.model);
+    setColor(v.color); setYear(v.year);
+    setCategory(v.category);
+  };
+
+  const cycleVehicle = (dir: -1 | 1) => {
+    if (customerVehicles.length === 0) return;
+    const base = activeVehicleIndex >= 0 ? activeVehicleIndex : (dir === 1 ? -1 : 0);
+    const next = (base + dir + customerVehicles.length) % customerVehicles.length;
+    applyVehicle(customerVehicles[next]);
+  };
+
+  const startNewVehicle = () => {
+    setExistingVehicle(null);
+    setPlate(""); setBrand(""); setModel(""); setColor(""); setYear("");
+    setCategory("Hatch");
   };
 
   const fillFromMatch = (m: { customer: Customer; vehicles: Vehicle[]; matchedPlate?: string; }) => {
@@ -168,14 +199,10 @@ export default function Sales() {
     setExistingCustomer(c);
     setCpf(c.cpf); setName(c.name); setPhone(c.phone);
     const pick = m.matchedPlate ? m.vehicles.find((v) => v.plate === m.matchedPlate) : m.vehicles[0];
-    if (pick) {
-      setExistingVehicle(pick); setPlate(pick.plate);
-      setBrand(pick.brand); setModel(pick.model);
-      setColor(pick.color); setYear(pick.year);
-      setCategory(pick.category);
-    }
+    if (pick) applyVehicle(pick);
     toast.success(`Cliente carregado: ${c.name}`);
   };
+
 
   const contractLimitReached = mode === "partner" && selectedContract
     ? contractUsage.used >= contractUsage.limit : false;
@@ -250,83 +277,80 @@ export default function Sales() {
 
   return (
     <AppShell>
-      <header className="border-b border-border bg-gradient-surface px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-6 sticky top-0 z-20 backdrop-blur">
-        <div>
+      <header className="bg-surface-2 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 sticky top-0 z-20">
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight">
             Tela de <span className="gold-text">Vendas</span>
           </h1>
           <p className="text-xs text-muted-foreground">Iniciar triagem · pagamento na retirada</p>
         </div>
-        <div className="w-full md:w-auto md:ml-auto grid grid-cols-2 md:flex md:flex-wrap md:items-center gap-2 md:gap-3 min-w-0">
-          <StatChip icon={<Clock className="h-4 w-4" />} label="Espera estimada" value={formatDuration(newWait)} />
-          <StatChip icon={<Car className="h-4 w-4" />} label="Veículos na fila" value={String(queueCount)} />
-          <div className="col-span-2 md:col-auto [&_button]:w-full md:[&_button]:w-auto">
-            <QueueDrawer orders={orders} contracts={partnerContracts} />
-          </div>
+        <div className="w-full md:w-auto md:ml-auto grid grid-cols-3 md:flex md:items-center gap-3 min-w-0">
+          <StatChip icon={<Clock className="h-5 w-5 md:h-4 md:w-4" />} label="Espera estimada" value={formatDuration(newWait)} />
+          <StatChip icon={<Car className="h-5 w-5 md:h-4 md:w-4" />} label="Veículos na fila" value={String(queueCount)} />
+          <QueueDrawer orders={orders} contracts={partnerContracts} />
         </div>
       </header>
 
-      <div className="flex-1 p-4 md:p-6 grid gap-4 md:gap-6 lg:grid-cols-12 bg-surface-sunken overflow-auto">
-        <section className="lg:col-span-4 space-y-4">
-          <Panel title="Categoria do Veículo" subtitle="Selecione antes do serviço">
-            <div className="grid grid-cols-3 gap-2">
+      <div className="flex-1 p-4 md:p-6 grid gap-4 md:gap-5 lg:grid-cols-12 items-stretch overflow-auto">
+        {/* COLUNA 1 — Categoria + Serviços unificados */}
+        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
+          <Panel title="Serviços" subtitle={`Preços para ${category}`} className="flex-1">
+            <div className="flex flex-wrap gap-1.5 p-1 rounded-control bg-surface-3 mb-4">
               {VEHICLE_CATEGORIES.map((c) => (
                 <button key={c} onClick={() => setCategory(c)}
                   className={cn(
-                    "px-3 py-3 rounded-lg border text-sm font-medium transition-all active:scale-[0.98]",
+                    "flex-1 min-w-[64px] px-2 py-2 rounded-[0.5rem] text-sm font-medium transition-colors",
                     category === c
-                      ? "border-primary bg-primary/15 text-primary shadow-glow"
-                      : "border-border bg-muted/30 text-foreground hover:border-primary/40 hover:bg-muted/50"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-surface-4"
                   )}>{c}</button>
               ))}
             </div>
-          </Panel>
 
-          <Panel title="Serviços" subtitle={category ? `Preços para ${category}` : "Selecione a categoria"}>
             <div className="space-y-2">
               {activeServices.map(({ override, def }) => {
-                const price = category ? prices[category][override.key] : null;
+                const price = prices[category][override.key];
                 const active = service === override.key;
                 return (
-                  <button key={override.key} onClick={() => setService(override.key)} disabled={!category}
+                  <button key={override.key} onClick={() => setService(override.key)}
                     className={cn(
-                      "w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3 active:scale-[0.99]",
-                      active ? "border-primary bg-primary/10 shadow-glow" : "border-border bg-muted/20 hover:border-primary/40 hover:bg-muted/30",
-                      !category && "opacity-50 cursor-not-allowed"
+                      "w-full text-left p-3 rounded-control transition-colors flex items-center gap-3",
+                      active ? "bg-primary text-primary-foreground" : "bg-surface-3 hover:bg-surface-4"
                     )}>
-                    <div className={cn("h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-all",
-                      active ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground")}>
+                    <div className={cn("h-9 w-9 rounded-[0.5rem] grid place-items-center shrink-0",
+                      active ? "bg-primary-foreground/15 text-primary-foreground" : "bg-surface-4 text-foreground")}>
                       <ServiceIcon iconKey={override.icon} serviceKey={override.key} className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold truncate">{override.name ?? def.name}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                      <div className={cn("text-xs flex items-center gap-2", active ? "text-primary-foreground/70" : "text-muted-foreground")}>
                         <Clock className="h-3 w-3" /> {formatDuration(override.durationMinutes ?? def.durationMinutes)}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-primary">{price !== null ? brl(price) : "—"}</div>
+                    <div className={cn("text-sm font-bold tabular-nums", active ? "text-primary-foreground" : "text-primary")}>
+                      {brl(price)}
                     </div>
                   </button>
                 );
               })}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-border">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Extras</div>
+            <div className="mt-5 pt-5">
+              <div className="label-xs mb-2">Extras</div>
               <div className="grid grid-cols-3 gap-2">
                 {EXTRA_KEYS.map((k) => {
                   const active = extras.includes(k);
-                  const price = category ? prices[category][k] : null;
+                  const price = prices[category][k];
                   return (
-                    <button key={k} onClick={() => toggleExtra(k)} disabled={!category}
+                    <button key={k} onClick={() => toggleExtra(k)}
                       className={cn(
-                        "p-2.5 rounded-lg border text-xs transition-all active:scale-[0.98]",
-                        active ? "border-primary bg-primary/15 text-primary" : "border-border bg-muted/20 hover:border-primary/40",
-                        !category && "opacity-50 cursor-not-allowed"
+                        "p-2.5 rounded-control text-xs transition-colors",
+                        active ? "bg-primary text-primary-foreground" : "bg-surface-3 hover:bg-surface-4"
                       )}>
                       <div className="font-medium">{k}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">{price !== null ? brl(price) : "—"}</div>
+                      <div className={cn("text-[11px] mt-0.5 tabular-nums", active ? "text-primary-foreground/75" : "text-muted-foreground")}>
+                        {brl(price)}
+                      </div>
                     </button>
                   );
                 })}
@@ -335,13 +359,14 @@ export default function Sales() {
           </Panel>
         </section>
 
-        <section className="lg:col-span-4 space-y-4">
+        {/* COLUNA 2 — Detalhes + Cliente/Parceiro */}
+        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
           <Panel title="Detalhes do Serviço">
             {selectedServiceDef ? (
               <div className="space-y-3 animate-fade-in">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary grid place-items-center shrink-0">
+                    <div className="h-10 w-10 rounded-control bg-surface-3 text-primary grid place-items-center shrink-0">
                       <ServiceIcon iconKey={selectedOverride?.icon} serviceKey={selectedServiceDef.key} className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -349,8 +374,8 @@ export default function Sales() {
                       <div className="text-xs text-muted-foreground">{selectedOverride?.description ?? selectedServiceDef.description}</div>
                     </div>
                   </div>
-                  <Badge className="bg-primary text-primary-foreground border-0 shrink-0">
-                    {category ? brl(prices[category][selectedServiceDef.key]) : "—"}
+                  <Badge className="bg-primary text-primary-foreground border-0 shrink-0 tabular-nums">
+                    {brl(prices[category][selectedServiceDef.key])}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -370,29 +395,34 @@ export default function Sales() {
                 </ul>
               </div>
             ) : (
-              <EmptyHint icon={<Sparkles className="h-6 w-6" />} text="Selecione um serviço para ver os detalhes." />
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Esse espaço informa o que está incluso no serviço e qual é o tempo minimo necessário. Para isso, selecione a aba correspondente ao carro do cliente e em seguida, selecione o serviço que ele deseja.
+              </p>
             )}
           </Panel>
 
           <Panel
+            className="flex-1"
             title={mode === "customer" ? "Cliente" : "Parceiro"}
             right={
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant={mode === "customer" ? "default" : "outline"}
-                  className={cn("h-8", mode === "customer" && "bg-primary text-primary-foreground border-0")}
+              <div className="flex items-center gap-1 p-1 rounded-control bg-surface-3">
+                <button
+                  className={cn("h-8 px-3 rounded-[0.5rem] text-xs font-medium inline-flex items-center gap-1.5 transition-colors",
+                    mode === "customer" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
                   onClick={() => { setMode("customer"); setContractId(""); }}>
-                  <User className="h-3.5 w-3.5 mr-1" /> Cliente
-                </Button>
-                <Button size="sm" variant={mode === "partner" ? "default" : "outline"}
-                  className={cn("h-8", mode === "partner" && "bg-primary text-primary-foreground border-0")}
+                  <User className="h-3.5 w-3.5" /> Cliente
+                </button>
+                <button
+                  className={cn("h-8 px-3 rounded-[0.5rem] text-xs font-medium inline-flex items-center gap-1.5 transition-colors",
+                    mode === "partner" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
                   onClick={() => { setMode("partner"); setCpf(""); setName(""); setPhone(""); setExistingCustomer(null); }}>
-                  <Building2 className="h-3.5 w-3.5 mr-1" /> Parceiro
-                </Button>
+                  <Building2 className="h-3.5 w-3.5" /> Parceiro
+                </button>
               </div>
             }>
             {mode === "customer" ? (
               <div className="space-y-3">
-                <div className="mb-2"><CustomerLiveSearch onSelect={fillFromMatch} placeholder="Buscar cliente…" /></div>
+                <CustomerLiveSearch onSelect={fillFromMatch} placeholder="Buscar cliente…" />
                 <Field label="CPF *">
                   <Input value={formatCpf(cpf)} onChange={(e) => setCpf(e.target.value)}
                     placeholder="000.000.000-00" inputMode="numeric" className="font-mono" />
@@ -407,11 +437,14 @@ export default function Sales() {
                       placeholder="(00) 00000-0000" inputMode="numeric" className="pl-9" />
                   </div>
                 </Field>
-                {existingCustomer && (
-                  <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 text-xs text-muted-foreground">
-                    Cliente já cadastrado. Fidelidade vinculada à <span className="text-primary font-medium">placa do veículo</span>.
-                  </div>
-                )}
+                {/* área estável — evita salto de layout */}
+                <div className="min-h-5 text-xs">
+                  {existingCustomer && (
+                    <span className="text-primary">
+                      Cliente já cadastrado · fidelidade vinculada à placa do veículo.
+                    </span>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -428,12 +461,12 @@ export default function Sales() {
                   </Select>
                 </Field>
                 {selectedContract && (
-                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2 text-xs">
+                  <div className="surface-inset p-3 space-y-2 text-xs">
                     <div className="flex justify-between"><span className="text-muted-foreground">Empresa</span><span className="font-medium">{selectedContract.companyName}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">CNPJ</span><span className="font-mono">{formatCnpj(selectedContract.cnpj)}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Contato</span><span>{selectedContract.contactPhone || "—"}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Valor contratado</span><span>{brl(selectedContract.contractValue)}</span></div>
-                    <div className="pt-1 border-t border-border">
+                    <div className="pt-2">
                       <div className="flex justify-between mb-1"><span className="text-muted-foreground">Utilização mensal</span><span><strong>{contractUsage.used}</strong>/{contractUsage.limit} veículos</span></div>
                       <Progress value={contractUsage.limit ? (contractUsage.used / contractUsage.limit) * 100 : 0} className="h-2" />
                       <div className="text-[11px] mt-1 text-muted-foreground">
@@ -449,9 +482,41 @@ export default function Sales() {
           </Panel>
         </section>
 
-        <section className="lg:col-span-4 space-y-4">
-          <Panel title="Veículo">
+        {/* COLUNA 3 — Veículo + Observações */}
+        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
+          <Panel
+            title="Veículo"
+            right={
+              <div className="flex items-center gap-1">
+                {mode === "customer" && customerVehicles.length > 1 && (
+                  <>
+                    <Button type="button" variant="ghost" size="icon" aria-label="Veículo anterior"
+                      className="h-9 w-9 rounded-control bg-surface-3 hover:bg-surface-4"
+                      onClick={() => cycleVehicle(-1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button type="button" variant="ghost" size="icon" aria-label="Próximo veículo"
+                      className="h-9 w-9 rounded-control bg-surface-3 hover:bg-surface-4"
+                      onClick={() => cycleVehicle(1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+                {mode === "customer" && (
+                  <Button type="button" variant="ghost" size="icon" aria-label="Novo veículo para este cliente"
+                    className="h-9 w-9 rounded-control bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={startNewVehicle}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            }>
             <div className="space-y-3">
+              {mode === "customer" && customerVehicles.length > 1 && (
+                <div className="text-[11px] text-muted-foreground">
+                  Veículo {activeVehicleIndex >= 0 ? activeVehicleIndex + 1 : "novo"} de {customerVehicles.length} deste cliente
+                </div>
+              )}
               <Field label="Placa *">
                 <Input value={formatPlate(plate)} onChange={(e) => setPlate(e.target.value)}
                   placeholder="ABC-1D23" className="font-mono uppercase tracking-wider" />
@@ -462,149 +527,104 @@ export default function Sales() {
                 <Field label="Cor"><Input value={color} onChange={(e) => setColor(toUpperCase(e.target.value))} placeholder="Ex: PRATA" className="uppercase" /></Field>
                 <Field label="Ano"><Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="Ex: 2022" inputMode="numeric" /></Field>
               </div>
-              <Field label="Categoria detectada">
-                <div className="px-3 py-2 rounded-md bg-muted/40 text-sm border border-border">
-                  {category ?? <span className="text-muted-foreground">Selecione no painel à esquerda</span>}
-                </div>
+              <Field label="Categoria selecionada">
+                <div className="px-3 py-2 rounded-control bg-surface-3 text-sm">{category}</div>
               </Field>
 
               {mode === "customer" && (
-                <div className={cn(
-                  "mt-2 p-3 rounded-lg border transition-all",
-                  loyalty.rewardAvailable
-                    ? "border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-glow"
-                    : existingVehicle ? "border-primary/30 bg-primary/5" : "border-border bg-muted/20"
-                )}>
+                <div className="surface-inset p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2 text-sm font-medium">
-                      <Trophy className={cn("h-4 w-4", existingVehicle || loyalty.rewardAvailable ? "text-primary" : "text-muted-foreground")} />
+                      <Trophy className={cn("h-4 w-4", loyalty.rewardAvailable ? "text-primary" : "text-muted-foreground")} />
                       Fidelidade da placa
                     </div>
-                    {existingVehicle && (
-                      <Badge variant="outline" className="border-primary/40 text-primary font-mono">
-                        {formatPlate(existingVehicle.plate)}
-                      </Badge>
-                    )}
+                    <span className="text-xs font-mono text-muted-foreground">
+                      {existingVehicle ? formatPlate(existingVehicle.plate) : "—"}
+                    </span>
                   </div>
-                  {!existingVehicle && normalizePlate(plate).length < 7 && (
-                    <div className="text-xs text-muted-foreground">Informe a placa para ver o status.</div>
-                  )}
-                  {!existingVehicle && normalizePlate(plate).length >= 7 && (
-                    <div className="text-xs text-muted-foreground">Placa nova — 1ª lavagem do ciclo.</div>
-                  )}
-                  {existingVehicle && loyalty.rewardAvailable && (
-                    <div className="text-xs text-primary flex items-center gap-1">
-                      <Sparkles className="h-3 w-3" /> Benefício disponível — consolidado no pagamento.
-                    </div>
-                  )}
-                  {existingVehicle && !loyalty.rewardAvailable && (
-                    <>
-                      <Progress value={(loyalty.washCount / 10) * 100} className="h-2" />
-                      <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
-                        <span>Lavagens: <span className="text-foreground font-medium">{loyalty.washCount}/10</span></span>
-                        <span>Faltam {loyalty.untilReward} {loyalty.untilReward === 1 ? "lavagem" : "lavagens"}</span>
-                      </div>
-                    </>
-                  )}
+                  <Progress value={(loyalty.washCount / 10) * 100} className="h-2" />
+                  <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
+                    <span>Lavagens: <span className="text-foreground font-medium">{loyalty.washCount}/10</span></span>
+                    <span>
+                      {loyalty.rewardAvailable
+                        ? <span className="text-primary">Benefício disponível</span>
+                        : <>Faltam {loyalty.untilReward} {loyalty.untilReward === 1 ? "lavagem" : "lavagens"}</>}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
           </Panel>
 
-          <Panel title="Observações do Atendente">
+          <Panel title="Observações do Atendente" className="flex-1">
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="Detalhes do atendimento, instruções específicas, condição do veículo..."
-              className="min-h-[100px] resize-none" />
+              className="min-h-[100px] h-full resize-none" />
           </Panel>
         </section>
       </div>
 
-      <footer className="border-t border-border bg-gradient-surface px-6 py-4 sticky bottom-0 z-20">
-        <div className="grid lg:grid-cols-12 gap-4 items-end">
-          <div className="lg:col-span-3">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Resumo (prévia)</div>
-            <div className="mt-1 text-xs text-muted-foreground flex flex-col justify-end min-h-10">
-              <span>Subtotal: <span className="text-foreground">{brl(totals.subtotal)}</span></span>
-              {totals.loyaltyDiscount > 0 && (
-                <span className="text-primary flex items-center gap-1">
-                  <BadgePercent className="h-3 w-3" /> Fidelidade prevista: −{brl(totals.loyaltyDiscount)}
-                </span>
-              )}
-              <span className="text-[11px]">Desconto manual é aplicado apenas na retirada.</span>
-            </div>
-          </div>
-
-          <div className="lg:col-span-3">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Taxa de serviço</div>
-            <div className="mt-1 min-h-10 flex items-end">
-              {!feeOpen ? (
-                <Button type="button" variant="outline" size="sm"
-                  className="w-full h-10 gap-2 border-border text-muted-foreground hover:text-primary hover:border-primary/40"
-                  onClick={() => setFeeOpen(true)}>
-                  <Plus className="h-4 w-4" /> Adicionar taxa
-                </Button>
-              ) : (
-                <div className="w-full rounded-lg border border-primary/30 bg-primary/5 p-2 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium flex items-center gap-1 text-primary"><Receipt className="h-3 w-3" /> Taxa</span>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground"
-                      onClick={() => { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }}>
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-5 gap-2">
-                    <Input inputMode="numeric" value={feeStr} onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
-                      placeholder="R$ 0,00" className="col-span-2 h-8 text-xs" />
-                    <Input value={feeNote} onChange={(e) => setFeeNote(e.target.value)}
-                      placeholder="Descrição" maxLength={120} className="col-span-3 h-8 text-xs" />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="lg:col-span-3 flex flex-col items-end">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Total previsto</div>
-            <div className="text-2xl font-bold gold-text leading-tight">{brl(previewTotal)}</div>
-          </div>
-
-          <div className="lg:col-span-3 flex gap-2 justify-end items-end">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="h-10 gap-2 border-border text-muted-foreground hover:text-destructive hover:border-destructive/50">
-                  <Trash2 className="h-4 w-4" /> Limpar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Limpar formulário?</AlertDialogTitle>
-                  <AlertDialogDescription>Todas as informações desta triagem serão descartadas.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Voltar</AlertDialogCancel>
-                  <AlertDialogAction onClick={clearAll} className="bg-destructive hover:bg-destructive/90">Sim, limpar</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button onClick={handleSubmit} disabled={!canSubmit}
-              className="h-10 gap-2 bg-primary text-primary-foreground hover:opacity-90 shadow-glow font-semibold transition-all active:scale-[0.98]">
-              <Car className="h-4 w-4" />
-              {submitting ? "Iniciando…" : "Iniciar Triagem"}
-              <ChevronRight className="h-4 w-4" />
+      <footer className="bg-surface-2 px-4 md:px-6 py-4 sticky bottom-0 z-20 space-y-3">
+        {!feeOpen ? (
+          <Button type="button" variant="ghost" size="sm"
+            className="h-10 gap-2 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-foreground"
+            onClick={() => setFeeOpen(true)}>
+            <Plus className="h-4 w-4" /> Adicionar taxa de serviço
+          </Button>
+        ) : (
+          <div className="surface-inset p-2 flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-primary shrink-0" />
+            <Input inputMode="numeric" value={feeStr} onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
+              placeholder="R$ 0,00" className="h-9 w-32 text-xs" />
+            <Input value={feeNote} onChange={(e) => setFeeNote(e.target.value)}
+              placeholder="Descrição" maxLength={120} className="h-9 flex-1 text-xs" />
+            <Button type="button" variant="ghost" size="icon" aria-label="Remover taxa"
+              className="h-9 w-9 shrink-0 text-muted-foreground"
+              onClick={() => { setFeeOpen(false); setFeeStr(""); setFeeNote(""); }}>
+              <X className="h-4 w-4" />
             </Button>
           </div>
+        )}
+
+        <div className="flex items-center gap-3">
+          <div className="text-2xl font-bold gold-text tabular-nums leading-none mr-auto">{brl(previewTotal)}</div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" className="h-11 gap-2 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-destructive">
+                <Trash2 className="h-4 w-4" /> Limpar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar formulário?</AlertDialogTitle>
+                <AlertDialogDescription>Todas as informações desta triagem serão descartadas.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                <AlertDialogAction onClick={clearAll} className="bg-destructive hover:bg-destructive/90">Sim, limpar</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button onClick={handleSubmit} disabled={!canSubmit}
+            className="h-11 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
+            <Car className="h-4 w-4" />
+            <span className="hidden md:inline">{submitting ? "Iniciando…" : "Iniciar Triagem"}</span>
+            <span className="md:hidden">{submitting ? "…" : "Iniciar"}</span>
+          </Button>
         </div>
       </footer>
     </AppShell>
   );
 }
 
-function Panel({ title, subtitle, right, children }: { title: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode }) {
+function Panel({ title, subtitle, right, children, className }: {
+  title: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode; className?: string;
+}) {
   return (
-    <div className="surface-card p-5 transition-shadow hover:shadow-elegant">
+    <div className={cn("surface-card p-5 md:p-6", className)}>
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-lg font-normal text-foreground">{title}</div>
+          <div className="text-lg font-normal text-foreground">{title}</div>
           {subtitle && <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>}
         </div>
         {right}
@@ -623,20 +643,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 md:gap-3 h-14 px-3 md:px-4 rounded-lg bg-muted/30 border border-border min-w-0">
+    <div className="flex flex-col md:flex-row items-center md:gap-3 justify-center md:justify-start h-16 md:h-14 px-2 md:px-5 rounded-control bg-surface-3 min-w-0 md:min-w-[168px]">
       <span className="text-primary shrink-0">{icon}</span>
-      <div className="leading-tight min-w-0">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{label}</div>
-        <div className="text-sm font-semibold">{value}</div>
+      <div className="leading-tight min-w-0 text-center md:text-left">
+        <div className="hidden md:block text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">{label}</div>
+        <div className="text-base md:text-sm font-semibold truncate">{value}</div>
       </div>
     </div>
   );
 }
-function EmptyHint({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <div className="text-center text-muted-foreground py-10 animate-fade-in">
-      <div className="mx-auto mb-2 opacity-50">{icon}</div>
-      <div className="text-sm">{text}</div>
-    </div>
-  );
-}
+
