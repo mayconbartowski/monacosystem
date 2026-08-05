@@ -157,11 +157,40 @@ export default function Sales() {
     setExtras((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
 
   const clearAll = () => {
-    setCategory(null); setService(null); setExtras([]);
+    setCategory("Hatch"); setService(null); setExtras([]);
     setCpf(""); setName(""); setPhone(""); setExistingCustomer(null);
     setPlate(""); setBrand(""); setModel(""); setColor(""); setYear(""); setExistingVehicle(null);
     setNotes(""); setContractId("");
     setFeeOpen(false); setFeeStr(""); setFeeNote("");
+  };
+
+  // ----- múltiplos veículos do mesmo cliente -----
+  const customerVehicles = useMemo(
+    () => existingCustomer ? vehicles.filter((v) => v.customerId === existingCustomer.id) : [],
+    [vehicles, existingCustomer]
+  );
+  const activeVehicleIndex = existingVehicle
+    ? customerVehicles.findIndex((v) => v.id === existingVehicle.id)
+    : -1;
+
+  const applyVehicle = (v: Vehicle) => {
+    setExistingVehicle(v); setPlate(v.plate);
+    setBrand(v.brand); setModel(v.model);
+    setColor(v.color); setYear(v.year);
+    setCategory(v.category);
+  };
+
+  const cycleVehicle = (dir: -1 | 1) => {
+    if (customerVehicles.length === 0) return;
+    const base = activeVehicleIndex >= 0 ? activeVehicleIndex : (dir === 1 ? -1 : 0);
+    const next = (base + dir + customerVehicles.length) % customerVehicles.length;
+    applyVehicle(customerVehicles[next]);
+  };
+
+  const startNewVehicle = () => {
+    setExistingVehicle(null);
+    setPlate(""); setBrand(""); setModel(""); setColor(""); setYear("");
+    setCategory("Hatch");
   };
 
   const fillFromMatch = (m: { customer: Customer; vehicles: Vehicle[]; matchedPlate?: string; }) => {
@@ -169,14 +198,10 @@ export default function Sales() {
     setExistingCustomer(c);
     setCpf(c.cpf); setName(c.name); setPhone(c.phone);
     const pick = m.matchedPlate ? m.vehicles.find((v) => v.plate === m.matchedPlate) : m.vehicles[0];
-    if (pick) {
-      setExistingVehicle(pick); setPlate(pick.plate);
-      setBrand(pick.brand); setModel(pick.model);
-      setColor(pick.color); setYear(pick.year);
-      setCategory(pick.category);
-    }
+    if (pick) applyVehicle(pick);
     toast.success(`Cliente carregado: ${c.name}`);
   };
+
 
   const contractLimitReached = mode === "partner" && selectedContract
     ? contractUsage.used >= contractUsage.limit : false;
