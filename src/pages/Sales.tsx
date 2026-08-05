@@ -627,9 +627,6 @@ function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string
       <span className="text-primary shrink-0">{icon}</span>
       <div className="leading-tight min-w-0">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{label}</div>
-      <span className="text-primary">{icon}</span>
-      <div className="leading-tight">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
         <div className="text-sm font-semibold">{value}</div>
       </div>
     </div>
