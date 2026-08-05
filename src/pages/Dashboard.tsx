@@ -120,18 +120,18 @@ export default function Dashboard() {
               <div className="relative">
                 <div className="divide-y divide-border max-h-[380px] overflow-y-auto pr-1">
                   {recent.map((o) => (
-                    <div key={o.id} className="py-3 flex items-center gap-3">
-                      <div className="font-mono text-sm w-24">{o.vehiclePlate}</div>
-                      <div className="flex-1 min-w-0">
+                    <div key={o.id} className="py-3 grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 md:flex md:items-center">
+                      <div className="font-mono text-sm md:w-24">{o.vehiclePlate}</div>
+                      <div className="min-w-0 md:flex-1">
                         <div className="text-sm truncate">{o.customerName}</div>
                         <div className="text-xs text-muted-foreground truncate">
                           {o.service} {o.extras.length ? `+ ${o.extras.join(", ")}` : ""}
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-xs">
+                      <div className="text-right font-semibold text-primary md:order-last md:w-28">{o.orderSource === "partner" ? "Contrato" : brl(o.total)}</div>
+                      <Badge variant="outline" className="text-xs justify-self-start col-span-3 md:col-span-1">
                         {o.paymentStatus === "paid" ? "Pago" : o.status === "completed" ? "Aguarda retirada" : o.status === "queued" ? "Fila" : o.status === "in_progress" ? "Em andamento" : o.status === "cancelled" ? "Cancelado" : "Entregue"}
                       </Badge>
-                      <div className="w-28 text-right font-semibold text-primary">{o.orderSource === "partner" ? "Contrato" : brl(o.total)}</div>
                     </div>
                   ))}
                 </div>
