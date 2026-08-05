@@ -307,9 +307,9 @@ export default function Sales() {
         </div>
       </header>
 
-      <div className="flex-1 p-4 md:p-6 grid gap-4 md:gap-5 lg:grid-cols-12 items-stretch overflow-auto">
+      <div className="flex-1 p-4 md:p-6 grid gap-2 md:gap-2.5 lg:grid-cols-12 items-stretch overflow-auto">
         {/* COLUNA 1 — Categoria + Serviços unificados */}
-        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
+        <section className="lg:col-span-4 flex flex-col gap-2 md:gap-2.5 min-h-0">
           <Panel title="Serviços" subtitle={`Preços para ${category}`} className="flex-1">
             <div className="flex flex-wrap gap-1.5 p-1 rounded-control bg-surface-3 mb-4">
               {VEHICLE_CATEGORIES.map((c) => (
@@ -376,7 +376,7 @@ export default function Sales() {
         </section>
 
         {/* COLUNA 2 — Detalhes + Cliente/Parceiro */}
-        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
+        <section className="lg:col-span-4 flex flex-col gap-2 md:gap-2.5 min-h-0">
           <Panel title="Detalhes do Serviço">
             {selectedServiceDef ? (
               <div className="space-y-3 animate-fade-in">
@@ -499,7 +499,7 @@ export default function Sales() {
         </section>
 
         {/* COLUNA 3 — Veículo + Observações */}
-        <section className="lg:col-span-4 flex flex-col gap-4 md:gap-5">
+        <section className="lg:col-span-4 flex flex-col gap-2 md:gap-2.5 min-h-0">
           <Panel
             title="Veículo"
             right={
