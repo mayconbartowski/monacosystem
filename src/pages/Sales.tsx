@@ -257,7 +257,7 @@ export default function Sales() {
           </h1>
           <p className="text-xs text-muted-foreground">Iniciar triagem · pagamento na retirada</p>
         </div>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="w-full md:w-auto md:ml-auto flex flex-wrap items-center gap-2 md:gap-3">
           <StatChip icon={<Clock className="h-4 w-4" />} label="Espera estimada" value={formatDuration(newWait)} />
           <StatChip icon={<Car className="h-4 w-4" />} label="Veículos na fila" value={String(queueCount)} />
           <QueueDrawer orders={orders} contracts={partnerContracts} />
