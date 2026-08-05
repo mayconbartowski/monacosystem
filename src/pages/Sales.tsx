@@ -47,12 +47,13 @@ function formatMoneyInput(v: string): string {
 }
 
 export default function Sales() {
-  const { orders, services, prices, partnerContracts, findCustomerByCpf, findVehicleByPlate } = useData();
+  const { orders, services, prices, partnerContracts, vehicles, findCustomerByCpf, findVehicleByPlate } = useData();
 
   const [mode, setMode] = useState<Mode>("customer");
 
-  const [category, setCategory] = useState<VehicleCategory | null>(null);
+  const [category, setCategory] = useState<VehicleCategory>("Hatch");
   const [service, setService] = useState<ServiceKey | null>(null);
+
   const [extras, setExtras] = useState<ExtraKey[]>([]);
 
   // customer fields
