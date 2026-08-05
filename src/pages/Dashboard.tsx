@@ -103,8 +103,8 @@ export default function Dashboard() {
       <div className="p-4 md:p-6 space-y-12 bg-surface-sunken flex-1 overflow-auto">
         <div>
           <h2 className="text-sm font-semibold mb-3">Resumo do Dia</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Metric icon={<DollarSign />} label="Faturamento hoje (pago)" value={brl(revenue)} highlight />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+            <Metric icon={<DollarSign />} label="Faturamento hoje" value={brl(revenue)} highlight />
             <Metric icon={<TrendingUp />} label="Vendas pagas hoje" value={String(paidToday.length)} />
             <Metric icon={<Car />} label="Veículos na fila" value={String(queue.length)} />
             <Metric icon={<Clock />} label="Tempo total fila" value={formatDuration(totalQueueWait(orders))} />
@@ -112,7 +112,8 @@ export default function Dashboard() {
             <Metric icon={<ListOrdered />} label="Serviços finalizados" value={String(completed)} />
           </div>
 
-          <Card className="bg-card/25 border-border shadow-card rounded-xl p-5 mt-4">
+          <Card className="surface-card border-0 shadow-none p-5 mt-2">
+
             <h2 className="text-sm font-semibold mb-4">Últimas vendas</h2>
             {recent.length === 0 ? (
               <div className="text-sm text-muted-foreground py-8 text-center">Nenhuma venda registrada ainda.</div>
@@ -141,18 +142,19 @@ export default function Dashboard() {
           </Card>
 
           {/* Metas financeiras */}
-          <div className="mt-6 space-y-6">
+          <div className="mt-3 space-y-3">
             {goalsGrids.map(({ monthly, data }) => (
               <div key={monthly}>
                 <div className="flex items-center gap-2 mb-3">
                   <Target className="h-4 w-4 text-primary" />
                   <h3 className="text-sm font-semibold">Meta {brl(monthly)}/mês</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <GoalCardView g={data.day} />
                   <GoalCardView g={data.week} />
                   <GoalCardView g={data.month} />
                 </div>
+
               </div>
             ))}
           </div>
@@ -164,14 +166,15 @@ export default function Dashboard() {
               Despesas da Loja
               <span className="text-muted-foreground font-normal">· caixa operacional</span>
             </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               <Metric icon={<Receipt />} label="Despesas hoje" value={brl(expensesTodayTotal)} />
               <Metric icon={<Wallet />} label="Despesas do mês" value={brl(expensesMonthTotal)} />
               <Metric icon={<TrendingUp />} label="Resultado líquido (hoje)" value={brl(netToday)} />
               <Metric icon={<ListOrdered />} label="Lançamentos no mês" value={String(expensesMonth.length)} />
             </div>
 
-            <Card className="bg-card/25 border-border shadow-card rounded-xl p-5 mt-4">
+            <Card className="surface-card border-0 shadow-none p-5 mt-2">
+
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold">Últimas despesas</div>
                 <Button size="sm" variant="outline" onClick={openNew} className="gap-2">
@@ -213,14 +216,15 @@ export default function Dashboard() {
           <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
             Programa de Fidelidade <span className="text-muted-foreground font-normal">· por placa</span>
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <Metric icon={<Sparkles />} label="Recompensas concedidas no mês" value={String(rewardsThisMonth)} />
             <Metric icon={<Target />} label="Veículos próximos (8–9 lavagens)" value={String(closeToReward.length)} />
             <Metric icon={<Trophy />} label="Benefícios aguardando uso" value={String(benefitsAvailable.length)} />
           </div>
 
           {(closeToReward.length > 0 || benefitsAvailable.length > 0) && (
-            <Card className="surface-card p-5 mt-4">
+            <Card className="surface-card border-0 shadow-none p-5 mt-2">
+
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Benefícios disponíveis</div>
@@ -280,20 +284,24 @@ export default function Dashboard() {
 
 function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
-    <Card className={highlight ? "surface-card border-primary/30 bg-primary/[0.07] p-4" : "surface-card p-4"}>
+    <Card className={
+      highlight
+        ? "surface-card border-0 shadow-none p-4 bg-primary text-primary-foreground"
+        : "surface-card border-0 shadow-none p-4"
+    }>
       <div className="flex items-center gap-3">
         <div className={
           highlight
-            ? "h-10 w-10 grid place-items-center rounded-xl bg-primary/20 text-primary"
-            : "h-10 w-10 grid place-items-center rounded-lg bg-primary/15 text-primary"
+            ? "h-10 w-10 grid place-items-center rounded-control bg-primary-foreground/10 text-primary-foreground"
+            : "h-10 w-10 grid place-items-center rounded-control bg-primary/15 text-primary"
         }>{icon}</div>
         <div>
           <div className={
             highlight
-              ? "text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium"
+              ? "text-[11px] uppercase tracking-[0.14em] text-primary-foreground/80 font-medium"
               : "text-[11px] uppercase tracking-wider text-muted-foreground"
           }>{label}</div>
-          <div className={highlight ? "text-lg font-bold text-primary tabular-nums" : "text-lg font-bold tabular-nums"}>{value}</div>
+          <div className={highlight ? "text-lg font-bold text-primary-foreground tabular-nums" : "text-lg font-bold tabular-nums"}>{value}</div>
         </div>
       </div>
     </Card>
@@ -304,7 +312,7 @@ function GoalCardView({ g }: { g: ReturnType<typeof computeGoals>["day"] }) {
   const surpassed = g.surpassedBy > 0;
   const pct = (g.progress * 100).toFixed(2);
   return (
-    <Card className="surface-card p-4">
+    <Card className="surface-card border-0 shadow-none p-4">
       <div className="flex items-center justify-between mb-1">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{g.period}</div>
         <div className={surpassed ? "text-xs text-primary font-semibold" : "text-xs text-muted-foreground"}>{pct}%</div>
