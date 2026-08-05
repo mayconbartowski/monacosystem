@@ -257,10 +257,12 @@ export default function Sales() {
           </h1>
           <p className="text-xs text-muted-foreground">Iniciar triagem · pagamento na retirada</p>
         </div>
-        <div className="w-full md:w-auto md:ml-auto flex flex-wrap items-center gap-2 md:gap-3">
+        <div className="w-full md:w-auto md:ml-auto grid grid-cols-2 md:flex md:flex-wrap md:items-center gap-2 md:gap-3 min-w-0">
           <StatChip icon={<Clock className="h-4 w-4" />} label="Espera estimada" value={formatDuration(newWait)} />
           <StatChip icon={<Car className="h-4 w-4" />} label="Veículos na fila" value={String(queueCount)} />
-          <QueueDrawer orders={orders} contracts={partnerContracts} />
+          <div className="col-span-2 md:col-auto [&_button]:w-full md:[&_button]:w-auto">
+            <QueueDrawer orders={orders} contracts={partnerContracts} />
+          </div>
         </div>
       </header>
 
@@ -621,10 +623,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 h-14 px-4 rounded-lg bg-muted/30 border border-border">
-      <span className="text-primary">{icon}</span>
-      <div className="leading-tight">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="flex items-center gap-2 md:gap-3 h-14 px-3 md:px-4 rounded-lg bg-muted/30 border border-border min-w-0">
+      <span className="text-primary shrink-0">{icon}</span>
+      <div className="leading-tight min-w-0">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{label}</div>
         <div className="text-sm font-semibold">{value}</div>
       </div>
     </div>
