@@ -3,8 +3,9 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Car, LayoutDashboard, Users, ClipboardList, BarChart3,
   LogOut, Settings as SettingsIcon, Wrench, ListOrdered, Building2,
-  PanelLeftClose, PanelLeftOpen, Menu,
+  PanelLeftClose, PanelLeftOpen, Menu, Crown,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/authContext";
 import { ROLE_LABEL } from "@/lib/domain";
@@ -246,16 +247,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <Link to={homeTo} className="flex items-center gap-2 min-w-0">
-              <div className="h-8 w-8 rounded-xl bg-primary grid place-items-center text-primary-foreground text-sm font-extrabold">M</div>
-              <span className="font-semibold truncate">Monaco</span>
+            <Link to={homeTo} className="ml-auto flex items-center" aria-label="Início">
+              <Crown className="h-6 w-6 text-primary" />
             </Link>
 
-            {session && (
-              <div className="ml-auto h-9 w-9 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold shrink-0">
-                {session.login.slice(0, 1).toUpperCase()}
-              </div>
-            )}
           </div>
 
           {children}
