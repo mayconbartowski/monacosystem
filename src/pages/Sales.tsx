@@ -32,7 +32,7 @@ import {
   calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getServiceDef,
 } from "@/lib/pricing";
 import { useData } from "@/lib/DataContext";
-import { upsertCustomer, upsertVehicle, createOrder } from "@/services/data";
+import { upsertCustomer, upsertVehicle, createOrder, preflightCustomerVehicle } from "@/services/data";
 import { createPartnerOrderRpc, formatCnpj } from "@/services/partners";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -123,14 +123,23 @@ export default function Sales() {
     if (mode !== "customer") return;
     if (normalizePlate(plate).length >= 7) {
       const v = findVehicleByPlate(plate);
-      if (v) {
+      if (v && existingCustomer && v.customerId === existingCustomer.id) {
         setExistingVehicle(v);
         setBrand(v.brand); setModel(v.model);
         setColor(v.color); setYear(v.year);
         setCategory(v.category);
       } else setExistingVehicle(null);
     } else setExistingVehicle(null);
-  }, [plate, findVehicleByPlate, mode]);
+  }, [plate, findVehicleByPlate, mode, existingCustomer]);
+
+  const plateConflict = useMemo(() => {
+    if (mode !== "customer" || normalizePlate(plate).length < 7) return "";
+    const matched = findVehicleByPlate(plate);
+    if (!matched) return "";
+    if (!existingCustomer) return "Esta placa já está cadastrada. Selecione o cliente proprietário para continuar.";
+    if (matched.customerId !== existingCustomer.id) return "Esta placa pertence a outro cliente e não pode ser reatribuída.";
+    return "";
+  }, [mode, plate, findVehicleByPlate, existingCustomer]);
 
   const loyalty = useMemo(
     () => mode === "customer" ? getLoyaltyForVehicle(existingVehicle) : getLoyaltyForVehicle(null),
@@ -213,7 +222,7 @@ export default function Sales() {
     (mode === "partner"
       ? !!selectedContract && !contractLimitReached
       : normalizeCpf(cpf).length === 11 && name.trim().length >= 2 &&
-        (phone || "").replace(/\D/g, "").length >= 10);
+        (phone || "").replace(/\D/g, "").length >= 10 && !plateConflict);
 
   const handleSubmit = async () => {
     if (!canSubmit || !category || !service) {
@@ -238,6 +247,13 @@ export default function Sales() {
           description: `Veículo ${formatPlate(plate)} adicionado à fila (parceiro).`,
         });
       } else {
+        await preflightCustomerVehicle({
+          customerId: existingCustomer?.id,
+          vehicleId: existingVehicle?.id,
+          cpf,
+          phone,
+          plate,
+        });
         const cust = await upsertCustomer({
           id: existingCustomer?.id,
           name: name.trim(), cpf, phone,
@@ -520,6 +536,7 @@ export default function Sales() {
               <Field label="Placa *">
                 <Input value={formatPlate(plate)} onChange={(e) => setPlate(e.target.value)}
                   placeholder="ABC-1D23" className="font-mono uppercase tracking-wider" />
+                {plateConflict && <p className="text-xs text-destructive">{plateConflict}</p>}
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Marca"><Input value={brand} onChange={(e) => setBrand(toTitleCase(e.target.value))} placeholder="Ex: Toyota" /></Field>

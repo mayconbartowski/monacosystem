@@ -5,6 +5,7 @@ import {
   PaymentStatus, OrderSource,
 } from "@/lib/domain";
 import { normalizePlate, normalizeCpf } from "@/lib/storage";
+import { findRegistrationConflict } from "@/lib/registrationConflicts";
 import { fetchPartnerContracts } from "@/services/partners";
 
 // ---------- mappers ----------
@@ -165,6 +166,38 @@ async function assertCustomerUnique(cpf: string, whatsapp: string, ignoreId?: st
   if (byZap) throw new DuplicateError("whatsapp", "Este WhatsApp já está cadastrado para outro cliente.");
 }
 
+export async function preflightCustomerVehicle(input: {
+  customerId?: string;
+  vehicleId?: string;
+  cpf: string;
+  phone: string;
+  plate: string;
+}): Promise<void> {
+  const cpf = normalizeCpf(input.cpf);
+  const whatsapp = (input.phone || "").replace(/\D/g, "");
+  const plate = normalizePlate(input.plate);
+  const [customerResult, vehicleResult] = await Promise.all([
+    supabase.from("customers").select("id,cpf,whatsapp").or(`cpf.eq.${cpf},whatsapp.eq.${whatsapp}`),
+    supabase.from("vehicles").select("id,customer_id,plate").eq("plate", plate),
+  ]);
+  if (customerResult.error) throw customerResult.error;
+  if (vehicleResult.error) throw vehicleResult.error;
+
+  const conflict = findRegistrationConflict({
+    cpf,
+    whatsapp,
+    plate,
+    customers: customerResult.data ?? [],
+    vehicles: vehicleResult.data ?? [],
+    ignoreCustomerId: input.customerId,
+    ignoreVehicleId: input.vehicleId,
+    expectedCustomerId: input.customerId,
+  });
+  if (conflict === "cpf") throw new DuplicateError("cpf", "Este CPF já está cadastrado para outro cliente.");
+  if (conflict === "whatsapp") throw new DuplicateError("whatsapp", "Este WhatsApp já está cadastrado para outro cliente.");
+  if (conflict === "plate") throw new DuplicateError("plate", "Esta placa já está cadastrada e não pode ser reutilizada neste cadastro.");
+}
+
 export async function upsertCustomer(c: { id?: string; name: string; cpf: string; phone: string; }): Promise<Customer> {
   const row = { name: c.name.trim(), cpf: normalizeCpf(c.cpf), whatsapp: (c.phone || "").replace(/\D/g, "") };
   await assertCustomerUnique(row.cpf, row.whatsapp, c.id);
@@ -197,7 +230,7 @@ export async function upsertVehicle(v: {
   color?: string; year?: string; category: VehicleCategory;
 }): Promise<Vehicle> {
   const row = {
-    customer_id: v.customerId, plate: normalizePlate(v.plate),
+    plate: normalizePlate(v.plate),
     brand: v.brand || "", model: v.model || "",
     color: v.color || "", year: v.year || "", category: v.category,
   };
@@ -208,8 +241,22 @@ export async function upsertVehicle(v: {
     if (other && other.id !== v.id) {
       throw new DuplicateError("plate", "Esta placa já está cadastrada em outro veículo.");
     }
-    const { data, error } = await supabase.from("vehicles").update(row).eq("id", v.id).select().single();
-    if (error) translateConflict(error);
+    const { data, error } = await (supabase.rpc as any)("update_vehicle_without_ownership_change", {
+      _vehicle_id: v.id,
+      _expected_customer_id: v.customerId,
+      _plate: row.plate,
+      _brand: row.brand,
+      _model: row.model,
+      _color: row.color,
+      _year: row.year,
+      _category: row.category,
+    });
+    if (error) {
+      if (`${error.message ?? ""}`.includes("vehicle_ownership_conflict")) {
+        throw new DuplicateError("plate", "Este veículo pertence a outro cliente e não pode ser reatribuído.");
+      }
+      translateConflict(error);
+    }
     return mapVehicle(data as VehicleRow);
   }
 
@@ -222,7 +269,7 @@ export async function upsertVehicle(v: {
     );
   }
 
-  const { data, error } = await supabase.from("vehicles").insert(row).select().single();
+  const { data, error } = await supabase.from("vehicles").insert({ ...row, customer_id: v.customerId }).select().single();
   if (error) translateConflict(error);
   return mapVehicle(data as VehicleRow);
 }
