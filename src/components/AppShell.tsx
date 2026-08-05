@@ -92,27 +92,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   to={it.to}
                   end={it.to === "/"}
                   className={cn(
-                    "group flex items-center rounded-xl text-sm transition-all duration-200 relative border border-transparent",
+                    "group flex items-center rounded-control text-sm transition-colors duration-200 relative",
                     collapsed ? "mx-auto justify-center items-center h-11 w-11 p-0" : "gap-3 px-3 py-2.5",
                     isActive
-                      ? "bg-primary/10 border-primary/25 font-medium"
-                      : "hover:bg-sidebar-accent/70 hover:border-border"
+                      ? "bg-primary text-primary-foreground font-semibold"
+                      : "text-sidebar-foreground/80 hover:bg-surface-3 hover:text-sidebar-foreground"
                   )}
                 >
-                  {isActive && !collapsed && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />
-                  )}
                   <it.icon
                     className={cn(
-                      "h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110",
-                      isActive ? "text-primary" : "text-sidebar-foreground/75 group-hover:text-sidebar-foreground"
+                      "h-[18px] w-[18px] shrink-0",
+                      isActive ? "text-primary-foreground" : "text-current"
                     )}
                   />
-                  {!collapsed && (
-                    <span className={cn("truncate", isActive ? "text-primary" : "text-sidebar-foreground/80 group-hover:text-sidebar-foreground")}>
-                      {it.label}
-                    </span>
-                  )}
+                  {!collapsed && <span className="truncate">{it.label}</span>}
+
                 </NavLink>
               );
               if (!collapsed) return link;
