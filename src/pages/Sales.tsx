@@ -573,10 +573,10 @@ export default function Sales() {
             </div>
           </Panel>
 
-          <Panel title="Observações do Atendente" className="flex-1">
+          <Panel title="Observações do Atendente" className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="Detalhes do atendimento, instruções específicas, condição do veículo..."
-              className="min-h-[100px] h-full resize-none" />
+              className="flex-1 min-h-[100px] w-full resize-none" />
           </Panel>
         </section>
       </div>
