@@ -221,7 +221,7 @@ export default function Queue() {
             {buckets.queued.length + buckets.in_progress.length + buckets.completed.length} veíc.
           </Badge>
         </header>
-        <div className="flex-1 p-6 bg-surface-sunken overflow-auto">
+        <div className="flex-1 p-4 md:p-6 bg-surface-sunken overflow-auto">
           <div className="max-w-3xl mx-auto">{content}</div>
         </div>
         <footer className="border-t border-border px-4 py-3 text-[11px] text-muted-foreground text-center">

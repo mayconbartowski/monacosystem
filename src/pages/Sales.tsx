@@ -264,7 +264,7 @@ export default function Sales() {
         </div>
       </header>
 
-      <div className="flex-1 p-6 grid gap-6 lg:grid-cols-12 bg-surface-sunken overflow-auto">
+      <div className="flex-1 p-4 md:p-6 grid gap-4 md:gap-6 lg:grid-cols-12 bg-surface-sunken overflow-auto">
         <section className="lg:col-span-4 space-y-4">
           <Panel title="Categoria do Veículo" subtitle="Selecione antes do serviço">
             <div className="grid grid-cols-3 gap-2">
