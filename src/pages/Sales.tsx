@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -525,9 +524,6 @@ export default function Sales() {
                       </div>
                     </div>
                   </div>
-                  <Badge className="bg-primary text-primary-foreground border-0 shrink-0 tabular-nums">
-                    {brl(prices[category][selectedServiceDef.key])}
-                  </Badge>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
@@ -745,7 +741,7 @@ export default function Sales() {
                     variant="ghost"
                     size="icon"
                     aria-label="Novo veículo para este cliente"
-                    className="h-9 w-9 rounded-control bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="h-9 w-9 rounded-control bg-surface-3 text-foreground hover:bg-surface-4"
                     onClick={startNewVehicle}
                   >
                     <Plus className="h-4 w-4" />
@@ -852,29 +848,31 @@ export default function Sales() {
 
       <footer className="bg-surface-2 px-3 md:px-6 sticky bottom-0 z-20 min-h-[136px] flex items-center">
         <div className="w-full flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="w-full md:w-auto flex items-center gap-1.5 md:gap-2 min-w-0">
-            <div className="flex items-center gap-1 min-w-0">
+          <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-2 min-w-0">
+            <div
+              className={cn(
+                "w-full md:w-auto min-h-11 rounded-control flex items-center overflow-hidden transition-all duration-200",
+                discOpen
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-foreground",
+              )}
+            >
               <Button
                 type="button"
                 variant="ghost"
                 disabled={mode === "partner"}
                 className={cn(
-                  "h-11 px-2.5 md:px-4 gap-1.5 rounded-control text-xs md:text-sm shrink-0",
-                  discOpen
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-foreground",
+                  "h-11 justify-start px-3 md:px-4 gap-1.5 rounded-none bg-transparent text-inherit hover:bg-transparent hover:text-inherit shrink-0",
+                  discOpen ? "w-auto" : "w-full md:w-auto",
                 )}
-                onClick={() => {
-                  setDiscOpen((v) => !v);
-                  setFeeOpen(false);
-                }}
+                onClick={() => setDiscOpen(true)}
               >
-                <BadgePercent className="hidden md:inline h-4 w-4" />
+                <BadgePercent className="h-4 w-4" />
                 <span className="hidden md:inline">Desconto manual</span>
                 <span className="md:hidden">Desconto</span>
               </Button>
               {discOpen && (
-                <div className="surface-inset h-11 px-1.5 flex items-center gap-1 animate-fade-in min-w-0">
+                <div className="h-11 flex flex-1 md:flex-none items-center gap-1 pr-1.5 animate-fade-in min-w-0">
                   <Input
                     inputMode="numeric"
                     type="number"
@@ -888,18 +886,18 @@ export default function Sales() {
                     }}
                     placeholder="0"
                     aria-label="Percentual de desconto"
-                    className="h-8 w-14 px-2 text-xs"
+                    className="h-8 w-14 px-2 border-0 bg-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-primary-foreground/40 text-xs"
                   />
-                  <span className="text-xs text-muted-foreground">%</span>
-                  <span className="hidden md:inline text-xs text-muted-foreground whitespace-nowrap">
+                  <span className="text-xs text-primary-foreground">%</span>
+                  <span className="hidden md:inline text-xs text-primary-foreground/80 whitespace-nowrap">
                     −{brl(manualDiscount)}
                   </span>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label="Remover desconto"
-                    className="h-8 w-8 shrink-0 text-muted-foreground"
+                    aria-label="Cancelar desconto"
+                    className="h-8 w-8 ml-auto shrink-0 rounded-control bg-transparent text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
                     onClick={() => {
                       setDiscOpen(false);
                       setDiscPct(0);
@@ -911,34 +909,36 @@ export default function Sales() {
               )}
             </div>
 
-            <div className="flex items-center gap-1 min-w-0">
+            <div
+              className={cn(
+                "w-full md:w-auto min-h-11 rounded-control flex items-center overflow-hidden transition-all duration-200",
+                feeOpen
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-foreground",
+              )}
+            >
               <Button
                 type="button"
                 variant="ghost"
                 className={cn(
-                  "h-11 px-2.5 md:px-4 gap-1.5 rounded-control text-xs md:text-sm shrink-0",
-                  feeOpen
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-foreground",
+                  "h-11 justify-start px-3 md:px-4 gap-1.5 rounded-none bg-transparent text-inherit hover:bg-transparent hover:text-inherit shrink-0",
+                  feeOpen ? "w-auto" : "w-full md:w-auto",
                 )}
-                onClick={() => {
-                  setFeeOpen((v) => !v);
-                  setDiscOpen(false);
-                }}
+                onClick={() => setFeeOpen(true)}
               >
-                <Plus className="hidden md:inline h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 <span className="hidden md:inline">Adicionar taxa de serviço</span>
                 <span className="md:hidden">Taxa</span>
               </Button>
               {feeOpen && (
-                <div className="surface-inset h-11 px-1.5 flex items-center gap-1 animate-fade-in min-w-0">
+                <div className="h-11 flex flex-1 md:flex-none items-center gap-1 pr-1.5 animate-fade-in min-w-0">
                   <Input
                     inputMode="numeric"
                     value={feeStr}
                     onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
                     placeholder="R$ 0,00"
                     aria-label="Valor da taxa"
-                    className="h-8 w-[76px] md:w-24 px-2 text-xs"
+                    className="h-8 w-[84px] md:w-24 px-2 border-0 bg-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-primary-foreground/40 text-xs"
                   />
                   <Input
                     value={feeNote}
@@ -946,14 +946,14 @@ export default function Sales() {
                     placeholder="Descrição"
                     aria-label="Descrição da taxa"
                     maxLength={120}
-                    className="h-8 w-16 sm:w-20 md:w-36 px-2 text-xs"
+                    className="h-8 flex-1 md:flex-none md:w-32 min-w-0 px-2 border-0 bg-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-primary-foreground/40 text-xs"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label="Remover taxa"
-                    className="h-8 w-8 shrink-0 text-muted-foreground"
+                    aria-label="Cancelar taxa"
+                    className="h-8 w-8 shrink-0 rounded-control bg-transparent text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
                     onClick={() => {
                       setFeeOpen(false);
                       setFeeStr("");
