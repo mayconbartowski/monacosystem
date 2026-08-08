@@ -85,11 +85,17 @@
   body {
     @apply text-foreground font-sans antialiased;
     background-color: hsl(var(--background));
-    background-image: var(--gradient-page);
-    background-attachment: fixed;
+    background-image: none;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     letter-spacing: -0.005em;
   }
+  @media (min-width: 1024px) {
+    body {
+      background-image: var(--gradient-page);
+      background-attachment: fixed;
+    }
+  }
+
   h1,
   h2,
   h3,
@@ -114,46 +120,70 @@
 }
 
 @layer components {
-  /* Vidro fumê compartilhado por Card e painéis customizados. */
+  /* ---------- BASE (mobile/tablet): superfícies sólidas, sem vidro ---------- */
   .glass-panel,
-  .surface-card {
+  .surface-card,
+  .glass-chrome {
     position: relative;
     isolation: isolate;
-    background-color: rgb(15 15 15 / 0.62);
-    -webkit-backdrop-filter: blur(20px) saturate(116%);
-    backdrop-filter: blur(20px) saturate(116%);
+    background-color: hsl(var(--surface-2));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     border: none !important;
-    box-shadow: 0 16px 44px rgb(0 0 0 / 0.16);
+    box-shadow: none;
   }
 
-  .surface-card {
+  .surface-card,
+  .glass-panel {
     border-radius: var(--radius);
   }
 
   .glass-panel > *,
-  .surface-card > * {
+  .surface-card > *,
+  .glass-chrome > * {
     position: relative;
     z-index: 1;
   }
 
-  .glass-panel::after,
-  .surface-card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    border-radius: inherit;
-    opacity: 0.07;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23noise)' opacity='0.82'/%3E%3C/svg%3E");
-    background-size: 140px 140px;
-    background-repeat: repeat;
-  }
-
-  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  /* ---------- DESKTOP: dark glassmorphism ---------- */
+  @media (min-width: 1024px) {
     .glass-panel,
-    .surface-card {
-      background-color: rgb(15 15 15 / 0.88);
+    .surface-card,
+    .glass-chrome {
+      background-color: rgb(15 15 15 / 0.7);
+      -webkit-backdrop-filter: blur(20px) saturate(116%);
+      backdrop-filter: blur(20px) saturate(116%);
+      box-shadow: 0 16px 44px rgb(0 0 0 / 0.16);
+    }
+
+    .glass-panel::after,
+    .surface-card::after,
+    .glass-chrome::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      opacity: 0.07;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23noise)' opacity='0.82'/%3E%3C/svg%3E");
+      background-size: 140px 140px;
+      background-repeat: repeat;
+    }
+
+    /* Campos dentro de superfícies de vidro: apenas o fundo a 70% */
+    .glass-panel :is(input, textarea, select, [role="combobox"]),
+    .surface-card :is(input, textarea, select, [role="combobox"]),
+    .glass-chrome :is(input, textarea, select, [role="combobox"]) {
+      background-color: hsl(var(--input) / 0.7);
+    }
+
+    @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+      .glass-panel,
+      .surface-card,
+      .glass-chrome {
+        background-color: rgb(15 15 15 / 0.9);
+      }
     }
   }
 
@@ -188,8 +218,14 @@
 }
 
 @layer utilities {
-  /* Containers de página precisam permanecer transparentes para revelar o glow global. */
+  /* Desktop: containers transparentes revelam o glow global. Mobile: sólido. */
   .bg-surface-sunken {
-    background-color: transparent !important;
+    background-color: hsl(var(--surface-1)) !important;
+  }
+  @media (min-width: 1024px) {
+    .bg-surface-sunken {
+      background-color: transparent !important;
+    }
   }
 }
+

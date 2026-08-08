@@ -174,7 +174,7 @@ export default function Reports() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4 flex flex-wrap items-center gap-4">
+      <header className="glass-chrome px-6 py-4 flex flex-wrap items-center gap-4">
         <div>
           <h1 className="text-xl font-semibold">Relatórios</h1>
           <p className="text-xs text-muted-foreground">{rangeLabel}</p>

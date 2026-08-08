@@ -32,7 +32,7 @@ export default function History() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
+      <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div>
           <h1 className="text-xl font-semibold">Histórico</h1>
           <p className="text-xs text-muted-foreground">{orders.length} ordens registradas</p>

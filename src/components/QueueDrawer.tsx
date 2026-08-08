@@ -65,7 +65,7 @@ export function QueueDrawer({ orders, contracts = [] }: Props) {
           </Button>
         </SheetTrigger>
 
-        <SheetContent className="glass-panel w-full sm:max-w-md bg-[rgba(15,15,15,0.78)] backdrop-blur-[20px] border-0">
+        <SheetContent className="glass-panel w-full sm:max-w-md border-0">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2 text-foreground">
               <ListOrdered className="h-5 w-5 text-primary" />

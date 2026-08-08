@@ -68,16 +68,17 @@ export function AmbientGlow() {
   }, []);
 
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden hidden lg:block">
       <div
         ref={ref}
         className="absolute left-0 top-0 will-change-transform"
         style={{
-          width: "clamp(800px, 78vw, 1200px)",
-          height: "clamp(800px, 78vw, 1200px)",
+          width: "clamp(1600px, 156vw, 2400px)",
+          height: "clamp(1600px, 156vw, 2400px)",
           transform: "translate3d(50vw, 36vh, 0) translate3d(-50%, -50%, 0)",
+          filter: "blur(80px)",
           background:
-            "radial-gradient(circle at center, hsl(var(--primary) / 0.15) 0%, hsl(var(--primary) / 0.08) 25%, hsl(var(--primary) / 0.025) 50%, transparent 72%)",
+            "radial-gradient(circle at center, hsl(var(--primary) / 0.10) 0%, hsl(var(--primary) / 0.092) 10%, hsl(var(--primary) / 0.081) 20%, hsl(var(--primary) / 0.068) 30%, hsl(var(--primary) / 0.054) 40%, hsl(var(--primary) / 0.041) 50%, hsl(var(--primary) / 0.029) 60%, hsl(var(--primary) / 0.019) 70%, hsl(var(--primary) / 0.011) 80%, hsl(var(--primary) / 0.004) 90%, transparent 100%)",
         }}
       />
     </div>

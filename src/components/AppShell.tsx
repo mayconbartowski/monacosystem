@@ -202,7 +202,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <main className="relative z-10 flex-1 min-w-0 flex flex-col">
           {/* Mobile / tablet topbar */}
-          <div className="lg:hidden sticky top-0 z-40 flex items-center gap-3 px-4 py-2 border-b border-border bg-[rgba(10,10,10,0.82)] backdrop-blur-[18px] pt-[max(0.5rem,env(safe-area-inset-top))]">
+          <div className="lg:hidden sticky top-0 z-40 flex items-center gap-3 px-4 py-2 border-b border-border bg-[hsl(var(--surface-2))] pt-[max(0.5rem,env(safe-area-inset-top))]">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -216,7 +216,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-[86vw] max-w-xs border-0 bg-[rgba(10,10,10,0.88)] backdrop-blur-[18px] p-0 flex flex-col"
+                className="w-[86vw] max-w-xs border-0 bg-[hsl(var(--surface-1))] p-0 flex flex-col"
               >
                 <SheetTitle className="sr-only">Navegação</SheetTitle>
                 <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">

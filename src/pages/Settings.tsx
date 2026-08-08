@@ -40,7 +40,7 @@ export default function Settings() {
 
   return (
     <AppShell>
-      <header className="border-b border-border px-6 py-4">
+      <header className="glass-chrome px-6 py-4">
         <h1 className="text-xl font-semibold">Configurações</h1>
         <p className="text-xs text-muted-foreground">Editar credenciais das contas operacionais</p>
       </header>
