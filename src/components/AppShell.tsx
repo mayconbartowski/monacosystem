@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/authContext";
 import { ROLE_LABEL } from "@/lib/domain";
+import { AmbientGlow } from "@/components/AmbientGlow";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
