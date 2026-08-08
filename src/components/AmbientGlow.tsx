@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Glow radial amarelo difuso no fundo. Segue o ponteiro com inércia em desktop,
- * estático em touch e com prefers-reduced-motion. Sem state React por mousemove.
+ * Uma única luz ambiental global. Em desktop acompanha o mouse com inércia;
+ * em touch ou reduced-motion permanece estática. Não provoca re-render React.
  */
 export function AmbientGlow() {
   const ref = useRef<HTMLDivElement>(null);
@@ -11,55 +11,73 @@ export function AmbientGlow() {
     const el = ref.current;
     if (!el) return;
 
-    const fine = window.matchMedia("(pointer: fine)").matches;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!fine || reduced) return;
+    const staticX = window.innerWidth * 0.5;
+    const staticY = window.innerHeight * 0.36;
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let targetX = window.innerWidth / 2;
-    let targetY = window.innerHeight * 0.35;
-    let x = targetX;
-    let y = targetY;
-    let raf = 0;
-    let running = false;
+    let targetX = staticX;
+    let targetY = staticY;
+    let currentX = staticX;
+    let currentY = staticY;
+    let frame: number | null = null;
 
-    const tick = () => {
-      x += (targetX - x) * 0.06;
-      y += (targetY - y) * 0.06;
-      el.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
-      if (Math.abs(targetX - x) < 0.5 && Math.abs(targetY - y) < 0.5) {
-        running = false;
+    const place = () => {
+      el.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) translate3d(-50%, -50%, 0)`;
+    };
+
+    const animate = () => {
+      currentX += (targetX - currentX) * 0.06;
+      currentY += (targetY - currentY) * 0.06;
+
+      const remainingX = Math.abs(targetX - currentX);
+      const remainingY = Math.abs(targetY - currentY);
+
+      if (remainingX < 0.4 && remainingY < 0.4) {
+        currentX = targetX;
+        currentY = targetY;
+        place();
+        frame = null;
         return;
       }
-      raf = requestAnimationFrame(tick);
+
+      place();
+      frame = window.requestAnimationFrame(animate);
     };
 
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
-      targetX = e.clientX;
-      targetY = e.clientY;
-      if (!running) {
-        running = true;
-        raf = requestAnimationFrame(tick);
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") return;
+      targetX = event.clientX;
+      targetY = event.clientY;
+
+      if (frame === null) {
+        frame = window.requestAnimationFrame(animate);
       }
     };
 
-    el.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
-    window.addEventListener("pointermove", onMove, { passive: true });
+    place();
+
+    if (!finePointer || reducedMotion) return;
+
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+
     return () => {
-      window.removeEventListener("pointermove", onMove);
-      cancelAnimationFrame(raf);
+      window.removeEventListener("pointermove", onPointerMove);
+      if (frame !== null) window.cancelAnimationFrame(frame);
     };
   }, []);
 
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       <div
         ref={ref}
-        className="absolute left-0 top-0 h-[900px] w-[900px] max-w-[160vw] will-change-transform"
+        className="absolute left-0 top-0 will-change-transform"
         style={{
-          transform: "translate3d(50vw, 35vh, 0) translate(-50%, -50%)",
+          width: "clamp(800px, 78vw, 1200px)",
+          height: "clamp(800px, 78vw, 1200px)",
+          transform: "translate3d(50vw, 36vh, 0) translate3d(-50%, -50%, 0)",
           background:
-            "radial-gradient(circle, hsl(var(--primary) / 0.10) 0%, hsl(var(--primary) / 0.05) 32%, hsl(var(--primary) / 0.015) 55%, transparent 72%)",
+            "radial-gradient(circle at center, hsl(var(--primary) / 0.15) 0%, hsl(var(--primary) / 0.08) 25%, hsl(var(--primary) / 0.025) 50%, transparent 72%)",
         }}
       />
     </div>
