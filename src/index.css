@@ -85,11 +85,17 @@
   body {
     @apply text-foreground font-sans antialiased;
     background-color: hsl(var(--background));
-    background-image: var(--gradient-page);
-    background-attachment: fixed;
+    background-image: none;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     letter-spacing: -0.005em;
   }
+  @media (min-width: 1024px) {
+    body {
+      background-image: var(--gradient-page);
+      background-attachment: fixed;
+    }
+  }
+
   h1,
   h2,
   h3,
