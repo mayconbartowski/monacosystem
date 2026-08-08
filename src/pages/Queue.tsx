@@ -3,7 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  ListOrdered, Clock, CheckCircle2, Play, Car, LogOut, Trophy, Sparkles, PackageCheck, Building2,
+  ListOrdered,
+  Clock,
+  CheckCircle2,
+  Play,
+  Car,
+  LogOut,
+  Trophy,
+  Sparkles,
+  PackageCheck,
+  Building2,
 } from "lucide-react";
 import { Order, OrderStatus } from "@/lib/domain";
 import { formatDuration } from "@/lib/storage";
@@ -14,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { AppShell } from "@/components/AppShell";
+import { AmbientGlow } from "@/components/AmbientGlow";
 import { PickupPaymentDialog } from "@/components/PickupPaymentDialog";
 import { cn } from "@/lib/utils";
 
@@ -35,13 +45,14 @@ export default function Queue() {
       handle = window.setTimeout(tick, 30_000);
     };
     handle = window.setTimeout(tick, 30_000);
-    return () => { cancelled = true; window.clearTimeout(handle); };
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
   }, []);
 
   const buckets = useMemo(() => {
-    const all = [...orders].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
+    const all = [...orders].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return {
       queued: all.filter((o) => o.status === "queued"),
       in_progress: all.filter((o) => o.status === "in_progress"),
@@ -50,7 +61,7 @@ export default function Queue() {
   }, [orders]);
 
   const contractById = useMemo(() => {
-    const m = new Map<string, typeof partnerContracts[number]>();
+    const m = new Map<string, (typeof partnerContracts)[number]>();
     partnerContracts.forEach((c) => m.set(c.id, c));
     return m;
   }, [partnerContracts]);
@@ -59,34 +70,48 @@ export default function Queue() {
     const c = contractById.get(contractId);
     if (!c) return { used: 0, limit: 0 };
     const monthPrefix = new Date().toISOString().slice(0, 7);
-    const used = orders.filter((o) =>
-      o.partnerContractId === contractId &&
-      o.status !== "cancelled" &&
-      o.createdAt.slice(0, 7) === monthPrefix
+    const used = orders.filter(
+      (o) => o.partnerContractId === contractId && o.status !== "cancelled" && o.createdAt.slice(0, 7) === monthPrefix,
     ).length;
     return { used, limit: c.monthlyVehicleLimit };
   };
 
   const start = async (o: Order) => {
-    try { await startOrder(o.id); toast.success(`Lavagem iniciada — ${o.vehiclePlate}`); setTab("in_progress"); }
-    catch (e: any) { toast.error(e.message ?? "Erro ao iniciar"); }
+    try {
+      await startOrder(o.id);
+      toast.success(`Lavagem iniciada — ${o.vehiclePlate}`);
+      setTab("in_progress");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao iniciar");
+    }
   };
   const finish = async (o: Order) => {
-    try { await finishOrder(o); toast.success(`Finalizado — ${o.vehiclePlate}`); setTab("completed"); }
-    catch (e: any) { toast.error(e.message ?? "Erro ao finalizar"); }
+    try {
+      await finishOrder(o);
+      toast.success(`Finalizado — ${o.vehiclePlate}`);
+      setTab("completed");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao finalizar");
+    }
   };
 
-  const doLogout = async () => { await logout(); navigate("/login"); };
+  const doLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   const renderCard = (o: Order, i: number, phase: OrderStatus) => {
     const started = o.startedAt ? new Date(o.startedAt) : null;
     const elapsed = started ? Math.max(0, Math.floor((Date.now() - started.getTime()) / 60000)) : 0;
     return (
-      <div key={o.id} className={cn(
-        "surface-card p-4 animate-fade-in",
-        phase === "in_progress" && "border-primary/50",
-        phase === "completed" && "border-emerald-500/40",
-      )}>
+      <div
+        key={o.id}
+        className={cn(
+          "surface-card p-4 animate-fade-in",
+          phase === "in_progress" && "border-primary/50",
+          phase === "completed" && "border-emerald-500/40",
+        )}
+      >
         <div className="flex items-start gap-3">
           <div className="h-12 w-12 rounded-xl bg-primary/15 text-primary grid place-items-center shrink-0 text-lg font-bold">
             {i + 1}
@@ -101,7 +126,9 @@ export default function Queue() {
               )}
             </div>
             <div className="text-sm text-foreground/90 truncate">{o.vehicleLabel}</div>
-            <div className="text-xs text-muted-foreground truncate">{o.customerName} · {o.category}</div>
+            <div className="text-xs text-muted-foreground truncate">
+              {o.customerName} · {o.category}
+            </div>
           </div>
           <div className="text-right shrink-0">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Tempo</div>
@@ -118,7 +145,9 @@ export default function Queue() {
             {o.service}
           </Badge>
           {o.extras.map((e) => (
-            <Badge key={e} variant="outline" className="border-border bg-muted/30">{e}</Badge>
+            <Badge key={e} variant="outline" className="border-border bg-muted/30">
+              {e}
+            </Badge>
           ))}
           {o.loyaltyRewardUsed && (
             <Badge className="bg-primary/15 text-primary border border-primary/30 gap-1">
@@ -131,26 +160,37 @@ export default function Queue() {
             </Badge>
           )}
           {phase === "completed" && o.paymentStatus !== "paid" && (
-            <Badge variant="outline" className="border-yellow-500/40 text-yellow-500">Pagamento pendente</Badge>
+            <Badge variant="outline" className="border-yellow-500/40 text-yellow-500">
+              Pagamento pendente
+            </Badge>
           )}
         </div>
 
         <div className="mt-3">
           {phase === "queued" && (
-            <Button size="lg" onClick={() => start(o)}
-              className="w-full h-12 gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80">
+            <Button
+              size="lg"
+              onClick={() => start(o)}
+              className="w-full h-12 gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            >
               <Play className="h-5 w-5" /> Iniciar lavagem
             </Button>
           )}
           {phase === "in_progress" && (
-            <Button size="lg" onClick={() => finish(o)}
-              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 font-semibold">
+            <Button
+              size="lg"
+              onClick={() => finish(o)}
+              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 font-semibold"
+            >
               <CheckCircle2 className="h-5 w-5" /> Finalizar lavagem
             </Button>
           )}
           {phase === "completed" && canPickup && o.paymentStatus !== "paid" && (
-            <Button size="lg" onClick={() => setPicking(o)}
-              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 font-semibold">
+            <Button
+              size="lg"
+              onClick={() => setPicking(o)}
+              className="w-full h-12 gap-2 bg-primary text-primary-foreground hover:opacity-90 font-semibold"
+            >
               <PackageCheck className="h-5 w-5" /> Iniciar Retirada
             </Button>
           )}
@@ -171,15 +211,27 @@ export default function Queue() {
         <TabsList className="grid grid-cols-3 w-full h-[50px] p-1">
           <TabsTrigger value="queued" className="h-full w-full flex items-center justify-center gap-1.5 leading-none">
             <ListOrdered className="h-3.5 w-3.5" /> Aguardando
-            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">{buckets.queued.length}</Badge>
+            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
+              {buckets.queued.length}
+            </Badge>
           </TabsTrigger>
-          <TabsTrigger value="in_progress" className="h-full w-full flex items-center justify-center gap-1.5 leading-none">
+          <TabsTrigger
+            value="in_progress"
+            className="h-full w-full flex items-center justify-center gap-1.5 leading-none"
+          >
             <Play className="h-3.5 w-3.5" /> Lavando
-            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">{buckets.in_progress.length}</Badge>
+            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
+              {buckets.in_progress.length}
+            </Badge>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="h-full w-full flex items-center justify-center gap-1.5 leading-none">
+          <TabsTrigger
+            value="completed"
+            className="h-full w-full flex items-center justify-center gap-1.5 leading-none"
+          >
             <CheckCircle2 className="h-3.5 w-3.5" /> Finalizados
-            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">{buckets.completed.length}</Badge>
+            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
+              {buckets.completed.length}
+            </Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -233,8 +285,9 @@ export default function Queue() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="sticky top-0 z-20 bg-[hsl(var(--surface-2))] border-b border-border px-4 py-3 flex items-center gap-3 backdrop-blur">
+    <div className="relative isolate min-h-screen flex flex-col bg-transparent">
+      <AmbientGlow />
+      <header className="sticky top-0 z-20 bg-[rgba(10,10,10,0.82)] border-b border-border px-4 py-3 flex items-center gap-3 backdrop-blur-[18px]">
         <div className="h-9 w-9 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">M</div>
         <div className="leading-tight min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>
@@ -249,8 +302,8 @@ export default function Queue() {
           <LogOut className="h-4 w-4" />
         </Button>
       </header>
-      <main className="flex-1 p-3 sm:p-4 max-w-2xl w-full mx-auto">{content}</main>
-      <footer className="border-t border-border px-4 py-3 text-[11px] text-muted-foreground text-center">
+      <main className="relative z-10 flex-1 p-3 sm:p-4 max-w-2xl w-full mx-auto">{content}</main>
+      <footer className="relative z-10 border-t border-border px-4 py-3 text-[11px] text-muted-foreground text-center">
         <Trophy className="h-3 w-3 inline mr-1 text-primary" />
         Fidelidade consolidada no pagamento.
       </footer>
