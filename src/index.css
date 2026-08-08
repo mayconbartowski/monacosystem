@@ -77,7 +77,9 @@
   * {
     @apply border-border;
   }
-  html, body, #root {
+  html,
+  body,
+  #root {
     @apply h-full;
   }
   body {
@@ -88,7 +90,10 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     letter-spacing: -0.005em;
   }
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     letter-spacing: -0.02em;
   }
   :focus-visible {
@@ -99,7 +104,9 @@
     color: hsl(var(--primary-foreground));
   }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
@@ -107,31 +114,47 @@
 }
 
 @layer components {
-  /* Vidro fosco escuro + grain sutil */
+  /* Vidro fumê compartilhado por Card e painéis customizados. */
+  .glass-panel,
   .surface-card {
     position: relative;
     isolation: isolate;
-    background-color: hsl(var(--surface-2) / 0.68);
-    -webkit-backdrop-filter: blur(14px) saturate(115%);
-    backdrop-filter: blur(14px) saturate(115%);
-    border: 1px solid hsl(0 0% 100% / 0.06);
-    @apply rounded-[var(--radius)];
+    background-color: rgb(15 15 15 / 0.62);
+    -webkit-backdrop-filter: blur(20px) saturate(116%);
+    backdrop-filter: blur(20px) saturate(116%);
+    border: none !important;
+    box-shadow: 0 16px 44px rgb(0 0 0 / 0.16);
   }
+
+  .surface-card {
+    border-radius: var(--radius);
+  }
+
+  .glass-panel > *,
   .surface-card > * {
     position: relative;
     z-index: 1;
   }
-  .surface-card::before {
+
+  .glass-panel::after,
+  .surface-card::after {
     content: "";
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
     border-radius: inherit;
-    opacity: 0.035;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 120px 120px;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23noise)' opacity='0.82'/%3E%3C/svg%3E");
+    background-size: 140px 140px;
+    background-repeat: repeat;
+  }
+
+  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .glass-panel,
+    .surface-card {
+      background-color: rgb(15 15 15 / 0.88);
+    }
   }
 
   .surface-inset {
@@ -161,5 +184,12 @@
   .is-selected-solid {
     background-color: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
+  }
+}
+
+@layer utilities {
+  /* Containers de página precisam permanecer transparentes para revelar o glow global. */
+  .bg-surface-sunken {
+    background-color: transparent !important;
   }
 }
