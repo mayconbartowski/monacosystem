@@ -379,7 +379,7 @@ export default function Sales() {
 
   return (
     <AppShell>
-      <header className="bg-surface-2 px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 sticky top-0 z-20">
+      <header className="glass-chrome px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 sticky top-0 z-20">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight">
             Tela de <span className="gold-text">Vendas</span>
@@ -846,7 +846,7 @@ export default function Sales() {
         </section>
       </div>
 
-      <footer className="bg-surface-2 px-3 md:px-6 sticky bottom-0 z-20 min-h-[136px] flex items-center">
+      <footer className="glass-chrome px-3 md:px-6 sticky bottom-0 z-20 min-h-[136px] flex items-center">
         <div className="w-full flex flex-col gap-3 md:flex-row md:items-center">
           <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-2 min-w-0">
             <div

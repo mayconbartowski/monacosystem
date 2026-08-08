@@ -262,7 +262,7 @@ export default function Queue() {
   if (role === "gerencia") {
     return (
       <AppShell>
-        <header className="border-b border-border bg-[hsl(var(--surface-2))] px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 backdrop-blur">
+        <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 ">
           <div>
             <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
               <ListOrdered className="h-5 w-5 text-primary" /> Fila de Lavagem
@@ -287,7 +287,7 @@ export default function Queue() {
   return (
     <div className="relative isolate min-h-screen flex flex-col bg-transparent">
       <AmbientGlow />
-      <header className="sticky top-0 z-20 bg-[rgba(10,10,10,0.82)] border-b border-border px-4 py-3 flex items-center gap-3 backdrop-blur-[18px]">
+      <header className="glass-chrome sticky top-0 z-20 px-4 py-3 flex items-center gap-3">
         <div className="h-9 w-9 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">M</div>
         <div className="leading-tight min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>
