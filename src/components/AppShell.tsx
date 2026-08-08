@@ -1,9 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  Car, LayoutDashboard, Users, ClipboardList, BarChart3,
-  LogOut, Settings as SettingsIcon, Wrench, ListOrdered, Building2,
-  PanelLeftClose, PanelLeftOpen, Menu, Crown,
+  Car,
+  LayoutDashboard,
+  Users,
+  ClipboardList,
+  BarChart3,
+  LogOut,
+  Settings as SettingsIcon,
+  Wrench,
+  ListOrdered,
+  Building2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Menu,
+  Crown,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -57,29 +68,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return v === null ? true : v === "1";
   });
   useEffect(() => {
-    try { window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0"); } catch {}
+    try {
+      window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
+    } catch {}
   }, [collapsed]);
 
-  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
-  const doLogout = async () => { await logout(); navigate("/login"); };
+  const doLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
   const homeTo = role === "lavajato" ? "/fila" : "/";
   const isActivePath = (to: string) => (to === "/" ? location.pathname === "/" : location.pathname.startsWith(to));
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="relative min-h-screen flex w-full bg-background">
+      <div className="relative isolate min-h-screen flex w-full bg-transparent">
         <AmbientGlow />
         <aside
           className={cn(
-            "hidden lg:flex flex-col border-r border-sidebar-border bg-sidebar/70 backdrop-blur-xl transition-[width] duration-200 ease-out h-screen sticky top-0",
-            collapsed ? "w-[72px]" : "w-64"
+            "relative z-10 hidden lg:flex flex-col border-0 bg-[rgba(10,10,10,0.82)] backdrop-blur-[18px] transition-[width] duration-200 ease-out h-screen sticky top-0",
+            collapsed ? "w-[72px]" : "w-64",
           )}
         >
-          <div className={cn(
-            "flex items-center border-b border-sidebar-border",
-            collapsed ? "justify-center px-3 py-5" : "px-5 py-5 gap-3"
-          )}>
+          <div
+            className={cn(
+              "flex items-center border-b border-sidebar-border",
+              collapsed ? "justify-center px-3 py-5" : "px-5 py-5 gap-3",
+            )}
+          >
             <Link to={homeTo} className="flex items-center gap-3 min-w-0">
               <Brand compact={collapsed} />
             </Link>
@@ -98,17 +118,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     collapsed ? "mx-auto justify-center items-center h-11 w-11 p-0" : "gap-3 px-3 py-2.5",
                     isActive
                       ? "bg-primary text-primary-foreground font-semibold"
-                      : "text-sidebar-foreground/80 hover:bg-surface-3 hover:text-sidebar-foreground"
+                      : "text-sidebar-foreground/80 hover:bg-surface-3 hover:text-sidebar-foreground",
                   )}
                 >
                   <it.icon
-                    className={cn(
-                      "h-[18px] w-[18px] shrink-0",
-                      isActive ? "text-primary-foreground" : "text-current"
-                    )}
+                    className={cn("h-[18px] w-[18px] shrink-0", isActive ? "text-primary-foreground" : "text-current")}
                   />
                   {!collapsed && <span className="truncate">{it.label}</span>}
-
                 </NavLink>
               );
               if (!collapsed) return link;
@@ -128,11 +144,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onClick={() => setCollapsed((v) => !v)}
               className={cn(
                 "w-full text-muted-foreground hover:text-foreground",
-                collapsed ? "justify-center h-11 px-0" : "justify-start gap-2"
+                collapsed ? "justify-center h-11 px-0" : "justify-start gap-2",
               )}
               aria-label={collapsed ? "Expandir menu" : "Retrair menu"}
             >
-              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <><PanelLeftClose className="h-4 w-4" /> Recolher</>}
+              {collapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <>
+                  <PanelLeftClose className="h-4 w-4" /> Recolher
+                </>
+              )}
             </Button>
 
             {session && !collapsed && (
@@ -178,9 +200,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 flex flex-col">
+        <main className="relative z-10 flex-1 min-w-0 flex flex-col">
           {/* Mobile / tablet topbar */}
-          <div className="lg:hidden sticky top-0 z-40 flex items-center gap-3 px-4 py-2 border-b border-border bg-background/90 backdrop-blur-xl pt-[max(0.5rem,env(safe-area-inset-top))]">
+          <div className="lg:hidden sticky top-0 z-40 flex items-center gap-3 px-4 py-2 border-b border-border bg-[rgba(10,10,10,0.82)] backdrop-blur-[18px] pt-[max(0.5rem,env(safe-area-inset-top))]">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -192,7 +214,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[86vw] max-w-xs bg-sidebar border-sidebar-border p-0 flex flex-col">
+              <SheetContent
+                side="left"
+                className="w-[86vw] max-w-xs border-0 bg-[rgba(10,10,10,0.88)] backdrop-blur-[18px] p-0 flex flex-col"
+              >
                 <SheetTitle className="sr-only">Navegação</SheetTitle>
                 <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
                   <Brand />
@@ -210,7 +235,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           "flex items-center gap-3 rounded-control px-3 min-h-[48px] text-sm transition-colors duration-200",
                           isActive
                             ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-sidebar-foreground/85 hover:bg-surface-3"
+                            : "text-sidebar-foreground/85 hover:bg-surface-3",
                         )}
                         aria-current={isActive ? "page" : undefined}
                       >
@@ -247,7 +272,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link to={homeTo} className="ml-auto flex items-center" aria-label="Início">
               <Crown className="h-6 w-6 text-primary" />
             </Link>
-
           </div>
 
           {children}
