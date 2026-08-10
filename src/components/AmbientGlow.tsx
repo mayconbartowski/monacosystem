@@ -1,4 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import noiseAsset from "@/assets/ambient-noise-monaco.png.asset.json";
 
 const DESKTOP_QUERY = "(min-width: 1024px)";
 const FALLBACK_BACKGROUND =
