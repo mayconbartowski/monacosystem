@@ -68,15 +68,15 @@ void main() {
   float aspect = uResolution.x / uResolution.y;
   vec2 point = (uv - 0.5) * vec2(aspect, 1.0) * 2.0;
   vec2 mouse = (uMouse - 0.5) * 2.0;
-  float time = uTime * 0.10;
+  float time = uTime * 0.12;
 
   // O mouse deforma o campo inteiro; nao existe uma fonte circular no cursor.
-  point += vec2(mouse.x * 0.42, mouse.y * 0.30);
+  point += vec2(mouse.x * 0.58, mouse.y * 0.44);
 
   vec2 noisePoint = point * 0.47;
   vec2 warp = vec2(
-    fbm(noisePoint + vec2(time * 0.58, -time * 0.31) + mouse * 0.16),
-    fbm(noisePoint + vec2(4.7 - time * 0.37, 2.4 + time * 0.46) - mouse * 0.12)
+    fbm(noisePoint + vec2(time * 0.58, -time * 0.31) + mouse * 0.24),
+    fbm(noisePoint + vec2(4.7 - time * 0.37, 2.4 + time * 0.46) - mouse * 0.18)
   );
   point += (warp - 0.5) * 1.28;
 
@@ -90,6 +90,13 @@ void main() {
   float halo = 1.0 - smoothstep(0.39, 0.91, distanceToFlow);
   float ribbon = 1.0 - smoothstep(0.15, 0.47, distanceToFlow);
   float alpha = 0.035 * halo + 0.110 * ribbon;
+
+  // A massa preta acompanha o mouse como um vazio organico dentro do fluxo.
+  vec2 voidDelta = (uv - uMouse) * vec2(aspect, 1.0);
+  voidDelta += (warp - 0.5) * 0.18;
+  float voidContour = length(voidDelta);
+  float voidMask = 1.0 - smoothstep(0.14, 0.42, voidContour);
+  alpha *= 1.0 - voidMask;
 
   // Dither estatico evita banding nas areas escuras sem parecer grain animado.
   float dither = (interleavedGradientNoise(gl_FragCoord.xy) - 0.5) / 255.0;
@@ -195,8 +202,8 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     };
 
     const draw = (now: number) => {
-      currentX += (targetX - currentX) * 0.085;
-      currentY += (targetY - currentY) * 0.085;
+      currentX += (targetX - currentX) * 0.12;
+      currentY += (targetY - currentY) * 0.12;
 
       gl.uniform2f(mouseUniform, currentX, 1.0 - currentY);
       gl.uniform1f(timeUniform, reducedMotion ? 0 : (now - startedAt) / 1000);
