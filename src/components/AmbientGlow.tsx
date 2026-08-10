@@ -1,4 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import noiseAsset from "@/assets/ambient-noise-monaco.png.asset.json";
 
 const DESKTOP_QUERY = "(min-width: 1024px)";
 const FALLBACK_BACKGROUND =
@@ -269,6 +271,7 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
  */
 export function AmbientGlow() {
   const ref = useRef<HTMLDivElement>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
     const container = ref.current;
@@ -283,6 +286,8 @@ export function AmbientGlow() {
         disposeRenderer();
         disposeRenderer = null;
       }
+
+      setIsDesktop(desktop.matches);
 
       if (desktop.matches) {
         disposeRenderer = mountLiquidGradient(container, reducedMotion.matches);
@@ -301,11 +306,30 @@ export function AmbientGlow() {
   }, []);
 
   return (
-    <div
-      ref={ref}
-      aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-0 hidden overflow-hidden lg:block"
-      style={{ background: FALLBACK_BACKGROUND }}
-    />
+    <>
+      <div
+        ref={ref}
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0 hidden overflow-hidden lg:block"
+        style={{ background: FALLBACK_BACKGROUND }}
+      />
+      {/* Textura de ruido estatica: acima do canvas, abaixo de todo o conteudo. */}
+      {isDesktop && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 z-0 hidden border-0 lg:block"
+          style={{
+            width: "100%",
+            height: "100%",
+            backgroundImage: `url("${noiseAsset.url}")`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            mixBlendMode: "multiply",
+            opacity: 0.4,
+          }}
+        />
+      )}
+    </>
   );
 }
