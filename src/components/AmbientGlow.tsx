@@ -68,15 +68,15 @@ void main() {
   float aspect = uResolution.x / uResolution.y;
   vec2 point = (uv - 0.5) * vec2(aspect, 1.0) * 2.0;
   vec2 mouse = (uMouse - 0.5) * 2.0;
-  float time = uTime * 0.075;
+  float time = uTime * 0.10;
 
   // O mouse deforma o campo inteiro; nao existe uma fonte circular no cursor.
-  point += vec2(mouse.x * 0.24, mouse.y * 0.17);
+  point += vec2(mouse.x * 0.42, mouse.y * 0.30);
 
   vec2 noisePoint = point * 0.47;
   vec2 warp = vec2(
-    fbm(noisePoint + vec2(time * 0.58, -time * 0.31) + mouse * 0.08),
-    fbm(noisePoint + vec2(4.7 - time * 0.37, 2.4 + time * 0.46) - mouse * 0.06)
+    fbm(noisePoint + vec2(time * 0.58, -time * 0.31) + mouse * 0.16),
+    fbm(noisePoint + vec2(4.7 - time * 0.37, 2.4 + time * 0.46) - mouse * 0.12)
   );
   point += (warp - 0.5) * 1.28;
 
@@ -87,8 +87,8 @@ void main() {
 
   // Uma fita larga com halo cria massas fluidas, nunca uma bolha isolada.
   float distanceToFlow = abs(field - 0.06);
-  float halo = 1.0 - smoothstep(0.22, 1.08, distanceToFlow);
-  float ribbon = 1.0 - smoothstep(0.04, 0.58, distanceToFlow);
+  float halo = 1.0 - smoothstep(0.39, 0.91, distanceToFlow);
+  float ribbon = 1.0 - smoothstep(0.15, 0.47, distanceToFlow);
   float alpha = 0.035 * halo + 0.110 * ribbon;
 
   // Dither estatico evita banding nas areas escuras sem parecer grain animado.
@@ -195,8 +195,8 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     };
 
     const draw = (now: number) => {
-      currentX += (targetX - currentX) * 0.045;
-      currentY += (targetY - currentY) * 0.045;
+      currentX += (targetX - currentX) * 0.085;
+      currentY += (targetY - currentY) * 0.085;
 
       gl.uniform2f(mouseUniform, currentX, 1.0 - currentY);
       gl.uniform1f(timeUniform, reducedMotion ? 0 : (now - startedAt) / 1000);
