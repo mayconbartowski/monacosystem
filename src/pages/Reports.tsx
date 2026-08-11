@@ -28,6 +28,16 @@ const PAYMENT_COLORS: Record<PaymentMethod, string> = {
   Débito: "hsl(210 90% 60%)",
   Pix: "hsl(150 70% 50%)",
 };
+const DONUT_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(70 30% 45%)",   // olive
+  "hsl(38 55% 55%)",   // âmbar dessaturado
+  "hsl(105 20% 55%)",  // sage
+  "hsl(180 25% 45%)",  // teal
+  "hsl(210 20% 55%)",  // steel
+  "hsl(300 15% 55%)",  // mauve
+  "hsl(15 40% 52%)",   // terracota
+];
 
 export default function Reports() {
   const { orders, customers, services, expenses, partnerContracts } = useData();
@@ -155,6 +165,11 @@ export default function Reports() {
     });
     return Array.from(map.entries()).map(([label, total]) => ({ label, total }));
   }, [rangeExpenses]);
+
+  const expenseDonut = useMemo(
+    () => expenseByCategory.filter((e) => e.total > 0),
+    [expenseByCategory],
+  );
 
   const expenseTimeSeries = useMemo(() => {
     const days = eachDayOfInterval({ start: from, end: to });
