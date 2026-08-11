@@ -214,7 +214,7 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
 
       gl.uniform2f(mouseUniform, currentX, 1.0 - currentY);
       gl.uniform1f(timeUniform, reducedMotion ? 0 : (now - startedAt) / 1000);
-      gl.clearColor(0, 0, 0, 0);
+      gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
