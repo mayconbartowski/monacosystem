@@ -98,11 +98,18 @@ void main() {
   float voidMask = 1.0 - smoothstep(0.14, 0.42, voidContour);
   alpha *= 1.0 - voidMask;
 
-  // Dither estatico evita banding nas areas escuras sem parecer grain animado.
-  float dither = (interleavedGradientNoise(gl_FragCoord.xy) - 0.5) / 255.0;
-  alpha = clamp(alpha + dither * smoothstep(0.0, 0.018, alpha), 0.0, 0.145);
+  alpha = clamp(alpha, 0.0, 0.145);
 
-  fragColor = vec4(vec3(0.898039, 1.0, 0.560784), alpha);
+  // Composicao opaca do amarelo sobre preto, equivalente ao alpha anterior.
+  vec3 yellow = vec3(0.898039, 1.0, 0.560784);
+  vec3 finalColor = yellow * alpha;
+
+  // Dither estatico determinístico aplicado no RGB final, nunca no alpha.
+  float ditherMask = smoothstep(0.001, 0.012, alpha);
+  float dither = (interleavedGradientNoise(gl_FragCoord.xy) - 0.5) / 255.0;
+  finalColor = clamp(finalColor + vec3(dither * ditherMask), 0.0, 1.0);
+
+  fragColor = vec4(finalColor, 1.0);
 }
 `;
 
@@ -133,7 +140,7 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
   });
 
   const gl = canvas.getContext("webgl2", {
-    alpha: true,
+    alpha: false,
     antialias: false,
     premultipliedAlpha: false,
     preserveDrawingBuffer: false,
@@ -207,7 +214,7 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
 
       gl.uniform2f(mouseUniform, currentX, 1.0 - currentY);
       gl.uniform1f(timeUniform, reducedMotion ? 0 : (now - startedAt) / 1000);
-      gl.clearColor(0, 0, 0, 0);
+      gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
