@@ -175,6 +175,10 @@ export default function Sales() {
     [existingVehicle, mode],
   );
 
+  const categoryLocked = mode === "customer" && !!existingVehicle;
+
+
+
   const baseTotals = useMemo(
     () => calcTotals(prices, category, service, extras, 0, loyalty),
     [prices, category, service, extras, loyalty],
