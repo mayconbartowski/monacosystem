@@ -89,6 +89,9 @@ export default function Reports() {
   const netResult = revenue - totalExpenses;
   const expenseRatio = revenue > 0 ? (totalExpenses / revenue) * 100 : totalExpenses > 0 ? 100 : 0;
   const gaugeFill = Math.min(100, Math.max(0, expenseRatio));
+  const noRevenueWithExpenses = revenue === 0 && totalExpenses > 0;
+  const limitExceeded = noRevenueWithExpenses || expenseRatio > 100;
+
 
 
   // Customers indicators
@@ -396,8 +399,10 @@ export default function Reports() {
                 </div>
                 <div className="mt-4 text-center space-y-1">
                   <div className="text-xs text-muted-foreground">{`Despesas: ${brl(totalExpenses)}`}</div>
-                  <div className="text-xs text-muted-foreground">{`${expenseRatio.toFixed(1)}% da receita`}</div>
-                  {expenseRatio > 100 && (
+                  <div className="text-xs text-muted-foreground">
+                    {noRevenueWithExpenses ? "Sem receita no período" : `${expenseRatio.toFixed(1)}% da receita`}
+                  </div>
+                  {limitExceeded && (
                     <div className="text-xs font-medium text-destructive">Limite excedido</div>
                   )}
                 </div>
