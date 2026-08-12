@@ -80,8 +80,8 @@ function PixEqualizer({ width = 0, height = 0, offset, data }: PixEqualizerProps
         const interpolated = lower + (upper - lower) * blend;
         const activity = Math.sqrt(interpolated / maxPix);
         const equalizerPulse = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(index * 1.73));
-        const idleWave = plot.height * (0.16 + 0.12 * (0.5 + 0.5 * Math.sin(index * 0.39)));
-        const lineHeight = Math.min(plot.height * 0.84, idleWave + activity * plot.height * 0.56 * equalizerPulse);
+        const idleWave = plot.height * (0.22 + 0.18 * (0.5 + 0.5 * Math.sin(index * 0.39)));
+        const lineHeight = Math.min(plot.height * 0.86, idleWave + activity * plot.height * 0.44 * equalizerPulse);
         const x = plot.left + progress * plot.width;
         const yBottom = plot.top + plot.height;
 
@@ -336,7 +336,7 @@ export default function Reports() {
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                   <YAxis
                     stroke="hsl(var(--muted-foreground))"
