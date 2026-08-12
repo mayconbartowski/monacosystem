@@ -4,8 +4,22 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import {
-  ResponsiveContainer, Line, XAxis, YAxis, Tooltip as RTooltip, Legend, CartesianGrid,
-  BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, ComposedChart,
+  ResponsiveContainer,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+  Legend,
+  CartesianGrid,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  ComposedChart,
+  Customized,
 } from "recharts";
 
 import { AppShell } from "@/components/AppShell";
@@ -30,14 +44,63 @@ const PAYMENT_COLORS: Record<PaymentMethod, string> = {
 };
 const DONUT_COLORS = [
   "hsl(var(--primary))",
-  "hsl(70 30% 45%)",   // olive
-  "hsl(38 55% 55%)",   // âmbar dessaturado
-  "hsl(105 20% 55%)",  // sage
-  "hsl(180 25% 45%)",  // teal
-  "hsl(210 20% 55%)",  // steel
-  "hsl(300 15% 55%)",  // mauve
-  "hsl(15 40% 52%)",   // terracota
+  "hsl(70 30% 45%)", // olive
+  "hsl(38 55% 55%)", // âmbar dessaturado
+  "hsl(105 20% 55%)", // sage
+  "hsl(180 25% 45%)", // teal
+  "hsl(210 20% 55%)", // steel
+  "hsl(300 15% 55%)", // mauve
+  "hsl(15 40% 52%)", // terracota
 ];
+
+type PixEqualizerProps = {
+  width?: number;
+  height?: number;
+  offset?: { left: number; top: number; width: number; height: number };
+  data: Array<Record<string, number | string>>;
+};
+
+function PixEqualizer({ width = 0, height = 0, offset, data }: PixEqualizerProps) {
+  const plot = offset ?? { left: 0, top: 0, width, height };
+  if (!plot.width || !plot.height || data.length === 0) return null;
+
+  const sampleCount = Math.max(64, Math.min(140, data.length * 5));
+  const maxPix = Math.max(1, ...data.map((item) => Number(item.Pix) || 0));
+  const baseline = Math.max(8, plot.height * 0.055);
+
+  return (
+    <g aria-hidden="true" pointerEvents="none">
+      {Array.from({ length: sampleCount }, (_, index) => {
+        const progress = sampleCount === 1 ? 0 : index / (sampleCount - 1);
+        const dataPosition = progress * Math.max(0, data.length - 1);
+        const lowerIndex = Math.floor(dataPosition);
+        const upperIndex = Math.min(data.length - 1, lowerIndex + 1);
+        const blend = dataPosition - lowerIndex;
+        const lower = Number(data[lowerIndex]?.Pix) || 0;
+        const upper = Number(data[upperIndex]?.Pix) || 0;
+        const interpolated = lower + (upper - lower) * blend;
+        const activity = Math.sqrt(interpolated / maxPix);
+        const equalizerPulse = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(index * 1.73));
+        const lineHeight = Math.min(plot.height * 0.82, baseline + activity * plot.height * 0.68 * equalizerPulse);
+        const x = plot.left + progress * plot.width;
+        const yBottom = plot.top + plot.height;
+
+        return (
+          <line
+            key={index}
+            x1={x}
+            x2={x}
+            y1={yBottom - lineHeight}
+            y2={yBottom}
+            stroke={PAYMENT_COLORS.Pix}
+            strokeWidth={1.25}
+            strokeOpacity={0.72}
+          />
+        );
+      })}
+    </g>
+  );
+}
 
 export default function Reports() {
   const { orders, customers, services, expenses, partnerContracts } = useData();
@@ -57,7 +120,8 @@ export default function Reports() {
 
   // Ordens operacionais (por data de criação) — para volume/categoria/partner
   const rangeOrders = useMemo(() => {
-    const f = from.getTime(); const t = to.getTime();
+    const f = from.getTime();
+    const t = to.getTime();
     return orders.filter((o) => {
       if (o.status === "cancelled") return false;
       const d = new Date(o.createdAt).getTime();
@@ -67,7 +131,8 @@ export default function Reports() {
 
   // Ordens PAGAS (particular) — para receita e forma de pagamento (usa data financeira)
   const paidOrders = useMemo(() => {
-    const f = from.getTime(); const t = to.getTime();
+    const f = from.getTime();
+    const t = to.getTime();
     return orders.filter((o) => {
       if (!isOrderPaid(o) || o.orderSource === "partner") return false;
       const d = orderFinancialDate(o);
@@ -88,17 +153,19 @@ export default function Reports() {
   const totalExpenses = rangeExpenses.reduce((a, e) => a + e.amount, 0);
   const netResult = revenue - totalExpenses;
   const expenseRatio = revenue > 0 ? (totalExpenses / revenue) * 100 : totalExpenses > 0 ? 100 : 0;
-  const gaugeFill = Math.min(100, Math.max(0, expenseRatio));
   const noRevenueWithExpenses = revenue === 0 && totalExpenses > 0;
+  const gaugeFill = noRevenueWithExpenses ? 100 : Math.min(100, Math.max(0, expenseRatio / 2));
   const limitExceeded = noRevenueWithExpenses || expenseRatio > 100;
 
-
-
   // Customers indicators
-  const registeredInPeriod = useMemo(() => customers.filter((c) => {
-    const d = new Date(c.createdAt).getTime();
-    return d >= from.getTime() && d <= to.getTime();
-  }).length, [customers, from, to]);
+  const registeredInPeriod = useMemo(
+    () =>
+      customers.filter((c) => {
+        const d = new Date(c.createdAt).getTime();
+        return d >= from.getTime() && d <= to.getTime();
+      }).length,
+    [customers, from, to],
+  );
   const attendedInPeriod = useMemo(() => {
     const set = new Set<string>();
     rangeOrders.forEach((o) => o.customerId && set.add(o.customerId));
@@ -111,7 +178,12 @@ export default function Reports() {
     const byDay = new Map<string, Record<string, number> & { label: string }>();
     days.forEach((d) => {
       const k = format(d, "yyyy-MM-dd");
-      byDay.set(k, { label: format(d, days.length > 60 ? "MMM/yy" : "dd/MM", { locale: ptBR }), Crédito: 0, Débito: 0, Pix: 0 } as any);
+      byDay.set(k, {
+        label: format(d, days.length > 60 ? "MMM/yy" : "dd/MM", { locale: ptBR }),
+        Crédito: 0,
+        Débito: 0,
+        Pix: 0,
+      } as any);
     });
     rangeOrders.forEach((o) => {
       const k = format(new Date(o.createdAt), "yyyy-MM-dd");
@@ -130,14 +202,23 @@ export default function Reports() {
     const rows: { label: string; qty: number; total: number }[] = [];
     rangeOrders.forEach((o) => {
       const key = o.service;
-      if (!seen.has(key)) { seen.add(key); rows.push({ label: key, qty: 0, total: 0 }); }
+      if (!seen.has(key)) {
+        seen.add(key);
+        rows.push({ label: key, qty: 0, total: 0 });
+      }
     });
     services.forEach((s) => {
-      if (!seen.has(s.key)) { seen.add(s.key); rows.push({ label: s.key, qty: 0, total: 0 }); }
+      if (!seen.has(s.key)) {
+        seen.add(s.key);
+        rows.push({ label: s.key, qty: 0, total: 0 });
+      }
     });
     rangeOrders.forEach((o) => {
       const r = rows.find((x) => x.label === o.service);
-      if (r) { r.qty += 1; r.total += o.total; }
+      if (r) {
+        r.qty += 1;
+        r.total += o.total;
+      }
     });
     return rows;
   }, [rangeOrders, services]);
@@ -148,7 +229,8 @@ export default function Reports() {
     VEHICLE_CATEGORIES.forEach((c) => map.set(c, { qty: 0, total: 0 }));
     rangeOrders.forEach((o) => {
       const cur = map.get(o.category) ?? { qty: 0, total: 0 };
-      cur.qty += 1; cur.total += o.total;
+      cur.qty += 1;
+      cur.total += o.total;
       map.set(o.category, cur);
     });
     return Array.from(map.entries()).map(([label, v]) => ({ label, ...v }));
@@ -172,10 +254,7 @@ export default function Reports() {
     return Array.from(map.entries()).map(([label, total]) => ({ label, total }));
   }, [rangeExpenses]);
 
-  const expenseDonut = useMemo(
-    () => expenseByCategory.filter((e) => e.total > 0),
-    [expenseByCategory],
-  );
+  const expenseDonut = useMemo(() => expenseByCategory.filter((e) => e.total > 0), [expenseByCategory]);
 
   const expenseTimeSeries = useMemo(() => {
     const days = eachDayOfInterval({ start: from, end: to });
@@ -202,16 +281,23 @@ export default function Reports() {
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {(["7", "30", "365"] as Preset[]).map((p) => (
-            <Button key={p} size="sm" variant={preset === p ? "default" : "outline"}
+            <Button
+              key={p}
+              size="sm"
+              variant={preset === p ? "default" : "outline"}
               onClick={() => setPreset(p)}
-              className={cn(preset === p && "bg-primary text-primary-foreground border-0")}>
+              className={cn(preset === p && "bg-primary text-primary-foreground border-0")}
+            >
               {p === "7" ? "Últimos 7 dias" : p === "30" ? "Últimos 30 dias" : "Últimos 365 dias"}
             </Button>
           ))}
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="sm" variant={preset === "custom" ? "default" : "outline"}
-                className={cn("gap-2", preset === "custom" && "bg-primary text-primary-foreground border-0")}>
+              <Button
+                size="sm"
+                variant={preset === "custom" ? "default" : "outline"}
+                className={cn("gap-2", preset === "custom" && "bg-primary text-primary-foreground border-0")}
+              >
                 <CalendarIcon className="h-3.5 w-3.5" /> Período específico
               </Button>
             </PopoverTrigger>
@@ -219,7 +305,10 @@ export default function Reports() {
               <Calendar
                 mode="range"
                 selected={range}
-                onSelect={(r) => { setRange(r); setPreset("custom"); }}
+                onSelect={(r) => {
+                  setRange(r);
+                  setPreset("custom");
+                }}
                 numberOfMonths={2}
                 locale={ptBR}
                 className={cn("p-3 pointer-events-auto")}
@@ -249,18 +338,48 @@ export default function Reports() {
                 <ComposedChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
-                    tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                    tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
+                  />
                   <RTooltip
                     formatter={(v: number) => brl(v)}
-                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="Pix" name="Pix" fill={PAYMENT_COLORS.Pix} barSize={3} isAnimationActive={false} />
-                  <Line type="monotone" dataKey="Débito" name="Débito" stroke={PAYMENT_COLORS["Débito"]}
-                    strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="Crédito" name="Crédito" stroke={PAYMENT_COLORS["Crédito"]}
-                    strokeWidth={2} dot={false} activeDot={{ r: 5 }} />
+                  <Bar
+                    dataKey="Pix"
+                    name="Pix"
+                    fill={PAYMENT_COLORS.Pix}
+                    fillOpacity={0}
+                    barSize={1}
+                    isAnimationActive={false}
+                  />
+                  <Customized component={(props: any) => <PixEqualizer {...props} data={paymentSeries} />} />
+                  <Line
+                    type="monotone"
+                    dataKey="Débito"
+                    name="Débito"
+                    stroke={PAYMENT_COLORS["Débito"]}
+                    strokeWidth={2.5}
+                    dot={false}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="Crédito"
+                    name="Crédito"
+                    stroke={PAYMENT_COLORS["Crédito"]}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 5 }}
+                  />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -284,12 +403,20 @@ export default function Reports() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
-                    tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                    tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
+                  />
                   <RTooltip
                     cursor={{ fill: "#ffffff", fillOpacity: 0.05 }}
-                    formatter={(v: number, name) => name === "total" ? brl(v) : String(v)}
-                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number, name) => (name === "total" ? brl(v) : String(v))}
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
                   />
                   <Bar dataKey="total" name="Faturamento" fill="url(#serviceBarGradient)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -341,24 +468,29 @@ export default function Reports() {
                   Nenhuma despesa registrada no período selecionado.
                 </div>
               ) : (
-                <div className="h-72 flex flex-col sm:flex-row items-center gap-4">
-                  <div className="h-40 sm:h-full w-full sm:w-1/2 min-w-0">
+                <div className="h-72 flex flex-col sm:flex-row items-center gap-3">
+                  <div className="h-52 sm:h-full w-full sm:w-[64%] min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <RTooltip
                           formatter={(v: number, name) => [brl(v), String(name)]}
-                          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                          contentStyle={{
+                            background: "hsl(var(--popover))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: 8,
+                            fontSize: 12,
+                          }}
                         />
                         <Pie
                           data={expenseDonut}
                           dataKey="total"
                           nameKey="label"
-                          innerRadius="60%"
-                          outerRadius="84%"
+                          innerRadius="82%"
+                          outerRadius="92%"
                           paddingAngle={2}
                           stroke="none"
                           isAnimationActive={false}
-                labelLine={false}
+                          labelLine={false}
                           label={false}
                         >
                           {expenseDonut.map((e, i) => (
@@ -368,11 +500,13 @@ export default function Reports() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="w-full sm:w-1/2 min-w-0 space-y-2 overflow-auto">
+                  <div className="w-full sm:w-[36%] min-w-0 space-y-2 overflow-auto">
                     {expenseDonut.map((e, i) => (
                       <div key={e.label} className="flex items-center gap-2 text-sm min-w-0">
-                        <span className="h-2.5 w-2.5 rounded-full shrink-0"
-                          style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                        <span
+                          className="h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
+                        />
                         <span className="truncate text-muted-foreground">{e.label}</span>
                       </div>
                     ))}
@@ -384,27 +518,40 @@ export default function Reports() {
             <Card className="surface-card border-0 shadow-none p-5">
               <h3 className="text-sm font-semibold mb-4">Despesa vs receita</h3>
               <div className="h-72 flex flex-col items-center justify-center">
-                <div className="relative w-full max-w-[260px]">
-                  <svg viewBox="0 0 200 110" className="w-full">
-                    <path d="M 20 95 A 80 80 0 0 1 180 95" fill="none"
-                      stroke="hsl(var(--surface-4))" strokeWidth={14} strokeLinecap="round" />
-                    <path d="M 20 95 A 80 80 0 0 1 180 95" fill="none"
-                      stroke="hsl(var(--primary))" strokeWidth={14} strokeLinecap="round"
-                      pathLength={100} strokeDasharray={`${gaugeFill} 100`} />
+                <div className="relative w-full max-w-[360px] pt-10">
+                  <div className="absolute inset-x-0 top-0 flex flex-col items-center">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Receita bruta</div>
+                    <div className="text-sm font-semibold tabular-nums">{brl(revenue)}</div>
+                  </div>
+                  <svg viewBox="0 0 260 145" className="w-full">
+                    <path
+                      d="M 14 132 A 116 116 0 0 1 246 132"
+                      fill="none"
+                      stroke="hsl(var(--surface-4))"
+                      strokeWidth={14}
+                      strokeLinecap="butt"
+                    />
+                    <path
+                      d="M 14 132 A 116 116 0 0 1 246 132"
+                      fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={14}
+                      strokeLinecap="butt"
+                      pathLength={100}
+                      strokeDasharray={`${gaugeFill} 100`}
+                    />
+                    <line x1="130" x2="130" y1="3" y2="31" stroke="hsl(var(--foreground))" strokeWidth={2.5} />
                   </svg>
-                  <div className="absolute inset-x-0 bottom-1 flex flex-col items-center">
-                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Receita bruta</div>
-                    <div className="text-xl font-bold tabular-nums">{brl(revenue)}</div>
+                  <div className="absolute inset-x-0 bottom-3 flex flex-col items-center">
+                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Despesas</div>
+                    <div className="text-3xl font-bold tabular-nums text-primary">{brl(totalExpenses)}</div>
                   </div>
                 </div>
-                <div className="mt-4 text-center space-y-1">
-                  <div className="text-xs text-muted-foreground">{`Despesas: ${brl(totalExpenses)}`}</div>
+                <div className="mt-1 text-center space-y-1">
                   <div className="text-xs text-muted-foreground">
                     {noRevenueWithExpenses ? "Sem receita no período" : `${expenseRatio.toFixed(1)}% da receita`}
                   </div>
-                  {limitExceeded && (
-                    <div className="text-xs font-medium text-destructive">Limite excedido</div>
-                  )}
+                  {limitExceeded && <div className="text-xs font-medium text-destructive">Limite excedido</div>}
                 </div>
               </div>
             </Card>
@@ -422,15 +569,30 @@ export default function Reports() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
-                      tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
+                    />
                     <RTooltip
                       formatter={(v: number) => brl(v)}
-                      contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                      contentStyle={{
+                        background: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
                     />
-                    <Area type="monotone" dataKey="total" name="Despesas"
-                      stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#expenseAreaGradient)"
-                      dot={false} activeDot={{ r: 5 }} />
+                    <Area
+                      type="monotone"
+                      dataKey="total"
+                      name="Despesas"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2.5}
+                      fill="url(#expenseAreaGradient)"
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -466,8 +628,14 @@ export default function Reports() {
                       <div className="text-sm font-medium truncate">{e.name}</div>
                       {e.notes && <div className="text-xs text-muted-foreground truncate">{e.notes}</div>}
                     </div>
-                    <Badge variant="outline" className="text-xs">{e.category}</Badge>
-                    {e.paymentMethod && <Badge variant="outline" className="text-xs">{e.paymentMethod}</Badge>}
+                    <Badge variant="outline" className="text-xs">
+                      {e.category}
+                    </Badge>
+                    {e.paymentMethod && (
+                      <Badge variant="outline" className="text-xs">
+                        {e.paymentMethod}
+                      </Badge>
+                    )}
                     <div className="w-28 text-right font-semibold text-destructive">−{brl(e.amount)}</div>
                   </div>
                 ))}
@@ -480,68 +648,96 @@ export default function Reports() {
         <div className="pt-2">
           <div className="flex items-center gap-3 mb-3">
             <h2 className="text-base font-semibold">Parceiros</h2>
-            <div className="text-xs text-muted-foreground">Atendimentos no período · uso do contrato no mês corrente</div>
+            <div className="text-xs text-muted-foreground">
+              Atendimentos no período · uso do contrato no mês corrente
+            </div>
           </div>
 
           {partnerContracts.length === 0 ? (
             <Card className="surface-card border-0 shadow-none p-6 text-sm text-muted-foreground text-center">
               Nenhum contrato de parceiro cadastrado.
             </Card>
-          ) : (() => {
-            const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-            const partnerOrdersRange = orders.filter((o) => o.orderSource === "partner" && o.status !== "cancelled"
-              && new Date(o.createdAt) >= from && new Date(o.createdAt) <= to);
-            const totalPartnerAttendances = partnerOrdersRange.length;
-            const totalContractValue = partnerContracts.filter((c) => c.active).reduce((a, c) => a + c.contractValue, 0);
-            return (
-              <>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                  <Stat label="Atendimentos (período)" value={String(totalPartnerAttendances)} />
-                  <Stat label="Contratos ativos" value={String(partnerContracts.filter((c) => c.active).length)} />
-                  <Stat label="Valor mensal contratado" value={brl(totalContractValue)} accent />
-                  <Stat label="Contratos totais" value={String(partnerContracts.length)} />
-                </div>
-
-                <Card className="surface-card border-0 shadow-none p-5 mt-2">
-                  <h3 className="text-sm font-semibold mb-4">Uso por contrato</h3>
-                  <div className="divide-y divide-border">
-                    {partnerContracts.map((c) => {
-                      const monthUsage = orders.filter((o) => o.partnerContractId === c.id
-                        && o.status !== "cancelled" && new Date(o.createdAt) >= monthStart).length;
-                      const periodUsage = partnerOrdersRange.filter((o) => o.partnerContractId === c.id).length;
-                      const pct = c.monthlyVehicleLimit > 0 ? Math.min(100, (monthUsage / c.monthlyVehicleLimit) * 100) : 0;
-                      return (
-                        <div key={c.id} className="py-3 flex items-center gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{c.companyName}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {periodUsage} no período · {monthUsage}/{c.monthlyVehicleLimit} este mês
-                            </div>
-                            <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
-                              <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <div className="text-sm font-semibold text-primary">{brl(c.contractValue)}</div>
-                            <Badge variant={c.active ? "outline" : "secondary"} className="text-[10px] mt-1">
-                              {c.active ? "Ativo" : "Inativo"}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
+          ) : (
+            (() => {
+              const monthStart = new Date();
+              monthStart.setDate(1);
+              monthStart.setHours(0, 0, 0, 0);
+              const partnerOrdersRange = orders.filter(
+                (o) =>
+                  o.orderSource === "partner" &&
+                  o.status !== "cancelled" &&
+                  new Date(o.createdAt) >= from &&
+                  new Date(o.createdAt) <= to,
+              );
+              const totalPartnerAttendances = partnerOrdersRange.length;
+              const totalContractValue = partnerContracts
+                .filter((c) => c.active)
+                .reduce((a, c) => a + c.contractValue, 0);
+              return (
+                <>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                    <Stat label="Atendimentos (período)" value={String(totalPartnerAttendances)} />
+                    <Stat label="Contratos ativos" value={String(partnerContracts.filter((c) => c.active).length)} />
+                    <Stat label="Valor mensal contratado" value={brl(totalContractValue)} accent />
+                    <Stat label="Contratos totais" value={String(partnerContracts.length)} />
                   </div>
-                </Card>
-              </>
-            );
-          })()}
+
+                  <Card className="surface-card border-0 shadow-none p-5 mt-2">
+                    <h3 className="text-sm font-semibold mb-4">Uso por contrato</h3>
+                    <div className="divide-y divide-border">
+                      {partnerContracts.map((c) => {
+                        const monthUsage = orders.filter(
+                          (o) =>
+                            o.partnerContractId === c.id &&
+                            o.status !== "cancelled" &&
+                            new Date(o.createdAt) >= monthStart,
+                        ).length;
+                        const periodUsage = partnerOrdersRange.filter((o) => o.partnerContractId === c.id).length;
+                        const pct =
+                          c.monthlyVehicleLimit > 0 ? Math.min(100, (monthUsage / c.monthlyVehicleLimit) * 100) : 0;
+                        return (
+                          <div key={c.id} className="py-3 flex items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">{c.companyName}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {periodUsage} no período · {monthUsage}/{c.monthlyVehicleLimit} este mês
+                              </div>
+                              <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                                <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="text-sm font-semibold text-primary">{brl(c.contractValue)}</div>
+                              <Badge variant={c.active ? "outline" : "secondary"} className="text-[10px] mt-1">
+                                {c.active ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                </>
+              );
+            })()
+          )}
         </div>
       </div>
     </AppShell>
   );
 }
 
-function Stat({ label, value, accent, highlight }: { label: string; value: string; accent?: boolean; highlight?: boolean }) {
+function Stat({
+  label,
+  value,
+  accent,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  highlight?: boolean;
+}) {
   if (highlight) {
     return (
       <Card className="surface-card border-0 shadow-none p-4 bg-primary text-primary-foreground">
