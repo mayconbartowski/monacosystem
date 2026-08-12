@@ -175,6 +175,10 @@ export default function Sales() {
     [existingVehicle, mode],
   );
 
+  const categoryLocked = mode === "customer" && !!existingVehicle;
+
+
+
   const baseTotals = useMemo(
     () => calcTotals(prices, category, service, extras, 0, loyalty),
     [prices, category, service, extras, loyalty],
@@ -406,20 +410,27 @@ export default function Sales() {
         <section className="lg:col-span-4 flex flex-col gap-2 md:gap-2.5 min-h-0">
           <Panel title="Serviços" subtitle={`Preços para ${category}`} className="flex-1">
             <div className="flex flex-wrap gap-1.5 p-1 rounded-control bg-surface-3 mb-4">
-              {VEHICLE_CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCategory(c)}
-                  className={cn(
-                    "flex-1 min-w-[64px] px-2 py-2 rounded-[0.5rem] text-sm font-medium transition-colors",
-                    category === c
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-surface-4",
-                  )}
-                >
-                  {c}
-                </button>
-              ))}
+              {VEHICLE_CATEGORIES.map((c) => {
+                const locked = categoryLocked && c !== category;
+                return (
+                  <button
+                    key={c}
+                    disabled={locked}
+                    onClick={() => { if (!categoryLocked) setCategory(c); }}
+                    className={cn(
+                      "flex-1 min-w-[64px] px-2 py-2 rounded-[0.5rem] text-sm font-medium transition-colors",
+                      category === c
+                        ? "bg-primary text-primary-foreground"
+                        : locked
+                          ? "text-muted-foreground/50 opacity-50 cursor-not-allowed"
+                          : "text-muted-foreground hover:text-foreground hover:bg-surface-4",
+                    )}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+
             </div>
 
             <div className="space-y-2">

@@ -4,8 +4,8 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, Legend, CartesianGrid,
-  BarChart, Bar, PieChart, Pie, Cell,
+  ResponsiveContainer, Line, XAxis, YAxis, Tooltip as RTooltip, Legend, CartesianGrid,
+  BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, ComposedChart,
 } from "recharts";
 
 import { AppShell } from "@/components/AppShell";
@@ -24,9 +24,9 @@ import { cn } from "@/lib/utils";
 type Preset = "7" | "30" | "365" | "custom";
 const PAYMENTS: PaymentMethod[] = ["Crédito", "Débito", "Pix"];
 const PAYMENT_COLORS: Record<PaymentMethod, string> = {
-  Crédito: "hsl(38 100% 55%)",
-  Débito: "hsl(210 90% 60%)",
-  Pix: "hsl(150 70% 50%)",
+  Crédito: "hsl(0 0% 62%)",
+  Débito: "hsl(var(--primary))",
+  Pix: "hsl(0 0% 39%)",
 };
 const DONUT_COLORS = [
   "hsl(var(--primary))",
@@ -41,9 +41,9 @@ const DONUT_COLORS = [
 
 export default function Reports() {
   const { orders, customers, services, expenses, partnerContracts } = useData();
-  const [preset, setPreset] = useState<Preset>("7");
+  const [preset, setPreset] = useState<Preset>("30");
   const [range, setRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 6),
+    from: subDays(new Date(), 29),
     to: new Date(),
   });
 
@@ -87,6 +87,9 @@ export default function Reports() {
   const discounts = paidOrders.reduce((a, o) => a + o.discount + o.loyaltyDiscount, 0);
   const totalExpenses = rangeExpenses.reduce((a, e) => a + e.amount, 0);
   const netResult = revenue - totalExpenses;
+  const expenseRatio = revenue > 0 ? (totalExpenses / revenue) * 100 : totalExpenses > 0 ? 100 : 0;
+  const gaugeFill = Math.min(100, Math.max(0, expenseRatio));
+
 
   // Customers indicators
   const registeredInPeriod = useMemo(() => customers.filter((c) => {
@@ -240,7 +243,7 @@ export default function Reports() {
             <h3 className="text-sm font-semibold mb-4">Faturamento por forma de pagamento</h3>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                <ComposedChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
@@ -250,11 +253,12 @@ export default function Reports() {
                     contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  {PAYMENTS.map((p) => (
-                    <Line key={p} type="monotone" dataKey={p} stroke={PAYMENT_COLORS[p]}
-                      strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-                  ))}
-                </LineChart>
+                  <Bar dataKey="Pix" name="Pix" fill={PAYMENT_COLORS.Pix} barSize={3} isAnimationActive={false} />
+                  <Line type="monotone" dataKey="Débito" name="Débito" stroke={PAYMENT_COLORS["Débito"]}
+                    strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="Crédito" name="Crédito" stroke={PAYMENT_COLORS["Crédito"]}
+                    strokeWidth={2} dot={false} activeDot={{ r: 5 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2">
@@ -269,6 +273,12 @@ export default function Reports() {
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={serviceData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="serviceBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.95} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
@@ -278,7 +288,7 @@ export default function Reports() {
                     formatter={(v: number, name) => name === "total" ? brl(v) : String(v)}
                     contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                   />
-                  <Bar dataKey="total" name="Faturamento" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="total" name="Faturamento" fill="url(#serviceBarGradient)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -292,7 +302,7 @@ export default function Reports() {
 
         <Card className="surface-card border-0 shadow-none p-5">
           <h3 className="text-sm font-semibold mb-4">Por categoria de veículo</h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
             {categoryStats.map((c) => (
               <div key={c.label as string} className="rounded-card bg-surface-3 p-4">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{c.label}</div>
@@ -320,7 +330,7 @@ export default function Reports() {
             <Stat label="Saldo (receita − despesas)" value={brl(netResult)} accent={netResult >= 0} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-2">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mt-2 items-stretch">
             <Card className="surface-card border-0 shadow-none p-5">
               <h3 className="text-sm font-semibold mb-4">Despesas por categoria</h3>
               {expenseDonut.length === 0 ? (
@@ -369,10 +379,42 @@ export default function Reports() {
             </Card>
 
             <Card className="surface-card border-0 shadow-none p-5">
+              <h3 className="text-sm font-semibold mb-4">Despesa vs receita</h3>
+              <div className="h-72 flex flex-col items-center justify-center">
+                <div className="relative w-full max-w-[260px]">
+                  <svg viewBox="0 0 200 110" className="w-full">
+                    <path d="M 20 95 A 80 80 0 0 1 180 95" fill="none"
+                      stroke="hsl(var(--surface-4))" strokeWidth={14} strokeLinecap="round" />
+                    <path d="M 20 95 A 80 80 0 0 1 180 95" fill="none"
+                      stroke="hsl(var(--primary))" strokeWidth={14} strokeLinecap="round"
+                      pathLength={100} strokeDasharray={`${gaugeFill} 100`} />
+                  </svg>
+                  <div className="absolute inset-x-0 bottom-1 flex flex-col items-center">
+                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Receita bruta</div>
+                    <div className="text-xl font-bold tabular-nums">{brl(revenue)}</div>
+                  </div>
+                </div>
+                <div className="mt-4 text-center space-y-1">
+                  <div className="text-xs text-muted-foreground">{`Despesas: ${brl(totalExpenses)}`}</div>
+                  <div className="text-xs text-muted-foreground">{`${expenseRatio.toFixed(1)}% da receita`}</div>
+                  {expenseRatio > 100 && (
+                    <div className="text-xs font-medium text-destructive">Limite excedido</div>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            <Card className="surface-card border-0 shadow-none p-5">
               <h3 className="text-sm font-semibold mb-4">Despesas ao longo do tempo</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={expenseTimeSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                  <AreaChart data={expenseTimeSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="expenseAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.95} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
@@ -381,9 +423,10 @@ export default function Reports() {
                       formatter={(v: number) => brl(v)}
                       contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                     />
-                    <Line type="monotone" dataKey="total" name="Despesas"
-                      stroke="hsl(0 75% 60%)" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-                  </LineChart>
+                    <Area type="monotone" dataKey="total" name="Despesas"
+                      stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#expenseAreaGradient)"
+                      dot={false} activeDot={{ r: 5 }} />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </Card>
