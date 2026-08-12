@@ -24,9 +24,9 @@ import { cn } from "@/lib/utils";
 type Preset = "7" | "30" | "365" | "custom";
 const PAYMENTS: PaymentMethod[] = ["Crédito", "Débito", "Pix"];
 const PAYMENT_COLORS: Record<PaymentMethod, string> = {
-  Crédito: "hsl(38 100% 55%)",
-  Débito: "hsl(210 90% 60%)",
-  Pix: "hsl(150 70% 50%)",
+  Crédito: "hsl(0 0% 62%)",
+  Débito: "hsl(var(--primary))",
+  Pix: "hsl(0 0% 39%)",
 };
 const DONUT_COLORS = [
   "hsl(var(--primary))",
