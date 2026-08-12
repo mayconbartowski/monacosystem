@@ -41,9 +41,9 @@ const DONUT_COLORS = [
 
 export default function Reports() {
   const { orders, customers, services, expenses, partnerContracts } = useData();
-  const [preset, setPreset] = useState<Preset>("7");
+  const [preset, setPreset] = useState<Preset>("30");
   const [range, setRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 6),
+    from: subDays(new Date(), 29),
     to: new Date(),
   });
 
