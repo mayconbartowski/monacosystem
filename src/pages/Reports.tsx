@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, Legend, CartesianGrid,
+  ResponsiveContainer, Line, XAxis, YAxis, Tooltip as RTooltip, Legend, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, ComposedChart,
 } from "recharts";
 
