@@ -89,6 +89,9 @@ export default function Reports() {
   const netResult = revenue - totalExpenses;
   const expenseRatio = revenue > 0 ? (totalExpenses / revenue) * 100 : totalExpenses > 0 ? 100 : 0;
   const gaugeFill = Math.min(100, Math.max(0, expenseRatio));
+  const noRevenueWithExpenses = revenue === 0 && totalExpenses > 0;
+  const limitExceeded = noRevenueWithExpenses || expenseRatio > 100;
+
 
 
   // Customers indicators
