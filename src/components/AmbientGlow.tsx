@@ -101,7 +101,7 @@ void main() {
   alpha = clamp(alpha, 0.0, 0.145);
 
   // Composicao opaca do amarelo sobre preto, equivalente ao alpha anterior.
-  vec3 yellow = vec3(0.898039, 1.0, 0.560784);
+  vec3 yellow = vec3(1.0, 0.996078, 0.560784);
   vec3 finalColor = yellow * alpha;
 
   // Dither estatico determinístico aplicado no RGB final, nunca no alpha.
