@@ -66,7 +66,6 @@ function PixEqualizer({ width = 0, height = 0, offset, data }: PixEqualizerProps
 
   const sampleCount = Math.max(64, Math.min(140, data.length * 5));
   const maxPix = Math.max(1, ...data.map((item) => Number(item.Pix) || 0));
-  const baseline = Math.max(8, plot.height * 0.055);
 
   return (
     <g aria-hidden="true" pointerEvents="none">
@@ -81,7 +80,8 @@ function PixEqualizer({ width = 0, height = 0, offset, data }: PixEqualizerProps
         const interpolated = lower + (upper - lower) * blend;
         const activity = Math.sqrt(interpolated / maxPix);
         const equalizerPulse = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(index * 1.73));
-        const lineHeight = Math.min(plot.height * 0.82, baseline + activity * plot.height * 0.68 * equalizerPulse);
+        const idleWave = plot.height * (0.16 + 0.12 * (0.5 + 0.5 * Math.sin(index * 0.39)));
+        const lineHeight = Math.min(plot.height * 0.84, idleWave + activity * plot.height * 0.56 * equalizerPulse);
         const x = plot.left + progress * plot.width;
         const yBottom = plot.top + plot.height;
 
