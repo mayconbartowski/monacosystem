@@ -299,7 +299,7 @@ export default function Reports() {
 
         <Card className="surface-card border-0 shadow-none p-5">
           <h3 className="text-sm font-semibold mb-4">Por categoria de veículo</h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
             {categoryStats.map((c) => (
               <div key={c.label as string} className="rounded-card bg-surface-3 p-4">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{c.label}</div>
