@@ -240,7 +240,7 @@ export default function Reports() {
             <h3 className="text-sm font-semibold mb-4">Faturamento por forma de pagamento</h3>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                <ComposedChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
@@ -250,11 +250,12 @@ export default function Reports() {
                     contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  {PAYMENTS.map((p) => (
-                    <Line key={p} type="monotone" dataKey={p} stroke={PAYMENT_COLORS[p]}
-                      strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-                  ))}
-                </LineChart>
+                  <Bar dataKey="Pix" name="Pix" fill={PAYMENT_COLORS.Pix} barSize={3} isAnimationActive={false} />
+                  <Line type="monotone" dataKey="Débito" name="Débito" stroke={PAYMENT_COLORS["Débito"]}
+                    strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="Crédito" name="Crédito" stroke={PAYMENT_COLORS["Crédito"]}
+                    strokeWidth={2} dot={false} activeDot={{ r: 5 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2">
