@@ -87,6 +87,9 @@ export default function Reports() {
   const discounts = paidOrders.reduce((a, o) => a + o.discount + o.loyaltyDiscount, 0);
   const totalExpenses = rangeExpenses.reduce((a, e) => a + e.amount, 0);
   const netResult = revenue - totalExpenses;
+  const expenseRatio = revenue > 0 ? (totalExpenses / revenue) * 100 : totalExpenses > 0 ? 100 : 0;
+  const gaugeFill = Math.min(100, Math.max(0, expenseRatio));
+
 
   // Customers indicators
   const registeredInPeriod = useMemo(() => customers.filter((c) => {
