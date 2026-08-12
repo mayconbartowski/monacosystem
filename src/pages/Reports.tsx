@@ -54,21 +54,22 @@ const DONUT_COLORS = [
 ];
 
 type PixEqualizerProps = {
-  width?: number;
-  height?: number;
-  offset?: { left: number; top: number; width: number; height: number };
   data: Array<Record<string, number | string>>;
 };
 
-function PixEqualizer({ width = 0, height = 0, offset, data }: PixEqualizerProps) {
-  const plot = offset ?? { left: 0, top: 0, width, height };
-  if (!plot.width || !plot.height || data.length === 0) return null;
+function PixEqualizer({ data }: PixEqualizerProps) {
+  if (data.length === 0) return null;
 
-  const sampleCount = Math.max(64, Math.min(140, data.length * 5));
+  const sampleCount = Math.max(72, Math.min(144, data.length * 5));
   const maxPix = Math.max(1, ...data.map((item) => Number(item.Pix) || 0));
 
   return (
-    <g aria-hidden="true" pointerEvents="none">
+    <svg
+      className="h-full w-full overflow-visible"
+      viewBox="0 0 1000 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
       {Array.from({ length: sampleCount }, (_, index) => {
         const progress = sampleCount === 1 ? 0 : index / (sampleCount - 1);
         const dataPosition = progress * Math.max(0, data.length - 1);
@@ -80,25 +81,25 @@ function PixEqualizer({ width = 0, height = 0, offset, data }: PixEqualizerProps
         const interpolated = lower + (upper - lower) * blend;
         const activity = Math.sqrt(interpolated / maxPix);
         const equalizerPulse = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(index * 1.73));
-        const idleWave = plot.height * (0.22 + 0.18 * (0.5 + 0.5 * Math.sin(index * 0.39)));
-        const lineHeight = Math.min(plot.height * 0.86, idleWave + activity * plot.height * 0.44 * equalizerPulse);
-        const x = plot.left + progress * plot.width;
-        const yBottom = plot.top + plot.height;
+        const idleWave = 22 + 18 * (0.5 + 0.5 * Math.sin(index * 0.39));
+        const lineHeight = Math.min(86, idleWave + activity * 44 * equalizerPulse);
+        const x = progress * 1000;
 
         return (
           <line
             key={index}
             x1={x}
             x2={x}
-            y1={yBottom - lineHeight}
-            y2={yBottom}
+            y1={100 - lineHeight}
+            y2={100}
             stroke={PAYMENT_COLORS.Pix}
-            strokeWidth={1.25}
-            strokeOpacity={0.72}
+            strokeWidth={1.4}
+            strokeOpacity={0.8}
+            vectorEffect="non-scaling-stroke"
           />
         );
       })}
-    </g>
+    </svg>
   );
 }
 
@@ -333,55 +334,59 @@ export default function Reports() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <Card className="surface-card border-0 shadow-none p-5">
             <h3 className="text-sm font-semibold mb-4">Faturamento por forma de pagamento</h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={11}
-                    tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
-                  />
-                  <RTooltip
-                    formatter={(v: number) => brl(v)}
-                    contentStyle={{
-                      background: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar
-                    dataKey="Pix"
-                    name="Pix"
-                    fill={PAYMENT_COLORS.Pix}
-                    fillOpacity={0}
-                    barSize={1}
-                    isAnimationActive={false}
-                  />
-                  <Customized component={(props: any) => <PixEqualizer {...props} data={paymentSeries} />} />
-                  <Line
-                    type="monotone"
-                    dataKey="Débito"
-                    name="Débito"
-                    stroke={PAYMENT_COLORS["Débito"]}
-                    strokeWidth={2.5}
-                    dot={false}
-                    activeDot={{ r: 5 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="Crédito"
-                    name="Crédito"
-                    stroke={PAYMENT_COLORS["Crédito"]}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 5 }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
+            <div className="h-72 relative">
+              <div className="absolute left-[60px] right-5 top-[5px] bottom-12 pointer-events-none z-0">
+                <PixEqualizer data={paymentSeries} />
+              </div>
+              <div className="relative z-[1] h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={paymentSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
+                    />
+                    <RTooltip
+                      formatter={(v: number) => brl(v)}
+                      contentStyle={{
+                        background: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar
+                      dataKey="Pix"
+                      name="Pix"
+                      fill={PAYMENT_COLORS.Pix}
+                      fillOpacity={0}
+                      barSize={1}
+                      isAnimationActive={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Débito"
+                      name="Débito"
+                      stroke={PAYMENT_COLORS["Débito"]}
+                      strokeWidth={2.5}
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="Crédito"
+                      name="Crédito"
+                      stroke={PAYMENT_COLORS["Crédito"]}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2">
               {PAYMENTS.map((p) => (
