@@ -376,10 +376,42 @@ export default function Reports() {
             </Card>
 
             <Card className="surface-card border-0 shadow-none p-5">
+              <h3 className="text-sm font-semibold mb-4">Despesa vs receita</h3>
+              <div className="h-72 flex flex-col items-center justify-center">
+                <div className="relative w-full max-w-[260px]">
+                  <svg viewBox="0 0 200 110" className="w-full">
+                    <path d="M 20 95 A 80 80 0 0 1 180 95" fill="none"
+                      stroke="hsl(var(--surface-4))" strokeWidth={14} strokeLinecap="round" />
+                    <path d="M 20 95 A 80 80 0 0 1 180 95" fill="none"
+                      stroke="hsl(var(--primary))" strokeWidth={14} strokeLinecap="round"
+                      pathLength={100} strokeDasharray={`${gaugeFill} 100`} />
+                  </svg>
+                  <div className="absolute inset-x-0 bottom-1 flex flex-col items-center">
+                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Receita bruta</div>
+                    <div className="text-xl font-bold tabular-nums">{brl(revenue)}</div>
+                  </div>
+                </div>
+                <div className="mt-4 text-center space-y-1">
+                  <div className="text-xs text-muted-foreground">{`Despesas: ${brl(totalExpenses)}`}</div>
+                  <div className="text-xs text-muted-foreground">{`${expenseRatio.toFixed(1)}% da receita`}</div>
+                  {expenseRatio > 100 && (
+                    <div className="text-xs font-medium text-destructive">Limite excedido</div>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            <Card className="surface-card border-0 shadow-none p-5">
               <h3 className="text-sm font-semibold mb-4">Despesas ao longo do tempo</h3>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={expenseTimeSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                  <AreaChart data={expenseTimeSeries} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="expenseAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.95} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11}
@@ -388,9 +420,10 @@ export default function Reports() {
                       formatter={(v: number) => brl(v)}
                       contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
                     />
-                    <Line type="monotone" dataKey="total" name="Despesas"
-                      stroke="hsl(0 75% 60%)" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-                  </LineChart>
+                    <Area type="monotone" dataKey="total" name="Despesas"
+                      stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#expenseAreaGradient)"
+                      dot={false} activeDot={{ r: 5 }} />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </Card>
