@@ -327,7 +327,7 @@ export default function Reports() {
             <Stat label="Saldo (receita − despesas)" value={brl(netResult)} accent={netResult >= 0} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-2">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mt-2 items-stretch">
             <Card className="surface-card border-0 shadow-none p-5">
               <h3 className="text-sm font-semibold mb-4">Despesas por categoria</h3>
               {expenseDonut.length === 0 ? (
