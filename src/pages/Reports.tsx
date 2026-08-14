@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
@@ -270,6 +270,29 @@ export default function Reports() {
     });
     return Array.from(map.values());
   }, [rangeExpenses, from, to]);
+
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [barVisible, setBarVisible] = useState(true);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let last = el.scrollTop;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      const delta = y - last;
+      if (y <= 8) {
+        setBarVisible(true);
+        last = y;
+        return;
+      }
+      if (Math.abs(delta) < 10) return;
+      setBarVisible(delta < 0);
+      last = y;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   const rangeLabel = `${format(from, "dd/MM/yyyy")} — ${format(to, "dd/MM/yyyy")}`;
 
