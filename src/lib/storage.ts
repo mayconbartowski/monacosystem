@@ -3,7 +3,7 @@
 
 export function toTitleCase(v: string): string {
   return (v || "").toLocaleLowerCase("pt-BR").replace(
-    /(^|\s|['\-])(\p{L})/gu,
+    /(^|\s|['-])(\p{L})/gu,
     (_, sep, ch) => sep + ch.toLocaleUpperCase("pt-BR"),
   );
 }

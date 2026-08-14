@@ -20,6 +20,7 @@ import { useData } from "@/lib/DataContext";
 import { deleteCustomer, updateCustomer } from "@/services/data";
 import { toast } from "sonner";
 import type { Customer } from "@/lib/domain";
+import { errorMessage } from "@/lib/utils";
 
 export default function Customers() {
   const [q, setQ] = useState("");
@@ -43,8 +44,8 @@ export default function Customers() {
       await updateCustomer(editing.id, form);
       toast.success("Cliente atualizado");
       setEditing(null);
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao salvar");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao salvar"));
     } finally {
       setSaving(false);
     }
@@ -66,7 +67,7 @@ export default function Customers() {
 
   const remove = async (id: string) => {
     try { await deleteCustomer(id); toast.success("Cliente excluído"); }
-    catch (e: any) { toast.error(e.message ?? "Erro ao excluir"); }
+    catch (error: unknown) { toast.error(errorMessage(error, "Erro ao excluir")); }
   };
 
   return (

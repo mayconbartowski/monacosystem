@@ -25,7 +25,7 @@ import { ServiceIcon } from "@/components/ServiceIcon";
 import { AppShell } from "@/components/AppShell";
 import { AmbientGlow } from "@/components/AmbientGlow";
 import { PickupPaymentDialog } from "@/components/PickupPaymentDialog";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 
 export default function Queue() {
   const { logout, role, perms } = useAuth();
@@ -82,8 +82,8 @@ export default function Queue() {
       await startOrder(o.id);
       toast.success(`Lavagem iniciada — ${o.vehiclePlate}`);
       setTab("in_progress");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao iniciar");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao iniciar"));
     }
   };
   const finish = async (o: Order) => {
@@ -91,8 +91,8 @@ export default function Queue() {
       await finishOrder(o);
       toast.success(`Finalizado — ${o.vehiclePlate}`);
       setTab("completed");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao finalizar");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao finalizar"));
     }
   };
 

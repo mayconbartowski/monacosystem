@@ -10,6 +10,7 @@ import { Order, PaymentMethod } from "@/lib/domain";
 import { brl } from "@/lib/storage";
 import { payOrderRpc, deliverPartnerOrderRpc } from "@/services/partners";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/utils";
 
 const PAYMENTS: PaymentMethod[] = ["Crédito", "Débito", "Pix"];
 
@@ -58,8 +59,8 @@ export function PickupPaymentDialog({ order, open, onOpenChange, partnerLabel, p
         });
       }
       onOpenChange(false);
-    } catch (e: any) {
-      const msg = e?.message ?? "";
+    } catch (error: unknown) {
+      const msg = errorMessage(error, "");
       if (msg.includes("order_already_paid")) toast.error("Esta ordem já foi paga.");
       else if (msg.includes("order_not_completed")) toast.error("Ordem ainda não foi finalizada.");
       else toast.error(msg || "Erro ao concluir");

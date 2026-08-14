@@ -22,6 +22,7 @@ import { ExpenseFormDialog } from "@/components/ExpenseFormDialog";
 import { softDeleteExpense } from "@/services/expenses";
 import { Expense } from "@/lib/expenses";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/utils";
 
 const MONTHLY_GOALS = [10000, 20000];
 
@@ -82,8 +83,8 @@ export default function Dashboard() {
     try {
       await softDeleteExpense(deleting.id);
       toast.success("Despesa removida");
-    } catch (err: any) {
-      toast.error(err.message ?? "Erro ao remover");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao remover"));
     } finally { setDeleting(null); }
   };
 

@@ -13,7 +13,7 @@ import { brl } from "@/lib/storage";
 import { useData } from "@/lib/DataContext";
 import { updateServiceRow, upsertServicePrice } from "@/services/data";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 
 export default function Services() {
   const { services: dbServices, prices: dbPrices } = useData();
@@ -48,8 +48,8 @@ export default function Services() {
       }
       await Promise.all(tasks);
       toast.success("Serviços e preços atualizados");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao salvar");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao salvar"));
     } finally {
       setSaving(false);
     }

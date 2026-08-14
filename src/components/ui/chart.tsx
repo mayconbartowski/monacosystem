@@ -89,12 +89,20 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+type TooltipEntry = RechartsPrimitive.TooltipPayloadEntry;
+
 type TooltipContentProps = React.ComponentProps<"div"> & {
   active?: boolean;
-  payload?: any[];
-  label?: any;
-  labelFormatter?: (value: any, payload: any[]) => React.ReactNode;
-  formatter?: (value: any, name: any, item: any, index: number, payload: any) => React.ReactNode;
+  payload?: ReadonlyArray<TooltipEntry>;
+  label?: React.ReactNode;
+  labelFormatter?: (value: React.ReactNode, payload: ReadonlyArray<TooltipEntry>) => React.ReactNode;
+  formatter?: (
+    value: RechartsPrimitive.TooltipValueType | undefined,
+    name: number | string | undefined,
+    item: TooltipEntry,
+    index: number,
+    payload: unknown,
+  ) => React.ReactNode;
   color?: string;
   hideLabel?: boolean;
   hideIndicator?: boolean;
@@ -172,7 +180,7 @@ const ChartTooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps
 
             return (
               <div
-                key={item.dataKey}
+                key={String(item.dataKey ?? index)}
                 className={cn(
                   "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
                   indicator === "dot" && "items-center",
@@ -235,7 +243,7 @@ const ChartLegend = RechartsPrimitive.Legend;
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
-    payload?: any[];
+    payload?: ReadonlyArray<RechartsPrimitive.LegendPayload>;
     verticalAlign?: "top" | "middle" | "bottom";
     hideIcon?: boolean;
     nameKey?: string;

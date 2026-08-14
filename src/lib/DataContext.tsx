@@ -6,14 +6,14 @@ import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/
 import {
   Customer, Vehicle, Order, ServiceOverride, PriceTable, DEFAULT_PRICES,
   ServiceKey, ServiceIconKey, SERVICES, VehicleCategory, PartnerContract,
-  PaymentStatus, OrderSource,
 } from "@/lib/domain";
-import { fetchAll, mapOrder as mapOrderService } from "@/services/data";
-import { fetchExpenses, mapExpense } from "@/services/expenses";
+import { fetchAll, mapOrder as mapOrderService, type OrderRow } from "@/services/data";
+import { fetchExpenses, mapExpense, type ExpenseRow } from "@/services/expenses";
 import { Expense } from "@/lib/expenses";
-import { mapContract } from "@/services/partners";
+import { mapContract, type PartnerContractRow } from "@/services/partners";
 import { useAuth } from "@/lib/authContext";
 import { normalizeCpf, normalizePlate } from "@/lib/storage";
+import type { Database } from "@/integrations/supabase/types";
 
 interface DataState {
   customers: Customer[];
@@ -36,16 +36,9 @@ interface DataState {
 
 const Ctx = createContext<DataState | null>(null);
 
-type CustomerRow = { id: string; name: string; cpf: string; whatsapp: string; created_at: string; };
-type VehicleRow = {
-  id: string; customer_id: string; plate: string; brand: string; model: string; color: string; year: string;
-  category: VehicleCategory; wash_count: number; reward_available: boolean; last_reward_date: string | null;
-};
-type OrderRow = any; // shape mirrored by services/data.ts mapOrder
-type ServiceRow = {
-  id: string; key: string; title: string; description: string;
-  duration_minutes: number; position: number; active: boolean;
-};
+type CustomerRow = Database["public"]["Tables"]["customers"]["Row"];
+type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
+type ServiceRow = Database["public"]["Tables"]["services"]["Row"];
 
 function mapCustomer(r: CustomerRow, totalOrders = 0): Customer {
   return { id: r.id, name: r.name, cpf: r.cpf, phone: r.whatsapp, totalOrders, createdAt: r.created_at };
@@ -132,9 +125,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const { data: sps } = await supabase.from("service_prices").select("*");
       const { data: ss } = await supabase.from("services").select("id, key");
       const byId = new Map<string, ServiceKey>();
-      (ss ?? []).forEach((s: any) => byId.set(s.id, s.key as ServiceKey));
+      (ss ?? []).forEach((s) => byId.set(s.id, s.key as ServiceKey));
       const next: PriceTable = JSON.parse(JSON.stringify(DEFAULT_PRICES));
-      (sps ?? []).forEach((p: any) => {
+      (sps ?? []).forEach((p) => {
         const k = byId.get(p.service_id);
         if (!k) return;
         next[p.category as VehicleCategory][k] = Number(p.price);
@@ -166,11 +159,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const onCustomers = (p: RealtimePostgresChangesPayload<CustomerRow>) => {
       if (p.eventType === "DELETE") {
-        const id = (p.old as any)?.id;
+        const id = p.old.id;
         if (id) setCustomers((prev) => removeById(prev, id));
         return;
       }
-      const row = p.new as CustomerRow & { active?: boolean };
+      const row = p.new;
       if (row && row.active === false) {
         setCustomers((prev) => removeById(prev, row.id));
         return;
@@ -183,16 +176,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const onVehicles = (p: RealtimePostgresChangesPayload<VehicleRow>) => {
       if (p.eventType === "DELETE") {
-        const id = (p.old as any)?.id;
+        const id = p.old.id;
         if (id) setVehicles((prev) => removeById(prev, id));
         return;
       }
-      setVehicles((prev) => upsertById(prev, mapVehicle(p.new as VehicleRow)));
+      setVehicles((prev) => upsertById(prev, mapVehicle(p.new)));
     };
 
     const onOrders = (p: RealtimePostgresChangesPayload<OrderRow>) => {
       if (p.eventType === "DELETE") {
-        const id = (p.old as any)?.id;
+        const id = p.old.id;
         if (!id) return;
         setOrders((prev) => {
           const next = removeById(prev, id);
@@ -201,7 +194,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         });
         return;
       }
-      const mapped = mapOrderService(p.new as OrderRow);
+      const mapped = mapOrderService(p.new);
       setOrders((prev) => {
         const next = upsertById(prev, mapped);
         if (p.eventType === "INSERT") {
@@ -213,24 +206,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     const onServices = (p: RealtimePostgresChangesPayload<ServiceRow>) => {
       if (p.eventType === "DELETE") {
-        const id = (p.old as any)?.id;
+        const id = p.old.id;
         if (id) setServices((prev) => removeById(prev, id));
         return;
       }
-      const mapped = mapService(p.new as ServiceRow);
+      const mapped = mapService(p.new);
       setServices((prev) => {
         const next = upsertById(prev, mapped);
         return next.sort((a, b) => a.order - b.order);
       });
     };
 
-    const onExpenses = (p: RealtimePostgresChangesPayload<any>) => {
+    const onExpenses = (p: RealtimePostgresChangesPayload<ExpenseRow>) => {
       if (p.eventType === "DELETE") {
-        const id = (p.old as any)?.id;
+        const id = p.old.id;
         if (id) setExpenses((prev) => removeById(prev, id));
         return;
       }
-      const row = p.new as any;
+      const row = p.new;
       if (row && row.active === false) {
         setExpenses((prev) => removeById(prev, row.id));
         return;
@@ -245,21 +238,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
-    const onPartners = (p: RealtimePostgresChangesPayload<any>) => {
+    const onPartners = (p: RealtimePostgresChangesPayload<PartnerContractRow>) => {
       if (p.eventType === "DELETE") {
-        const id = (p.old as any)?.id;
+        const id = p.old.id;
         if (id) setPartnerContracts((prev) => removeById(prev, id));
         return;
       }
-      const mapped = mapContract(p.new as any);
+      const mapped = mapContract(p.new);
       setPartnerContracts((prev) => upsertById(prev, mapped)
         .sort((a, b) => a.companyName.localeCompare(b.companyName)));
     };
 
-    const mk = (name: string, table: string, handler: (p: any) => void) =>
+    const mk = <TRow extends Record<string, unknown>>(
+      name: string,
+      table: string,
+      handler: (p: RealtimePostgresChangesPayload<TRow>) => void,
+    ) =>
       supabase
         .channel(`monaco:${name}`)
-        .on("postgres_changes", { event: "*", schema: "public", table }, handler)
+        .on<TRow>("postgres_changes", { event: "*", schema: "public", table }, handler)
         .subscribe((status) => {
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
             console.warn(`[Monaco] realtime ${table}: ${status}`);
@@ -340,6 +337,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- provider and hook share the same context
 export function useData(): DataState {
   const v = useContext(Ctx);
   if (!v) throw new Error("useData must be inside DataProvider");

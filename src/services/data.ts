@@ -7,6 +7,8 @@ import {
 import { normalizePlate, normalizeCpf } from "@/lib/storage";
 import { findRegistrationConflict } from "@/lib/registrationConflicts";
 import { fetchPartnerContracts } from "@/services/partners";
+import type { PostgrestError } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 // ---------- mappers ----------
 type CustomerRow = { id: string; name: string; cpf: string; whatsapp: string; created_at: string; };
@@ -16,24 +18,7 @@ type VehicleRow = {
   category: VehicleCategory; wash_count: number;
   reward_available: boolean; last_reward_date: string | null;
 };
-type OrderRow = {
-  id: string; customer_id: string | null; customer_name: string;
-  vehicle_id: string | null; vehicle_plate: string; vehicle_label: string;
-  category: VehicleCategory; service_id: string; service_key: string;
-  extras: unknown;
-  subtotal: number; discount: number; loyalty_discount: number;
-  loyalty_reward_used: boolean; service_fee: number; service_fee_note: string | null;
-  total: number;
-  payment_method: "Crédito" | "Débito" | "Pix" | null;
-  payment_status?: PaymentStatus | null;
-  paid_at?: string | null;
-  discount_percentage?: number | null;
-  order_source?: OrderSource | null;
-  partner_contract_id?: string | null;
-  notes: string; queue_position: number; duration_minutes: number;
-  status: "queued" | "in_progress" | "completed" | "cancelled" | "delivered";
-  created_at: string; started_at: string | null; completed_at: string | null;
-};
+export type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
 type ServiceRow = {
   id: string; key: string; title: string; description: string;
   duration_minutes: number; position: number; active: boolean;
@@ -143,7 +128,7 @@ export class DuplicateError extends Error {
 }
 
 /** Traduz conflitos de unicidade do Postgres (SQLSTATE 23505) para português. */
-function translateConflict(error: any): never {
+function translateConflict(error: PostgrestError): never {
   const code = error?.code ?? "";
   const detail = `${error?.message ?? ""} ${error?.details ?? ""}`.toLowerCase();
   if (code === "23505") {
@@ -159,10 +144,10 @@ function translateConflict(error: any): never {
 async function assertCustomerUnique(cpf: string, whatsapp: string, ignoreId?: string) {
   const { data } = await supabase.from("customers").select("id,cpf,whatsapp")
     .or(`cpf.eq.${cpf},whatsapp.eq.${whatsapp}`);
-  const clash = (data ?? []).filter((r: any) => r.id !== ignoreId);
-  const byCpf = clash.find((r: any) => r.cpf === cpf);
+  const clash = (data ?? []).filter((r) => r.id !== ignoreId);
+  const byCpf = clash.find((r) => r.cpf === cpf);
   if (byCpf) throw new DuplicateError("cpf", "Este CPF já está cadastrado para outro cliente.");
-  const byZap = clash.find((r: any) => r.whatsapp === whatsapp);
+  const byZap = clash.find((r) => r.whatsapp === whatsapp);
   if (byZap) throw new DuplicateError("whatsapp", "Este WhatsApp já está cadastrado para outro cliente.");
 }
 
@@ -241,7 +226,7 @@ export async function upsertVehicle(v: {
     if (other && other.id !== v.id) {
       throw new DuplicateError("plate", "Esta placa já está cadastrada em outro veículo.");
     }
-    const { data, error } = await (supabase.rpc as any)("update_vehicle_without_ownership_change", {
+    const { data, error } = await supabase.rpc("update_vehicle_without_ownership_change", {
       _vehicle_id: v.id,
       _expected_customer_id: v.customerId,
       _plate: row.plate,
@@ -293,7 +278,7 @@ export async function createOrder(input: {
   const baseAfterLoyalty = Math.max(0, input.subtotal - input.loyaltyDiscount);
   const discountPct = Math.min(100, Math.max(0, input.discountPercentage ?? 0));
   const discount = Math.min(baseAfterLoyalty, Math.max(0, input.discount ?? 0));
-  const row: any = {
+  const row: Database["public"]["Tables"]["orders"]["Insert"] = {
     customer_id: input.customerId,
     customer_name: input.customerName,
     vehicle_id: input.vehicleId,
@@ -334,7 +319,7 @@ export async function startOrder(orderId: string): Promise<void> {
 
 export async function cancelOrder(orderId: string): Promise<void> {
   const { error } = await supabase.from("orders")
-    .update({ status: "cancelled", payment_status: "cancelled" } as any)
+    .update({ status: "cancelled", payment_status: "cancelled" })
     .eq("id", orderId);
   if (error) throw error;
 }
@@ -371,7 +356,7 @@ export async function finishOrder(order: Order): Promise<void> {
   if (e1) throw e1;
 
   if (order.serviceId) {
-    await (supabase.rpc as any)("record_service_actual_minutes", {
+    await supabase.rpc("record_service_actual_minutes", {
       _service_id: order.serviceId, _minutes: actualMinutes,
     });
   }

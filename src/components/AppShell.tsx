@@ -90,7 +90,9 @@ export function AppShell({
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
-    } catch {}
+    } catch {
+      // A preferência visual é opcional quando o armazenamento está indisponível.
+    }
   }, [collapsed]);
 
   useEffect(() => {

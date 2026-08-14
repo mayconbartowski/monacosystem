@@ -52,7 +52,7 @@ import { calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getSe
 import { useData } from "@/lib/DataContext";
 import { upsertCustomer, upsertVehicle, createOrder, preflightCustomerVehicle } from "@/services/data";
 import { createPartnerOrderRpc, formatCnpj } from "@/services/partners";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 
 type Mode = "customer" | "partner";
@@ -371,8 +371,8 @@ export default function Sales() {
         });
       }
       clearAll();
-    } catch (e: any) {
-      const msg = e?.message ?? "";
+    } catch (error: unknown) {
+      const msg = errorMessage(error, "");
       if (msg.includes("contract_limit_reached")) toast.error("Limite mensal do contrato atingido.");
       else if (msg.includes("contract_inactive")) toast.error("Contrato inativo.");
       else toast.error(msg || "Erro ao iniciar triagem");

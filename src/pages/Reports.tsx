@@ -176,7 +176,8 @@ export default function Reports() {
   // Payment method time series
   const paymentSeries = useMemo(() => {
     const days = eachDayOfInterval({ start: from, end: to });
-    const byDay = new Map<string, Record<string, number> & { label: string }>();
+    type PaymentSeriesRow = Record<PaymentMethod, number> & { label: string };
+    const byDay = new Map<string, PaymentSeriesRow>();
     days.forEach((d) => {
       const k = format(d, "yyyy-MM-dd");
       byDay.set(k, {
@@ -184,12 +185,12 @@ export default function Reports() {
         Crédito: 0,
         Débito: 0,
         Pix: 0,
-      } as any);
+      });
     });
     rangeOrders.forEach((o) => {
       const k = format(new Date(o.createdAt), "yyyy-MM-dd");
       const row = byDay.get(k);
-      if (row && o.paymentMethod) (row as any)[o.paymentMethod] += o.total;
+      if (row && o.paymentMethod) row[o.paymentMethod] += o.total;
     });
     return Array.from(byDay.values());
   }, [rangeOrders, from, to]);
