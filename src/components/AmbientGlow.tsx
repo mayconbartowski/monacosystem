@@ -213,7 +213,6 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     let currentY = targetY;
     let width = 1;
     let height = 1;
-    let frame = 0;
     const startedAt = performance.now();
 
     const resize = () => {
