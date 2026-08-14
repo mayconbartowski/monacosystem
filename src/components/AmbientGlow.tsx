@@ -46,12 +46,12 @@ vec3 gradientColor(vec2 fragment) {
   float aspect = uResolution.x / uResolution.y;
   float time = uTime * 0.10;
 
-  // O campo inteiro acompanha o cursor de forma sutil. O deslocamento local
-  // abaixo dele recebe a velocidade, criando o efeito de arrastar a superficie.
-  vec2 point = uv - (uMouse - 0.5) * vec2(0.055, 0.042);
+  // O campo acompanha o cursor com atraso. A area de influencia e ampla para
+  // que os dois pocos escuros sejam arrastados como partes da mesma superficie.
+  vec2 point = uv - (uMouse - 0.5) * vec2(0.095, 0.075);
   vec2 mouseDelta = (point - uMouse) * vec2(aspect, 1.0);
-  float dragInfluence = exp(-dot(mouseDelta, mouseDelta) / 0.085);
-  point -= uDrag * dragInfluence * 3.2;
+  float dragInfluence = exp(-dot(mouseDelta, mouseDelta) / 0.18);
+  point -= uDrag * dragInfluence * 4.2;
 
   // Deformacao de dominio ampla e continua. As frequencias baixas evitam que o
   // movimento gere contornos ou aparencia de textura sobre o gradiente.
@@ -61,34 +61,48 @@ vec3 gradientColor(vec2 fragment) {
   );
   point += flow * 0.026;
 
-  vec2 yellowA = vec2(0.16 + sin(time * 0.73) * 0.10, 0.21 + cos(time * 0.58) * 0.09);
-  vec2 yellowB = vec2(0.77 + cos(time * 0.51) * 0.09, 0.72 + sin(time * 0.64) * 0.11);
-  vec2 yellowC = vec2(0.52 + sin(time * 0.37 + 2.1) * 0.12, 0.43 + cos(time * 0.46 + 1.3) * 0.10);
+  vec2 warmA = vec2(0.16 + sin(time * 0.73) * 0.10, 0.21 + cos(time * 0.58) * 0.09);
+  vec2 warmB = vec2(0.77 + cos(time * 0.51) * 0.09, 0.72 + sin(time * 0.64) * 0.11);
+  vec2 warmC = vec2(0.52 + sin(time * 0.37 + 2.1) * 0.12, 0.43 + cos(time * 0.46 + 1.3) * 0.10);
 
   vec2 grayA = vec2(0.74 + sin(time * 0.43 + 0.8) * 0.12, 0.18 + cos(time * 0.52) * 0.08);
   vec2 grayB = vec2(0.24 + cos(time * 0.48 + 2.4) * 0.11, 0.78 + sin(time * 0.39) * 0.09);
   vec2 grayC = vec2(0.50 + cos(time * 0.31) * 0.15, 0.54 + sin(time * 0.44 + 2.7) * 0.12);
 
-  float yellowField =
-    softBlob(point, yellowA, vec2(0.54, 0.43), aspect) * 0.92 +
-    softBlob(point, yellowB, vec2(0.60, 0.50), aspect) * 0.86 +
-    softBlob(point, yellowC, vec2(0.72, 0.58), aspect) * 0.42;
+  float warmField =
+    softBlob(point, warmA, vec2(0.54, 0.43), aspect) * 0.92 +
+    softBlob(point, warmB, vec2(0.60, 0.50), aspect) * 0.86 +
+    softBlob(point, warmC, vec2(0.72, 0.58), aspect) * 0.42;
 
   float grayField =
     softBlob(point, grayA, vec2(0.70, 0.52), aspect) * 0.95 +
     softBlob(point, grayB, vec2(0.66, 0.56), aspect) * 0.90 +
     softBlob(point, grayC, vec2(0.88, 0.70), aspect) * 0.72;
 
+  // O primeiro poco fica no centro. O segundo percorre outra regiao do campo,
+  // evitando que a interacao dependa de um unico ponto escuro.
+  vec2 blackHoleA = vec2(0.50, 0.50);
+  vec2 blackHoleB = vec2(
+    0.24 + sin(time * 0.61 + 1.7) * 0.075,
+    0.74 + cos(time * 0.49 + 0.4) * 0.065
+  );
+  float holeA = softBlob(point, blackHoleA, vec2(0.34, 0.28), aspect);
+  float holeB = softBlob(point, blackHoleB, vec2(0.30, 0.25), aspect);
+  float blackHoleMix = clamp(1.08 * (1.0 - (1.0 - holeA) * (1.0 - holeB)), 0.0, 1.0);
+
   // Compressao exponencial preserva uma derivada suave em todo o intervalo.
   float grayMix = 1.0 - exp(-grayField * 0.82);
-  float yellowMix = 1.0 - exp(-yellowField * 0.72);
+  float warmMix = 1.0 - exp(-warmField * 0.72);
 
-  vec3 black = vec3(0.0035, 0.0035, 0.0032);
-  vec3 darkGray = vec3(0.075, 0.078, 0.070);
-  vec3 yellow = vec3(1.0, 0.996078, 0.560784);
+  vec3 black = vec3(0.0);
+  vec3 darkGray = vec3(0.065, 0.064, 0.056);
+  vec3 warm = vec3(0.192157, 0.176471, 0.133333); // #312D22
 
-  vec3 color = mix(black, darkGray, 0.16 + grayMix * 0.84);
-  color = mix(color, yellow, yellowMix * 0.205);
+  // O tom #312D22 ocupa a massa luminosa em opacidade total; os pocos sao
+  // aplicados por ultimo para que o centro seja preto, como um buraco negro.
+  vec3 color = mix(darkGray, warm, 0.58 + warmMix * 0.42);
+  color = mix(color, darkGray, grayMix * 0.28);
+  color = mix(color, black, blackHoleMix);
 
   // Vinheta larga, sem borda perceptivel, mantem o centro util e as extremidades escuras.
   vec2 edge = (uv - 0.5) * vec2(0.90, 1.0);
@@ -217,12 +231,12 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     };
 
     const draw = (now: number) => {
-      currentX += (targetX - currentX) * 0.12;
-      currentY += (targetY - currentY) * 0.12;
-      dragX += (dragTargetX - dragX) * 0.2;
-      dragY += (dragTargetY - dragY) * 0.2;
-      dragTargetX *= 0.88;
-      dragTargetY *= 0.88;
+      currentX += (targetX - currentX) * 0.055;
+      currentY += (targetY - currentY) * 0.055;
+      dragX += (dragTargetX - dragX) * 0.09;
+      dragY += (dragTargetY - dragY) * 0.09;
+      dragTargetX *= 0.94;
+      dragTargetY *= 0.94;
 
       gl.uniform2f(mouseUniform, currentX, 1.0 - currentY);
       gl.uniform2f(dragUniform, dragX, -dragY);
@@ -242,8 +256,8 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
       const deltaX = Math.max(-0.08, Math.min(0.08, nextX - targetX));
       const deltaY = Math.max(-0.08, Math.min(0.08, nextY - targetY));
 
-      dragTargetX = dragTargetX * 0.48 + deltaX * 1.35;
-      dragTargetY = dragTargetY * 0.48 + deltaY * 1.35;
+      dragTargetX = dragTargetX * 0.58 + deltaX * 1.65;
+      dragTargetY = dragTargetY * 0.58 + deltaY * 1.65;
       targetX = nextX;
       targetY = nextY;
     };
