@@ -37,7 +37,20 @@ const ALL_ITEMS = [
   { to: "/configuracoes", label: "Configurações", icon: SettingsIcon, perm: "settings" as const },
 ];
 
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Tela de Vendas",
+  "/fila": "Fila de Lavagem",
+  "/dashboard": "Dashboard",
+  "/clientes": "Clientes",
+  "/parceiros": "Contratos de Parceiros",
+  "/historico": "Histórico",
+  "/relatorios": "Relatórios",
+  "/servicos": "Serviços",
+  "/configuracoes": "Configurações",
+};
+
 const STORAGE_KEY = "monaco:sidebar:collapsed";
+
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
