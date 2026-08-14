@@ -11,9 +11,10 @@ import { PickupPaymentDialog } from "@/components/PickupPaymentDialog";
 interface Props {
   orders: Order[];
   contracts?: PartnerContract[];
+  estimatedWait?: string;
 }
 
-export function QueueDrawer({ orders, contracts = [] }: Props) {
+export function QueueDrawer({ orders, contracts = [], estimatedWait }: Props) {
   const { role, perms } = useAuth();
   const canPickup = !!perms?.takePayment;
   const [picking, setPicking] = useState<Order | null>(null);
@@ -50,12 +51,21 @@ export function QueueDrawer({ orders, contracts = [] }: Props) {
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            aria-label="Ver fila"
-            className="w-full h-16 md:h-14 px-3 md:px-4 gap-2 rounded-control border-0 bg-surface-3 text-foreground hover:bg-surface-4 hover:text-foreground flex-col md:flex-row justify-center md:justify-start"
+            aria-label={`Ver fila: espera estimada ${estimatedWait ?? "indisponível"}, ${visible.length} veículos`}
+            className="w-full h-11 md:h-14 px-4 gap-3 rounded-control border-0 bg-surface-3 text-foreground hover:bg-surface-4 hover:text-foreground flex-row justify-center md:justify-start"
           >
-            <ListOrdered className="h-5 w-5 md:h-4 md:w-4 text-primary" />
+            <span className="md:hidden flex items-center justify-center gap-4 whitespace-nowrap text-sm font-semibold tabular-nums">
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-primary" />
+                <span>{estimatedWait ?? "—"}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <ListOrdered className="h-4 w-4 text-primary" />
+                <span>{visible.length}</span>
+              </span>
+            </span>
+            <ListOrdered className="hidden md:block h-4 w-4 text-primary" />
             <span className="hidden md:inline">Ver Fila</span>
-            <span className="text-base font-semibold md:hidden">{visible.length}</span>
             <Badge
               variant="secondary"
               className="ml-1 hidden md:inline-flex bg-primary text-primary-foreground border-0"

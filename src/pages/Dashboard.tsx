@@ -89,7 +89,7 @@ export default function Dashboard() {
 
   return (
     <AppShell>
-      <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
+      <header className="glass-chrome px-4 md:px-6 py-4 hidden lg:flex flex-wrap items-center gap-3 md:gap-4">
         <div className="hidden lg:block">
           <h1 className="text-[22px] font-semibold text-white">Dashboard</h1>
         </div>
