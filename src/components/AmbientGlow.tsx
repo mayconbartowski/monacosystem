@@ -24,6 +24,7 @@ precision highp float;
 uniform vec2 uResolution;
 uniform vec2 uMouse;
 uniform float uTime;
+uniform float uFrame;
 out vec4 fragColor;
 
 float hash21(vec2 point) {
@@ -32,45 +33,49 @@ float hash21(vec2 point) {
   return fract(point.x * point.y);
 }
 
+// Value noise com interpolacao quintica (C2) para eliminar descontinuidades.
 float valueNoise(vec2 point) {
   vec2 cell = floor(point);
   vec2 local = fract(point);
-  local = local * local * (3.0 - 2.0 * local);
+  vec2 fade = local * local * local * (local * (local * 6.0 - 15.0) + 10.0);
 
   float a = hash21(cell);
   float b = hash21(cell + vec2(1.0, 0.0));
   float c = hash21(cell + vec2(0.0, 1.0));
   float d = hash21(cell + vec2(1.0, 1.0));
 
-  return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
+  return mix(mix(a, b, fade.x), mix(c, d, fade.x), fade.y);
 }
 
 float fbm(vec2 point) {
   float value = 0.0;
   float amplitude = 0.5;
+  float total = 0.0;
   mat2 rotation = mat2(0.80, -0.60, 0.60, 0.80);
 
-  for (int octave = 0; octave < 4; octave++) {
+  for (int octave = 0; octave < 6; octave++) {
     value += amplitude * valueNoise(point);
+    total += amplitude;
     point = rotation * point * 1.92 + 3.17;
     amplitude *= 0.5;
   }
 
-  return value;
+  return value / total;
 }
 
+// Ruido espacial decorrelacionado, base do dither triangular.
 float interleavedGradientNoise(vec2 position) {
   return fract(52.9829189 * fract(dot(position, vec2(0.06711056, 0.00583715))));
 }
 
-void main() {
-  vec2 uv = gl_FragCoord.xy / uResolution;
+// Intensidade continua da massa luminosa numa coordenada de tela.
+float glowIntensity(vec2 fragment) {
+  vec2 uv = fragment / uResolution;
   float aspect = uResolution.x / uResolution.y;
   vec2 point = (uv - 0.5) * vec2(aspect, 1.0) * 2.0;
   vec2 mouse = (uMouse - 0.5) * 2.0;
   float time = uTime * 0.12;
 
-  // O mouse deforma o campo inteiro; nao existe uma fonte circular no cursor.
   point += vec2(mouse.x * 0.58, mouse.y * 0.44);
 
   vec2 noisePoint = point * 0.47;
@@ -85,33 +90,44 @@ void main() {
   float flowC = cos(point.x * 0.44 - point.y * 0.67 + time * 0.61);
   float field = flowA * 0.56 + flowB * 0.30 + flowC * 0.25;
 
-  // Uma fita larga com halo cria massas fluidas, nunca uma bolha isolada.
+  // Uma unica curva gaussiana: queda monotonica, sem thresholds nem camadas.
   float distanceToFlow = abs(field - 0.06);
-  float halo = 1.0 - smoothstep(0.39, 0.91, distanceToFlow);
-  float ribbon = 1.0 - smoothstep(0.15, 0.47, distanceToFlow);
-  float alpha = 0.035 * halo + 0.110 * ribbon;
+  float sigma = 0.52;
+  float t = distanceToFlow / sigma;
+  float intensity = 0.150 * exp(-0.5 * t * t);
 
-  // A massa preta acompanha o mouse como um vazio organico dentro do fluxo.
+  // Vazio organico acompanhando o cursor, tambem com queda gaussiana suave.
   vec2 voidDelta = (uv - uMouse) * vec2(aspect, 1.0);
   voidDelta += (warp - 0.5) * 0.18;
-  float voidContour = length(voidDelta);
-  float voidMask = 1.0 - smoothstep(0.14, 0.42, voidContour);
-  alpha *= 1.0 - voidMask;
+  float voidT = length(voidDelta) / 0.30;
+  intensity *= 1.0 - exp(-0.5 * voidT * voidT);
 
-  alpha = clamp(alpha, 0.0, 0.145);
+  return max(intensity, 0.0);
+}
 
-  // Composicao opaca do amarelo sobre preto, equivalente ao alpha anterior.
+void main() {
+  // Supersampling 2x2 em subpixels para suavizar as regioes escuras.
+  float alpha = 0.0;
+  alpha += glowIntensity(gl_FragCoord.xy + vec2(-0.25, -0.25));
+  alpha += glowIntensity(gl_FragCoord.xy + vec2(0.25, -0.25));
+  alpha += glowIntensity(gl_FragCoord.xy + vec2(-0.25, 0.25));
+  alpha += glowIntensity(gl_FragCoord.xy + vec2(0.25, 0.25));
+  alpha *= 0.25;
+
   vec3 yellow = vec3(1.0, 0.996078, 0.560784);
   vec3 finalColor = yellow * alpha;
 
-  // Dither estatico determinístico aplicado no RGB final, nunca no alpha.
-  float ditherMask = smoothstep(0.001, 0.012, alpha);
-  float dither = (interleavedGradientNoise(gl_FragCoord.xy) - 0.5) / 255.0;
-  finalColor = clamp(finalColor + vec3(dither * ditherMask), 0.0, 1.0);
+  // Dither triangular decorrelacionado, ~1.2 LSB p2p, com deriva temporal sutil.
+  vec2 ditherSeed = gl_FragCoord.xy + fract(uFrame * 0.06180339887) * 137.0;
+  float n1 = interleavedGradientNoise(ditherSeed);
+  float n2 = interleavedGradientNoise(ditherSeed + vec2(17.31, 41.77));
+  float triangular = (n1 - n2) * 0.6;
+  finalColor = clamp(finalColor + vec3(triangular / 255.0), 0.0, 1.0);
 
   fragColor = vec4(finalColor, 1.0);
 }
 `;
+
 
 function compileShader(gl: WebGL2RenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);
