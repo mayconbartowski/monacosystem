@@ -23,112 +23,93 @@ precision highp float;
 
 uniform vec2 uResolution;
 uniform vec2 uMouse;
+uniform vec2 uDrag;
 uniform float uTime;
 out vec4 fragColor;
 
-float hash21(vec2 point) {
-  point = fract(point * vec2(123.34, 456.21));
-  point += dot(point, point + 45.32);
-  return fract(point.x * point.y);
-}
-
-// Value noise com interpolacao quintica (C2) para eliminar descontinuidades.
-float valueNoise(vec2 point) {
-  vec2 cell = floor(point);
-  vec2 local = fract(point);
-  vec2 fade = local * local * local * (local * (local * 6.0 - 15.0) + 10.0);
-
-  float a = hash21(cell);
-  float b = hash21(cell + vec2(1.0, 0.0));
-  float c = hash21(cell + vec2(0.0, 1.0));
-  float d = hash21(cell + vec2(1.0, 1.0));
-
-  return mix(mix(a, b, fade.x), mix(c, d, fade.x), fade.y);
-}
-
-float fbm(vec2 point) {
-  float value = 0.0;
-  float amplitude = 0.5;
-  float total = 0.0;
-  mat2 rotation = mat2(0.80, -0.60, 0.60, 0.80);
-
-  for (int octave = 0; octave < 6; octave++) {
-    value += amplitude * valueNoise(point);
-    total += amplitude;
-    point = rotation * point * 1.92 + 3.17;
-    amplitude *= 0.5;
-  }
-
-  return value / total;
-}
-
-// Ruido espacial decorrelacionado, base do dither triangular.
+// Ruido apenas para dither subpixel. Ele nao participa do desenho do gradiente.
 float interleavedGradientNoise(vec2 position) {
   return fract(52.9829189 * fract(dot(position, vec2(0.06711056, 0.00583715))));
 }
 
-// Intensidade continua da massa luminosa numa coordenada de tela.
-float glowIntensity(vec2 fragment) {
+float softBlob(vec2 point, vec2 center, vec2 radius, float aspect) {
+  vec2 delta = point - center;
+  delta.x *= aspect;
+  delta /= radius;
+  return exp(-dot(delta, delta));
+}
+
+// Mesh gradient analitico: pontos de cor de queda gaussiana formam uma unica
+// superficie continua. Nao ha linhas, celulas, thresholds ou faixas no desenho.
+vec3 gradientColor(vec2 fragment) {
   vec2 uv = fragment / uResolution;
   float aspect = uResolution.x / uResolution.y;
-  vec2 point = (uv - 0.5) * vec2(aspect, 1.0) * 2.0;
-  vec2 mouse = (uMouse - 0.5) * 2.0;
-  float time = uTime * 0.12;
+  float time = uTime * 0.10;
 
-  point += vec2(mouse.x * 0.58, mouse.y * 0.44);
+  // O campo inteiro acompanha o cursor de forma sutil. O deslocamento local
+  // abaixo dele recebe a velocidade, criando o efeito de arrastar a superficie.
+  vec2 point = uv - (uMouse - 0.5) * vec2(0.055, 0.042);
+  vec2 mouseDelta = (point - uMouse) * vec2(aspect, 1.0);
+  float dragInfluence = exp(-dot(mouseDelta, mouseDelta) / 0.085);
+  point -= uDrag * dragInfluence * 3.2;
 
-  vec2 noisePoint = point * 0.47;
-  vec2 warp = vec2(
-    fbm(noisePoint + vec2(time * 0.58, -time * 0.31) + mouse * 0.24),
-    fbm(noisePoint + vec2(4.7 - time * 0.37, 2.4 + time * 0.46) - mouse * 0.18)
+  // Deformacao de dominio ampla e continua. As frequencias baixas evitam que o
+  // movimento gere contornos ou aparencia de textura sobre o gradiente.
+  vec2 flow = vec2(
+    sin(point.y * 3.1 + time * 0.83) + sin((point.x + point.y) * 1.8 - time * 0.47),
+    cos(point.x * 2.7 - time * 0.69) + cos((point.x - point.y) * 1.6 + time * 0.41)
   );
-  point += (warp - 0.5) * 1.28;
+  point += flow * 0.026;
 
-  float flowA = sin(point.x * 1.18 + point.y * 0.82 + time * 1.15);
-  float flowB = sin(-point.x * 0.73 + point.y * 1.31 - time * 0.82);
-  float flowC = cos(point.x * 0.44 - point.y * 0.67 + time * 0.61);
-  float field = flowA * 0.56 + flowB * 0.30 + flowC * 0.25;
+  vec2 yellowA = vec2(0.16 + sin(time * 0.73) * 0.10, 0.21 + cos(time * 0.58) * 0.09);
+  vec2 yellowB = vec2(0.77 + cos(time * 0.51) * 0.09, 0.72 + sin(time * 0.64) * 0.11);
+  vec2 yellowC = vec2(0.52 + sin(time * 0.37 + 2.1) * 0.12, 0.43 + cos(time * 0.46 + 1.3) * 0.10);
 
-  // Uma unica curva gaussiana: queda monotonica, sem thresholds nem camadas.
-  float distanceToFlow = abs(field - 0.06);
-  float sigma = 0.52;
-  float t = distanceToFlow / sigma;
-  float intensity = 0.150 * exp(-0.5 * t * t);
+  vec2 grayA = vec2(0.74 + sin(time * 0.43 + 0.8) * 0.12, 0.18 + cos(time * 0.52) * 0.08);
+  vec2 grayB = vec2(0.24 + cos(time * 0.48 + 2.4) * 0.11, 0.78 + sin(time * 0.39) * 0.09);
+  vec2 grayC = vec2(0.50 + cos(time * 0.31) * 0.15, 0.54 + sin(time * 0.44 + 2.7) * 0.12);
 
-  // Vazio organico acompanhando o cursor, tambem com queda gaussiana suave.
-  vec2 voidDelta = (uv - uMouse) * vec2(aspect, 1.0);
-  voidDelta += (warp - 0.5) * 0.18;
-  float voidT = length(voidDelta) / 0.30;
-  intensity *= 1.0 - exp(-0.5 * voidT * voidT);
+  float yellowField =
+    softBlob(point, yellowA, vec2(0.54, 0.43), aspect) * 0.92 +
+    softBlob(point, yellowB, vec2(0.60, 0.50), aspect) * 0.86 +
+    softBlob(point, yellowC, vec2(0.72, 0.58), aspect) * 0.42;
 
-  return max(intensity, 0.0);
+  float grayField =
+    softBlob(point, grayA, vec2(0.70, 0.52), aspect) * 0.95 +
+    softBlob(point, grayB, vec2(0.66, 0.56), aspect) * 0.90 +
+    softBlob(point, grayC, vec2(0.88, 0.70), aspect) * 0.72;
+
+  // Compressao exponencial preserva uma derivada suave em todo o intervalo.
+  float grayMix = 1.0 - exp(-grayField * 0.82);
+  float yellowMix = 1.0 - exp(-yellowField * 0.72);
+
+  vec3 black = vec3(0.0035, 0.0035, 0.0032);
+  vec3 darkGray = vec3(0.075, 0.078, 0.070);
+  vec3 yellow = vec3(1.0, 0.996078, 0.560784);
+
+  vec3 color = mix(black, darkGray, 0.16 + grayMix * 0.84);
+  color = mix(color, yellow, yellowMix * 0.205);
+
+  // Vinheta larga, sem borda perceptivel, mantem o centro util e as extremidades escuras.
+  vec2 edge = (uv - 0.5) * vec2(0.90, 1.0);
+  color *= 1.0 - dot(edge, edge) * 0.34;
+  return max(color, 0.0);
 }
 
 void main() {
-  // Supersampling 2x2 em subpixels para suavizar as regioes escuras.
-  float alpha = 0.0;
-  alpha += glowIntensity(gl_FragCoord.xy + vec2(-0.25, -0.25));
-  alpha += glowIntensity(gl_FragCoord.xy + vec2(0.25, -0.25));
-  alpha += glowIntensity(gl_FragCoord.xy + vec2(-0.25, 0.25));
-  alpha += glowIntensity(gl_FragCoord.xy + vec2(0.25, 0.25));
-  alpha *= 0.25;
+  // Supersampling 2x2 mantem as deformacoes limpas mesmo em telas de alto DPI.
+  vec3 finalColor = vec3(0.0);
+  finalColor += gradientColor(gl_FragCoord.xy + vec2(-0.25, -0.25));
+  finalColor += gradientColor(gl_FragCoord.xy + vec2( 0.25, -0.25));
+  finalColor += gradientColor(gl_FragCoord.xy + vec2(-0.25,  0.25));
+  finalColor += gradientColor(gl_FragCoord.xy + vec2( 0.25,  0.25));
+  finalColor *= 0.25;
 
-  vec3 yellow = vec3(1.0, 0.996078, 0.560784);
-  vec3 finalColor = yellow * alpha;
-
-  // Dither triangular decorrelacionado no RGB final, ~1.2 LSB p2p.
-  // Fase temporal muito lenta (ciclo de ~80s) e de baixa amplitude para evitar
-  // cintilacao/TV noise; em reduced-motion uTime == 0, portanto estatico.
-  float phase = sin(uTime * 0.078) * 0.8 + cos(uTime * 0.053) * 0.6;
-  vec2 ditherSeed = gl_FragCoord.xy + phase;
-  float n1 = interleavedGradientNoise(ditherSeed);
-  float n2 = interleavedGradientNoise(ditherSeed + vec2(17.31, 41.77));
-  float triangular = (n1 - n2) * 0.6;
-
-  // Mascara suave baseada na intensidade: zero no preto verdadeiro, entrada
-  // gradual nas regioes onde o dither e util. A mascara multiplica apenas o ruido.
-  float ditherMask = smoothstep(0.0, 0.06, alpha);
-  finalColor = clamp(finalColor + vec3(triangular * ditherMask / 255.0), 0.0, 1.0);
+  // Dither triangular estatico quebra os degraus de 8 bits sem criar cintilacao.
+  float n1 = interleavedGradientNoise(gl_FragCoord.xy);
+  float n2 = interleavedGradientNoise(gl_FragCoord.xy + vec2(17.31, 41.77));
+  float triangular = (n1 - n2) * 0.82;
+  finalColor = clamp(finalColor + vec3(triangular / 255.0), 0.0, 1.0);
 
   fragColor = vec4(finalColor, 1.0);
 }
@@ -197,8 +178,9 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
 
     const resolution = gl.getUniformLocation(program, "uResolution");
     const mouseUniform = gl.getUniformLocation(program, "uMouse");
+    const dragUniform = gl.getUniformLocation(program, "uDrag");
     const timeUniform = gl.getUniformLocation(program, "uTime");
-    if (!resolution || !mouseUniform || !timeUniform) {
+    if (!resolution || !mouseUniform || !dragUniform || !timeUniform) {
       throw new Error("Uniforms do gradiente liquido nao encontrados.");
     }
 
@@ -211,6 +193,10 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     let targetY = 0.42;
     let currentX = targetX;
     let currentY = targetY;
+    let dragTargetX = 0;
+    let dragTargetY = 0;
+    let dragX = 0;
+    let dragY = 0;
     let width = 1;
     let height = 1;
     const startedAt = performance.now();
@@ -233,8 +219,13 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     const draw = (now: number) => {
       currentX += (targetX - currentX) * 0.12;
       currentY += (targetY - currentY) * 0.12;
+      dragX += (dragTargetX - dragX) * 0.2;
+      dragY += (dragTargetY - dragY) * 0.2;
+      dragTargetX *= 0.88;
+      dragTargetY *= 0.88;
 
       gl.uniform2f(mouseUniform, currentX, 1.0 - currentY);
+      gl.uniform2f(dragUniform, dragX, -dragY);
       gl.uniform1f(timeUniform, reducedMotion ? 0 : (now - startedAt) / 1000);
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -246,8 +237,15 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
 
     const onPointerMove = (event: PointerEvent) => {
       if (event.pointerType !== "mouse") return;
-      targetX = event.clientX / window.innerWidth;
-      targetY = event.clientY / window.innerHeight;
+      const nextX = event.clientX / window.innerWidth;
+      const nextY = event.clientY / window.innerHeight;
+      const deltaX = Math.max(-0.08, Math.min(0.08, nextX - targetX));
+      const deltaY = Math.max(-0.08, Math.min(0.08, nextY - targetY));
+
+      dragTargetX = dragTargetX * 0.48 + deltaX * 1.35;
+      dragTargetY = dragTargetY * 0.48 + deltaY * 1.35;
+      targetX = nextX;
+      targetY = nextY;
     };
 
     const onContextLost = (event: Event) => {
