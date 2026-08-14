@@ -198,8 +198,7 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     const resolution = gl.getUniformLocation(program, "uResolution");
     const mouseUniform = gl.getUniformLocation(program, "uMouse");
     const timeUniform = gl.getUniformLocation(program, "uTime");
-    const frameUniform = gl.getUniformLocation(program, "uFrame");
-    if (!resolution || !mouseUniform || !timeUniform || !frameUniform) {
+    if (!resolution || !mouseUniform || !timeUniform) {
       throw new Error("Uniforms do gradiente liquido nao encontrados.");
     }
 
