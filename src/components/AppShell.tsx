@@ -288,7 +288,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <Link to={homeTo} className="ml-auto flex items-center" aria-label="Início">
+            {currentTitle && (
+              <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold text-white leading-none">
+                {currentTitle}
+              </h1>
+            )}
+
+            <Link to={homeTo} className="ml-auto shrink-0 flex items-center" aria-label="Início">
               <Crown className="h-6 w-6 text-primary" />
             </Link>
           </div>
