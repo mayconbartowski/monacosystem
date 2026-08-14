@@ -24,7 +24,6 @@ precision highp float;
 uniform vec2 uResolution;
 uniform vec2 uMouse;
 uniform float uTime;
-uniform float uFrame;
 out vec4 fragColor;
 
 float hash21(vec2 point) {
@@ -117,12 +116,19 @@ void main() {
   vec3 yellow = vec3(1.0, 0.996078, 0.560784);
   vec3 finalColor = yellow * alpha;
 
-  // Dither triangular decorrelacionado, ~1.2 LSB p2p, com deriva temporal sutil.
-  vec2 ditherSeed = gl_FragCoord.xy + fract(uFrame * 0.06180339887) * 137.0;
+  // Dither triangular decorrelacionado no RGB final, ~1.2 LSB p2p.
+  // Fase temporal muito lenta (ciclo de ~80s) e de baixa amplitude para evitar
+  // cintilacao/TV noise; em reduced-motion uTime == 0, portanto estatico.
+  float phase = sin(uTime * 0.078) * 0.8 + cos(uTime * 0.053) * 0.6;
+  vec2 ditherSeed = gl_FragCoord.xy + phase;
   float n1 = interleavedGradientNoise(ditherSeed);
   float n2 = interleavedGradientNoise(ditherSeed + vec2(17.31, 41.77));
   float triangular = (n1 - n2) * 0.6;
-  finalColor = clamp(finalColor + vec3(triangular / 255.0), 0.0, 1.0);
+
+  // Mascara suave baseada na intensidade: zero no preto verdadeiro, entrada
+  // gradual nas regioes onde o dither e util. A mascara multiplica apenas o ruido.
+  float ditherMask = smoothstep(0.0, 0.06, alpha);
+  finalColor = clamp(finalColor + vec3(triangular * ditherMask / 255.0), 0.0, 1.0);
 
   fragColor = vec4(finalColor, 1.0);
 }
