@@ -263,11 +263,10 @@ export default function Queue() {
     return (
       <AppShell>
         <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 ">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+          <div className="hidden lg:block">
+            <h1 className="text-[22px] font-semibold tracking-tight text-white flex items-center gap-2">
               <ListOrdered className="h-5 w-5 text-primary" /> Fila de Lavagem
             </h1>
-            <p className="text-xs text-muted-foreground">Aguardando · Lavando · Finalizados</p>
           </div>
           <Badge variant="outline" className="ml-auto border-primary/40 text-primary">
             {buckets.queued.length + buckets.in_progress.length + buckets.completed.length} veíc.

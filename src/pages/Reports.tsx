@@ -746,7 +746,7 @@ function Stat({
   if (highlight) {
     return (
       <Card className="surface-card border-0 shadow-none p-4 bg-primary text-primary-foreground">
-        <div className="text-[11px] uppercase tracking-[0.14em] text-primary-foreground/80 font-medium">{label}</div>
+        <div className="text-[11px] uppercase tracking-wider text-primary-foreground/80 font-medium">{label}</div>
         <div className="text-2xl font-bold text-primary-foreground tabular-nums">{value}</div>
       </Card>
     );

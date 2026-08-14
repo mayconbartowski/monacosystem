@@ -58,9 +58,8 @@ export default function Services() {
   return (
     <AppShell>
       <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">Serviços</h1>
-          <p className="text-xs text-muted-foreground">Gerencie título, tempo, preços e visibilidade · alterações sincronizam para todas as estações</p>
+        <div className="hidden lg:block">
+          <h1 className="text-[22px] font-semibold text-white">Serviços</h1>
         </div>
         <Button onClick={saveAll} disabled={saving} className="ml-auto gap-2 bg-primary text-primary-foreground hover:opacity-90">
           <Save className="h-4 w-4" /> {saving ? "Salvando…" : "Salvar tudo"}

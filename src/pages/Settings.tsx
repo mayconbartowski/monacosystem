@@ -41,8 +41,7 @@ export default function Settings() {
   return (
     <AppShell>
       <header className="glass-chrome px-6 py-4">
-        <h1 className="text-xl font-semibold">Configurações</h1>
-        <p className="text-xs text-muted-foreground">Editar credenciais das contas operacionais</p>
+        <h1 className="hidden lg:block text-[22px] font-semibold text-white">Configurações</h1>
       </header>
       <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-2">
         <Card className="surface-card p-4 flex items-start gap-3">
