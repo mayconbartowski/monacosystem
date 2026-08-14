@@ -293,12 +293,8 @@ export default function Reports() {
       setBarVisible(delta < 0);
       last = y;
     };
-    el?.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el?.removeEventListener("scroll", onScroll);
-      window.removeEventListener("scroll", onScroll);
-    };
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    return () => document.removeEventListener("scroll", onScroll, { capture: true } as EventListenerOptions);
   }, []);
 
   const rangeLabel = `${format(from, "dd/MM/yyyy")} — ${format(to, "dd/MM/yyyy")}`;
@@ -351,9 +347,10 @@ export default function Reports() {
       <div ref={scrollRef} className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
         <div
           className={cn(
-            "lg:hidden sticky top-[60px] z-30 -mx-4 -mt-4 mb-0 px-3 py-2 bg-[hsl(var(--surface-2))] border-b border-border transition-all duration-200 ease-out",
+            "lg:hidden sticky z-30 -mx-4 -mt-4 mb-0 px-3 py-2 bg-[hsl(var(--surface-2))] border-b border-border transition-all duration-200 ease-out",
             barVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3 pointer-events-none",
           )}
+          style={{ top: 60 }}
         >
           <div className="flex items-center gap-1.5">
             {(["7", "30", "365"] as Preset[]).map((p) => (
