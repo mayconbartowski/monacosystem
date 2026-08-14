@@ -97,6 +97,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
   const homeTo = role === "lavajato" ? "/fila" : "/";
   const isActivePath = (to: string) => (to === "/" ? location.pathname === "/" : location.pathname.startsWith(to));
+  const currentTitle =
+    PAGE_TITLES[
+      Object.keys(PAGE_TITLES).find((p) => (p === "/" ? location.pathname === "/" : location.pathname.startsWith(p))) ??
+        ""
+    ] ?? "";
 
   return (
     <TooltipProvider delayDuration={200}>
