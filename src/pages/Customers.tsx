@@ -72,9 +72,8 @@ export default function Customers() {
   return (
     <AppShell>
       <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">Clientes</h1>
-          <p className="text-xs text-muted-foreground">{customers.length} cadastrados · fidelidade por placa</p>
+        <div className="hidden lg:block">
+          <h1 className="text-[22px] font-semibold text-white">Clientes</h1>
         </div>
         <div className="ml-auto relative w-full sm:w-80 max-w-full">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />

@@ -208,28 +208,28 @@ export default function Queue() {
   const content = (
     <>
       <Tabs value={tab} onValueChange={(v) => setTab(v as OrderStatus)} className="w-full">
-        <TabsList className="grid grid-cols-3 w-full h-[50px] p-1">
-          <TabsTrigger value="queued" className="h-full w-full flex items-center justify-center gap-1.5 leading-none">
-            <ListOrdered className="h-3.5 w-3.5" /> Aguardando
-            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
+        <TabsList className="grid grid-cols-3 w-full h-[50px] p-1 gap-0.5">
+          <TabsTrigger value="queued" className="h-full w-full flex items-center justify-center gap-1 sm:gap-1.5 leading-none text-[11px] sm:text-sm whitespace-nowrap">
+            <ListOrdered className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" /> Aguardando
+            <Badge variant="secondary" className="ml-0.5 sm:ml-1 px-1.5 py-0 text-[10px] sm:text-xs bg-primary/15 text-primary border-0">
               {buckets.queued.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger
             value="in_progress"
-            className="h-full w-full flex items-center justify-center gap-1.5 leading-none"
+            className="h-full w-full flex items-center justify-center gap-1 sm:gap-1.5 leading-none text-[11px] sm:text-sm whitespace-nowrap"
           >
-            <Play className="h-3.5 w-3.5" /> Lavando
-            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
+            <Play className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" /> Lavando
+            <Badge variant="secondary" className="ml-0.5 sm:ml-1 px-1.5 py-0 text-[10px] sm:text-xs bg-primary/15 text-primary border-0">
               {buckets.in_progress.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger
             value="completed"
-            className="h-full w-full flex items-center justify-center gap-1.5 leading-none"
+            className="h-full w-full flex items-center justify-center gap-1 sm:gap-1.5 leading-none text-[11px] sm:text-sm whitespace-nowrap"
           >
-            <CheckCircle2 className="h-3.5 w-3.5" /> Finalizados
-            <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-0">
+            <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" /> Finalizados
+            <Badge variant="secondary" className="ml-0.5 sm:ml-1 px-1.5 py-0 text-[10px] sm:text-xs bg-primary/15 text-primary border-0">
               {buckets.completed.length}
             </Badge>
           </TabsTrigger>
@@ -263,11 +263,10 @@ export default function Queue() {
     return (
       <AppShell>
         <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 ">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+          <div className="hidden lg:block">
+            <h1 className="text-[22px] font-semibold tracking-tight text-white flex items-center gap-2">
               <ListOrdered className="h-5 w-5 text-primary" /> Fila de Lavagem
             </h1>
-            <p className="text-xs text-muted-foreground">Aguardando · Lavando · Finalizados</p>
           </div>
           <Badge variant="outline" className="ml-auto border-primary/40 text-primary">
             {buckets.queued.length + buckets.in_progress.length + buckets.completed.length} veíc.

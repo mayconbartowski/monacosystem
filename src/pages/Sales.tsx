@@ -384,22 +384,14 @@ export default function Sales() {
   return (
     <AppShell>
       <header className="glass-chrome px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 sticky top-0 z-20">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight">
-            Tela de <span className="gold-text">Vendas</span>
-          </h1>
-          <p className="text-xs text-muted-foreground">Iniciar triagem · pagamento na retirada</p>
+        <div className="min-w-0 hidden lg:block">
+          <h1 className="text-[22px] font-semibold tracking-tight text-white">Tela de Vendas</h1>
         </div>
-        <div className="w-full md:w-auto md:ml-auto grid grid-cols-3 md:flex md:items-center gap-3 min-w-0">
+        <div className="w-full md:w-auto md:ml-auto grid grid-cols-2 md:flex md:items-center gap-3 min-w-0">
           <StatChip
             icon={<Clock className="h-5 w-5 md:h-4 md:w-4" />}
             label="Espera estimada"
             value={formatDuration(newWait)}
-          />
-          <StatChip
-            icon={<Car className="h-5 w-5 md:h-4 md:w-4" />}
-            label="Veículos na fila"
-            value={String(queueCount)}
           />
           <QueueDrawer orders={orders} contracts={partnerContracts} />
         </div>

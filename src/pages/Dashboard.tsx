@@ -90,9 +90,8 @@ export default function Dashboard() {
   return (
     <AppShell>
       <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">Dashboard</h1>
-          <p className="text-xs text-muted-foreground">Visão operacional Monaco System · sincronizada em tempo real</p>
+        <div className="hidden lg:block">
+          <h1 className="text-[22px] font-semibold text-white">Dashboard</h1>
         </div>
         {isAdmin && (
           <Button onClick={openNew} className="ml-auto bg-primary text-primary-foreground border-0 gap-2" size="sm">
@@ -298,7 +297,7 @@ function Metric({ icon, label, value, highlight }: { icon: React.ReactNode; labe
         <div>
           <div className={
             highlight
-              ? "text-[11px] uppercase tracking-[0.14em] text-primary-foreground/80 font-medium"
+              ? "text-[11px] uppercase tracking-wider text-primary-foreground/80 font-medium"
               : "text-[11px] uppercase tracking-wider text-muted-foreground"
           }>{label}</div>
           <div className={highlight ? "text-lg font-bold text-primary-foreground tabular-nums" : "text-lg font-bold tabular-nums"}>{value}</div>

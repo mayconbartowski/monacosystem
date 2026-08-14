@@ -84,13 +84,10 @@ export default function Partners() {
   return (
     <AppShell>
       <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2">
+        <div className="hidden lg:block">
+          <h1 className="text-[22px] font-semibold text-white flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" /> Contratos de Parceiros
           </h1>
-          <p className="text-xs text-muted-foreground">
-            {partnerContracts.filter(c => c.active).length} ativo(s) · {partnerContracts.length} total
-          </p>
         </div>
         <Button onClick={() => open(null)} className="ml-auto bg-primary text-primary-foreground border-0 gap-2" size="sm">
           <Plus className="h-4 w-4" /> Novo contrato

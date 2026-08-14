@@ -37,23 +37,37 @@ const ALL_ITEMS = [
   { to: "/configuracoes", label: "Configurações", icon: SettingsIcon, perm: "settings" as const },
 ];
 
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Tela de Vendas",
+  "/fila": "Fila de Lavagem",
+  "/dashboard": "Dashboard",
+  "/clientes": "Clientes",
+  "/parceiros": "Contratos de Parceiros",
+  "/historico": "Histórico",
+  "/relatorios": "Relatórios",
+  "/servicos": "Serviços",
+  "/configuracoes": "Configurações",
+};
+
 const STORAGE_KEY = "monaco:sidebar:collapsed";
+
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <>
-      <div className="h-10 w-10 rounded-2xl bg-primary grid place-items-center text-primary-foreground font-extrabold shrink-0">
-        M
+      <div className="h-10 w-10 rounded-2xl bg-primary grid place-items-center text-primary-foreground shrink-0">
+        <Crown className="h-5 w-5" aria-hidden="true" />
       </div>
       {!compact && (
         <div className="leading-tight min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Monaco</div>
-          <div className="font-semibold text-sidebar-foreground">Concierge</div>
+          <div className="font-semibold tracking-[0.06em] text-sidebar-foreground truncate">MONACO SYSTEM</div>
         </div>
       )}
+      <span className="sr-only">Monaco System</span>
     </>
   );
 }
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { perms, session, role, logout } = useAuth();
@@ -83,6 +97,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
   const homeTo = role === "lavajato" ? "/fila" : "/";
   const isActivePath = (to: string) => (to === "/" ? location.pathname === "/" : location.pathname.startsWith(to));
+  const currentTitle =
+    PAGE_TITLES[
+      Object.keys(PAGE_TITLES).find((p) => (p === "/" ? location.pathname === "/" : location.pathname.startsWith(p))) ??
+        ""
+    ] ?? "";
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -269,7 +288,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <Link to={homeTo} className="ml-auto flex items-center" aria-label="Início">
+            {currentTitle && (
+              <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold text-white leading-none">
+                {currentTitle}
+              </h1>
+            )}
+
+            <Link to={homeTo} className="ml-auto shrink-0 flex items-center" aria-label="Início">
               <Crown className="h-6 w-6 text-primary" />
             </Link>
           </div>
