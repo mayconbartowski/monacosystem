@@ -3,6 +3,7 @@ import {
 } from "lucide-react";
 import { ServiceIconKey, ServiceKey } from "@/lib/domain";
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared icon catalog
 export const SERVICE_ICON_OPTIONS: { key: ServiceIconKey; label: string; Icon: LucideIcon }[] = [
   { key: "droplets", label: "Gota", Icon: Droplets },
   { key: "sparkles", label: "Brilho", Icon: Sparkles },

@@ -69,7 +69,13 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  mobileTitleAccessory,
+}: {
+  children: React.ReactNode;
+  mobileTitleAccessory?: React.ReactNode;
+}) {
   const { perms, session, role, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,7 +90,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
-    } catch {}
+    } catch {
+      // A preferência visual é opcional quando o armazenamento está indisponível.
+    }
   }, [collapsed]);
 
   useEffect(() => {
@@ -289,9 +297,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Sheet>
 
             {currentTitle && (
-              <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold text-white leading-none">
-                {currentTitle}
-              </h1>
+              <div className="min-w-0 flex-1 flex items-center gap-2">
+                <h1 className="min-w-0 truncate text-[22px] font-semibold text-white leading-none">
+                  {currentTitle}
+                </h1>
+                {mobileTitleAccessory && <div className="shrink-0">{mobileTitleAccessory}</div>}
+              </div>
             )}
 
             <Link to={homeTo} className="ml-auto shrink-0 flex items-center" aria-label="Início">

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   EXPENSE_CATEGORIES, EXPENSE_PAYMENTS, Expense, normalizeExpenseName,
@@ -87,8 +87,8 @@ export function ExpenseFormDialog({ open, onOpenChange, editing, onSaved }: Prop
       }
       onSaved?.();
       onOpenChange(false);
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao salvar despesa");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao salvar despesa"));
     } finally {
       setSaving(false);
     }

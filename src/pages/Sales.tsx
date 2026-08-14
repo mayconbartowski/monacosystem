@@ -52,7 +52,7 @@ import { calcDuration, calcTotals, estimatedNewWait, getLoyaltyForVehicle, getSe
 import { useData } from "@/lib/DataContext";
 import { upsertCustomer, upsertVehicle, createOrder, preflightCustomerVehicle } from "@/services/data";
 import { createPartnerOrderRpc, formatCnpj } from "@/services/partners";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 
 type Mode = "customer" | "partner";
@@ -371,8 +371,8 @@ export default function Sales() {
         });
       }
       clearAll();
-    } catch (e: any) {
-      const msg = e?.message ?? "";
+    } catch (error: unknown) {
+      const msg = errorMessage(error, "");
       if (msg.includes("contract_limit_reached")) toast.error("Limite mensal do contrato atingido.");
       else if (msg.includes("contract_inactive")) toast.error("Contrato inativo.");
       else toast.error(msg || "Erro ao iniciar triagem");
@@ -383,17 +383,23 @@ export default function Sales() {
 
   return (
     <AppShell>
-      <header className="glass-chrome px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 sticky top-0 z-20">
+      <header className="glass-chrome px-4 md:px-6 py-2 md:py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 sticky top-0 z-20">
         <div className="min-w-0 hidden lg:block">
           <h1 className="text-[22px] font-semibold tracking-tight text-white">Tela de Vendas</h1>
         </div>
-        <div className="w-full md:w-auto md:ml-auto grid grid-cols-2 md:flex md:items-center gap-3 min-w-0">
-          <StatChip
-            icon={<Clock className="h-5 w-5 md:h-4 md:w-4" />}
-            label="Espera estimada"
-            value={formatDuration(newWait)}
+        <div className="w-full md:w-auto md:ml-auto flex md:items-center gap-3 min-w-0">
+          <div className="hidden md:block">
+            <StatChip
+              icon={<Clock className="h-4 w-4" />}
+              label="Espera estimada"
+              value={formatDuration(newWait)}
+            />
+          </div>
+          <QueueDrawer
+            orders={orders}
+            contracts={partnerContracts}
+            estimatedWait={formatDuration(newWait)}
           />
-          <QueueDrawer orders={orders} contracts={partnerContracts} />
         </div>
       </header>
 
@@ -401,7 +407,7 @@ export default function Sales() {
         {/* COLUNA 1 — Categoria + Serviços unificados */}
         <section className="lg:col-span-4 flex flex-col gap-2 md:gap-2.5 min-h-0">
           <Panel title="Serviços" subtitle={`Preços para ${category}`} className="flex-1">
-            <div className="flex flex-wrap gap-1.5 p-1 rounded-control bg-surface-3 mb-4">
+            <div className="grid grid-cols-5 gap-0.5 sm:gap-1.5 p-1 rounded-control bg-surface-3 mb-4">
               {VEHICLE_CATEGORIES.map((c) => {
                 const locked = categoryLocked && c !== category;
                 return (
@@ -410,7 +416,7 @@ export default function Sales() {
                     disabled={locked}
                     onClick={() => { if (!categoryLocked) setCategory(c); }}
                     className={cn(
-                      "flex-1 min-w-[64px] px-2 py-2 rounded-[0.5rem] text-sm font-medium transition-colors",
+                      "min-w-0 px-0.5 sm:px-2 py-2 rounded-[0.5rem] text-[10px] sm:text-sm font-medium transition-colors whitespace-nowrap",
                       category === c
                         ? "bg-primary text-primary-foreground"
                         : locked
@@ -970,41 +976,43 @@ export default function Sales() {
             </div>
           </div>
 
-          <div className="w-full md:w-auto md:ml-auto flex items-center justify-between md:justify-end gap-1.5 md:gap-3 min-w-0">
+          <div className="w-full md:w-auto md:ml-auto flex items-center gap-1.5 md:gap-3 min-w-0">
             <div className="text-lg md:text-2xl font-bold gold-text tabular-nums leading-none whitespace-nowrap">
               {brl(previewTotal)}
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="h-11 px-2.5 md:px-4 gap-1.5 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-destructive text-xs md:text-sm"
-                >
-                  <Trash2 className="hidden md:inline h-4 w-4" /> Limpar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Limpar formulário?</AlertDialogTitle>
-                  <AlertDialogDescription>Todas as informações desta triagem serão descartadas.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Voltar</AlertDialogCancel>
-                  <AlertDialogAction onClick={clearAll} className="bg-destructive hover:bg-destructive/90">
-                    Sim, limpar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="h-11 px-2.5 md:px-4 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs md:text-sm"
-            >
-              <Car className="hidden md:inline h-4 w-4" />
-              <span className="hidden md:inline">{submitting ? "Iniciando…" : "Iniciar Triagem"}</span>
-              <span className="md:hidden">{submitting ? "…" : "Iniciar"}</span>
-            </Button>
+            <div className="ml-auto flex items-center gap-1.5 md:gap-3 shrink-0">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-11 px-5 md:px-4 gap-1.5 rounded-control bg-surface-3 text-muted-foreground hover:bg-surface-4 hover:text-destructive text-xs md:text-sm"
+                  >
+                    <Trash2 className="hidden md:inline h-4 w-4" /> Limpar
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Limpar formulário?</AlertDialogTitle>
+                    <AlertDialogDescription>Todas as informações desta triagem serão descartadas.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Voltar</AlertDialogCancel>
+                    <AlertDialogAction onClick={clearAll} className="bg-destructive hover:bg-destructive/90">
+                      Sim, limpar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                className="h-11 px-5 md:px-4 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-xs md:text-sm"
+              >
+                <Car className="hidden md:inline h-4 w-4" />
+                <span className="hidden md:inline">{submitting ? "Iniciando…" : "Iniciar Triagem"}</span>
+                <span className="md:hidden">{submitting ? "…" : "Iniciar"}</span>
+              </Button>
+            </div>
           </div>
         </div>
       </footer>

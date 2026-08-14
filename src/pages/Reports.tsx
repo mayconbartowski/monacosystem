@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
@@ -176,7 +176,8 @@ export default function Reports() {
   // Payment method time series
   const paymentSeries = useMemo(() => {
     const days = eachDayOfInterval({ start: from, end: to });
-    const byDay = new Map<string, Record<string, number> & { label: string }>();
+    type PaymentSeriesRow = Record<PaymentMethod, number> & { label: string };
+    const byDay = new Map<string, PaymentSeriesRow>();
     days.forEach((d) => {
       const k = format(d, "yyyy-MM-dd");
       byDay.set(k, {
@@ -184,12 +185,12 @@ export default function Reports() {
         Crédito: 0,
         Débito: 0,
         Pix: 0,
-      } as any);
+      });
     });
     rangeOrders.forEach((o) => {
       const k = format(new Date(o.createdAt), "yyyy-MM-dd");
       const row = byDay.get(k);
-      if (row && o.paymentMethod) (row as any)[o.paymentMethod] += o.total;
+      if (row && o.paymentMethod) row[o.paymentMethod] += o.total;
     });
     return Array.from(byDay.values());
   }, [rangeOrders, from, to]);
@@ -271,32 +272,6 @@ export default function Reports() {
     return Array.from(map.values());
   }, [rangeExpenses, from, to]);
 
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [barVisible, setBarVisible] = useState(true);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    const getY = () => {
-      const inner = el && el.scrollHeight > el.clientHeight ? el.scrollTop : 0;
-      return inner || window.scrollY || document.documentElement.scrollTop || 0;
-    };
-    let last = getY();
-    const onScroll = () => {
-      const y = getY();
-      const delta = y - last;
-      if (y <= 8) {
-        setBarVisible(true);
-        last = y;
-        return;
-      }
-      if (Math.abs(delta) < 10) return;
-      setBarVisible(delta < 0);
-      last = y;
-    };
-    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
-    return () => document.removeEventListener("scroll", onScroll, { capture: true } as EventListenerOptions);
-  }, []);
-
   const rangeLabel = `${format(from, "dd/MM/yyyy")} — ${format(to, "dd/MM/yyyy")}`;
 
   return (
@@ -344,58 +319,56 @@ export default function Reports() {
         </div>
       </header>
 
-      <div ref={scrollRef} className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
-        <div
-          className={cn(
-            "lg:hidden sticky z-30 -mx-4 -mt-4 mb-0 px-3 py-2 bg-[hsl(var(--surface-2))] border-b border-border transition-all duration-200 ease-out",
-            barVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3 pointer-events-none",
-          )}
-          style={{ top: 60 }}
-        >
-          <div className="flex items-center gap-1.5">
-            {(["7", "30", "365"] as Preset[]).map((p) => (
+      <div
+        className="lg:hidden sticky z-30 px-3 py-2 bg-[hsl(var(--surface-2))] border-b border-border"
+        style={{ top: "calc(52px + max(0.5rem, env(safe-area-inset-top)))" }}
+      >
+        <div className="flex items-center gap-1.5">
+          {(["7", "30", "365"] as Preset[]).map((p) => (
+            <Button
+              key={p}
+              size="sm"
+              variant={preset === p ? "default" : "outline"}
+              onClick={() => setPreset(p)}
+              className={cn(
+                "flex-1 min-w-0 px-1 h-9 text-xs whitespace-nowrap",
+                preset === p && "bg-primary text-primary-foreground border-0",
+              )}
+            >
+              {p === "7" ? "7 dias" : p === "30" ? "30 dias" : "1 ano"}
+            </Button>
+          ))}
+          <Popover>
+            <PopoverTrigger asChild>
               <Button
-                key={p}
                 size="sm"
-                variant={preset === p ? "default" : "outline"}
-                onClick={() => setPreset(p)}
+                variant={preset === "custom" ? "default" : "outline"}
                 className={cn(
-                  "flex-1 min-w-0 px-1 h-9 text-xs whitespace-nowrap",
-                  preset === p && "bg-primary text-primary-foreground border-0",
+                  "flex-1 min-w-0 px-1 h-9 text-xs gap-1 whitespace-nowrap",
+                  preset === "custom" && "bg-primary text-primary-foreground border-0",
                 )}
               >
-                {p === "7" ? "7 dias" : p === "30" ? "30 dias" : "1 ano"}
+                <CalendarIcon className="h-3.5 w-3.5 shrink-0" /> Data
               </Button>
-            ))}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  size="sm"
-                  variant={preset === "custom" ? "default" : "outline"}
-                  className={cn(
-                    "flex-1 min-w-0 px-1 h-9 text-xs gap-1 whitespace-nowrap",
-                    preset === "custom" && "bg-primary text-primary-foreground border-0",
-                  )}
-                >
-                  <CalendarIcon className="h-3.5 w-3.5 shrink-0" /> Data
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="range"
-                  selected={range}
-                  onSelect={(r) => {
-                    setRange(r);
-                    setPreset("custom");
-                  }}
-                  numberOfMonths={1}
-                  locale={ptBR}
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="range"
+                selected={range}
+                onSelect={(r) => {
+                  setRange(r);
+                  setPreset("custom");
+                }}
+                numberOfMonths={1}
+                locale={ptBR}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
+      </div>
+
+      <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <Stat label="Receita bruta" value={brl(revenue)} highlight />

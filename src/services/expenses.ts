@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Expense, normalizeExpenseName } from "@/lib/expenses";
 
-type Row = {
+export type ExpenseRow = {
   id: string;
   name: string;
   amount: number | string;
@@ -15,7 +15,7 @@ type Row = {
   updated_at: string;
 };
 
-export function mapExpense(r: Row): Expense {
+export function mapExpense(r: ExpenseRow): Expense {
   return {
     id: r.id,
     name: r.name,
@@ -42,7 +42,7 @@ export async function fetchExpenses(): Promise<Expense[]> {
     // Non-admin users may hit RLS; treat as empty silently.
     return [];
   }
-  return (data as Row[]).map(mapExpense);
+  return (data as ExpenseRow[]).map(mapExpense);
 }
 
 export interface ExpenseInput {
@@ -70,7 +70,7 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     .select()
     .single();
   if (error) throw error;
-  return mapExpense(data as Row);
+  return mapExpense(data as ExpenseRow);
 }
 
 export async function updateExpense(id: string, patch: ExpenseInput): Promise<Expense> {
@@ -88,7 +88,7 @@ export async function updateExpense(id: string, patch: ExpenseInput): Promise<Ex
     .select()
     .single();
   if (error) throw error;
-  return mapExpense(data as Row);
+  return mapExpense(data as ExpenseRow);
 }
 
 /** Soft delete: preserva histórico financeiro. */

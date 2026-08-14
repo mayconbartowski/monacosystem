@@ -1,13 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
-import { PartnerContract } from "@/lib/domain";
+import { PartnerContract, PaymentMethod, VehicleCategory } from "@/lib/domain";
 
-type Row = {
+export type PartnerContractRow = {
   id: string; company_name: string; contact_phone: string; cnpj: string;
   monthly_vehicle_limit: number; contract_value: number; active: boolean;
   created_at: string; updated_at: string;
 };
 
-export function mapContract(r: Row): PartnerContract {
+export function mapContract(r: PartnerContractRow): PartnerContract {
   return {
     id: r.id,
     companyName: r.company_name,
@@ -39,7 +39,7 @@ export async function fetchPartnerContracts(): Promise<PartnerContract[]> {
     .select("*")
     .order("company_name");
   if (error) throw error;
-  return (data as Row[] | null ?? []).map(mapContract);
+  return (data as PartnerContractRow[] | null ?? []).map(mapContract);
 }
 
 export async function upsertPartnerContract(input: {
@@ -58,12 +58,12 @@ export async function upsertPartnerContract(input: {
     const { data, error } = await supabase.from("partner_contracts")
       .update(row).eq("id", input.id).select().single();
     if (error) throw error;
-    return mapContract(data as Row);
+    return mapContract(data as PartnerContractRow);
   }
   const { data, error } = await supabase.from("partner_contracts")
     .insert(row).select().single();
   if (error) throw error;
-  return mapContract(data as Row);
+  return mapContract(data as PartnerContractRow);
 }
 
 export async function setPartnerContractActive(id: string, active: boolean): Promise<void> {
@@ -75,11 +75,11 @@ export async function setPartnerContractActive(id: string, active: boolean): Pro
 export async function createPartnerOrderRpc(input: {
   partnerContractId: string;
   plate: string; brand: string; model: string; color: string; year: string;
-  category: string; serviceId: string; serviceKey: string;
+  category: VehicleCategory; serviceId: string; serviceKey: string;
   extras: string[]; subtotal: number; notes: string;
   queuePosition: number; durationMinutes: number;
 }): Promise<void> {
-  const { error } = await (supabase.rpc as any)("create_partner_order", {
+  const { error } = await supabase.rpc("create_partner_order", {
     _partner_contract_id: input.partnerContractId,
     _plate: input.plate,
     _brand: input.brand || "",
@@ -100,12 +100,12 @@ export async function createPartnerOrderRpc(input: {
 
 export async function payOrderRpc(
   orderId: string,
-  method: string,
+  method: PaymentMethod,
   discountPct: number,
   serviceFee: number = 0,
   serviceFeeNote: string = "",
 ): Promise<void> {
-  const { error } = await (supabase.rpc as any)("pay_order", {
+  const { error } = await supabase.rpc("pay_order", {
     _order_id: orderId,
     _payment_method: method,
     _discount_percentage: discountPct,
@@ -116,7 +116,7 @@ export async function payOrderRpc(
 }
 
 export async function deliverPartnerOrderRpc(orderId: string): Promise<void> {
-  const { error } = await (supabase.rpc as any)("deliver_partner_order", {
+  const { error } = await supabase.rpc("deliver_partner_order", {
     _order_id: orderId,
   });
   if (error) throw error;

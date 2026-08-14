@@ -9,6 +9,7 @@ import { AppAccount, ROLE_LABEL } from "@/lib/domain";
 import { listAccounts, updateAccountUsername, updateOwnPassword } from "@/lib/auth";
 import { useAuth } from "@/lib/authContext";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/utils";
 
 export default function Settings() {
   const [accounts, setAccounts] = useState<AppAccount[]>([]);
@@ -31,8 +32,8 @@ export default function Settings() {
       await updateOwnPassword(newPassword);
       toast.success("Senha atualizada");
       setNewPassword("");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao alterar senha");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao alterar senha"));
     } finally {
       setSavingPwd(false);
     }
@@ -101,8 +102,8 @@ function AccountEditor({ account, onSaved }: { account: AppAccount; onSaved: () 
       await updateAccountUsername(account.id, login);
       toast.success(`Login de ${ROLE_LABEL[account.role]} atualizado`);
       onSaved();
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao atualizar");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao atualizar"));
     } finally {
       setBusy(false);
     }

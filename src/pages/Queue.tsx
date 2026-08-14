@@ -25,7 +25,7 @@ import { ServiceIcon } from "@/components/ServiceIcon";
 import { AppShell } from "@/components/AppShell";
 import { AmbientGlow } from "@/components/AmbientGlow";
 import { PickupPaymentDialog } from "@/components/PickupPaymentDialog";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 
 export default function Queue() {
   const { logout, role, perms } = useAuth();
@@ -59,6 +59,7 @@ export default function Queue() {
       completed: all.filter((o) => o.status === "completed"),
     };
   }, [orders]);
+  const totalVehicles = buckets.queued.length + buckets.in_progress.length + buckets.completed.length;
 
   const contractById = useMemo(() => {
     const m = new Map<string, (typeof partnerContracts)[number]>();
@@ -81,8 +82,8 @@ export default function Queue() {
       await startOrder(o.id);
       toast.success(`Lavagem iniciada — ${o.vehiclePlate}`);
       setTab("in_progress");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao iniciar");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao iniciar"));
     }
   };
   const finish = async (o: Order) => {
@@ -90,8 +91,8 @@ export default function Queue() {
       await finishOrder(o);
       toast.success(`Finalizado — ${o.vehiclePlate}`);
       setTab("completed");
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao finalizar");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao finalizar"));
     }
   };
 
@@ -261,15 +262,25 @@ export default function Queue() {
 
   if (role === "gerencia") {
     return (
-      <AppShell>
-        <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 ">
+      <AppShell
+        mobileTitleAccessory={
+          <Badge
+            variant="outline"
+            aria-label={`${totalVehicles} veículos no total`}
+            className="border-primary/40 text-primary whitespace-nowrap"
+          >
+            {totalVehicles}
+          </Badge>
+        }
+      >
+        <header className="glass-chrome px-4 md:px-6 py-4 hidden lg:flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 ">
           <div className="hidden lg:block">
             <h1 className="text-[22px] font-semibold tracking-tight text-white flex items-center gap-2">
               <ListOrdered className="h-5 w-5 text-primary" /> Fila de Lavagem
             </h1>
           </div>
           <Badge variant="outline" className="ml-auto border-primary/40 text-primary">
-            {buckets.queued.length + buckets.in_progress.length + buckets.completed.length} veíc.
+            {totalVehicles} veíc.
           </Badge>
         </header>
         <div className="flex-1 p-4 md:p-6 bg-surface-sunken overflow-auto">
@@ -290,14 +301,19 @@ export default function Queue() {
         <div className="h-9 w-9 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">M</div>
         <div className="leading-tight min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>
-          <div className="text-sm font-semibold flex items-center gap-1.5">
-            <ListOrdered className="h-3.5 w-3.5 text-primary" /> Fila de Lavagem
+          <div className="text-sm font-semibold flex items-center gap-1.5 min-w-0">
+            <ListOrdered className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="truncate">Fila de Lavagem</span>
+            <Badge
+              variant="outline"
+              aria-label={`${totalVehicles} veículos no total`}
+              className="shrink-0 border-primary/40 text-primary whitespace-nowrap"
+            >
+              {totalVehicles}
+            </Badge>
           </div>
         </div>
-        <Badge variant="outline" className="ml-auto border-primary/40 text-primary">
-          {buckets.queued.length + buckets.in_progress.length + buckets.completed.length} veíc.
-        </Badge>
-        <Button size="icon" variant="ghost" onClick={doLogout} aria-label="Sair">
+        <Button size="icon" variant="ghost" onClick={doLogout} aria-label="Sair" className="ml-auto shrink-0">
           <LogOut className="h-4 w-4" />
         </Button>
       </header>

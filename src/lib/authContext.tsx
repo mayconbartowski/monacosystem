@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- provider and hook share the same context
 export function useAuth(): AuthState {
   const v = useContext(Ctx);
   if (!v) throw new Error("useAuth must be used inside AuthProvider");

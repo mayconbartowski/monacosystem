@@ -21,6 +21,7 @@ import {
 } from "@/services/partners";
 import { useData } from "@/lib/DataContext";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/utils";
 
 export default function Partners() {
   const { partnerContracts } = useData();
@@ -64,8 +65,8 @@ export default function Partners() {
       });
       toast.success(editing ? "Contrato atualizado" : "Contrato criado");
       setDialogOpen(false);
-    } catch (e: any) {
-      const msg = e?.message ?? "Erro ao salvar";
+    } catch (error: unknown) {
+      const msg = errorMessage(error, "Erro ao salvar");
       if (msg.includes("partner_contracts_cnpj_active_idx"))
         toast.error("CNPJ já cadastrado em contrato ativo");
       else toast.error(msg);
@@ -76,8 +77,8 @@ export default function Partners() {
     try {
       await setPartnerContractActive(c.id, !c.active);
       toast.success(c.active ? "Contrato inativado" : "Contrato reativado");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao atualizar");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Erro ao atualizar"));
     } finally { setConfirming(null); }
   };
 
