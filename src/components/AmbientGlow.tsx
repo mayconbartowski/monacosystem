@@ -192,7 +192,8 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     const resolution = gl.getUniformLocation(program, "uResolution");
     const mouseUniform = gl.getUniformLocation(program, "uMouse");
     const timeUniform = gl.getUniformLocation(program, "uTime");
-    if (!resolution || !mouseUniform || !timeUniform) {
+    const frameUniform = gl.getUniformLocation(program, "uFrame");
+    if (!resolution || !mouseUniform || !timeUniform || !frameUniform) {
       throw new Error("Uniforms do gradiente liquido nao encontrados.");
     }
 
@@ -207,11 +208,12 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
     let currentY = targetY;
     let width = 1;
     let height = 1;
+    let frame = 0;
     const startedAt = performance.now();
 
     const resize = () => {
       const bounds = container.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, 3);
       width = Math.max(1, Math.round(bounds.width * dpr));
       height = Math.max(1, Math.round(bounds.height * dpr));
 
@@ -230,9 +232,12 @@ function mountLiquidGradient(container: HTMLDivElement, reducedMotion: boolean) 
 
       gl.uniform2f(mouseUniform, currentX, 1.0 - currentY);
       gl.uniform1f(timeUniform, reducedMotion ? 0 : (now - startedAt) / 1000);
+      gl.uniform1f(frameUniform, reducedMotion ? 0 : frame);
+      frame += 1;
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+
 
       if (!reducedMotion) animationFrame = window.requestAnimationFrame(draw);
     };
