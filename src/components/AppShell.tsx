@@ -42,18 +42,19 @@ const STORAGE_KEY = "monaco:sidebar:collapsed";
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <>
-      <div className="h-10 w-10 rounded-2xl bg-primary grid place-items-center text-primary-foreground font-extrabold shrink-0">
-        M
+      <div className="h-10 w-10 rounded-2xl bg-primary grid place-items-center text-primary-foreground shrink-0">
+        <Crown className="h-5 w-5" aria-hidden="true" />
       </div>
       {!compact && (
         <div className="leading-tight min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Monaco</div>
-          <div className="font-semibold text-sidebar-foreground">Concierge</div>
+          <div className="font-semibold tracking-[0.06em] text-sidebar-foreground truncate">MONACO SYSTEM</div>
         </div>
       )}
+      <span className="sr-only">Monaco System</span>
     </>
   );
 }
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { perms, session, role, logout } = useAuth();
