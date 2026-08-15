@@ -185,6 +185,14 @@
         background-color: rgb(15 15 15 / 0.9);
       }
     }
+
+    /* Cards revelam o shader sem camada fosca; somente o ::after de noise fica visivel. */
+    .surface-card {
+      background-color: transparent;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      box-shadow: none;
+    }
   }
 
   .surface-inset {
@@ -228,4 +236,3 @@
     }
   }
 }
-
