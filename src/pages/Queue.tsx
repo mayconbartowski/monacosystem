@@ -298,7 +298,7 @@ export default function Queue() {
     <div className="relative isolate min-h-screen flex flex-col bg-transparent">
       <AmbientGlow />
       <header className="glass-chrome h-[60px] min-h-[60px] lg:h-[88px] lg:min-h-[88px] sticky top-0 z-20 px-4 py-0 flex items-center gap-3">
-        <div className="h-9 w-9 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">M</div>
+        <img src="/brand/monaco-icon.png" alt="Mônaco" className="h-9 w-9 object-contain" />
         <div className="leading-tight min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>
           <div className="text-sm font-semibold flex items-center gap-1.5 min-w-0">
