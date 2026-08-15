@@ -72,7 +72,7 @@ export default function Customers() {
 
   return (
     <AppShell>
-      <header className="glass-chrome px-4 md:px-6 py-4 flex flex-wrap items-center gap-3 md:gap-4">
+      <header className="glass-chrome h-[60px] min-h-[60px] lg:h-[88px] lg:min-h-[88px] px-4 md:px-6 py-0 flex flex-wrap items-center gap-3 md:gap-4">
         <div className="hidden lg:block">
           <h1 className="text-[22px] font-semibold text-white">Clientes</h1>
         </div>

@@ -383,7 +383,7 @@ export default function Sales() {
 
   return (
     <AppShell>
-      <header className="glass-chrome px-4 md:px-6 py-2 md:py-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 sticky top-0 z-20">
+      <header className="glass-chrome h-[60px] min-h-[60px] lg:h-[88px] lg:min-h-[88px] px-4 md:px-6 py-0 flex flex-col md:flex-row md:items-center gap-3 md:gap-5 sticky top-0 z-20">
         <div className="min-w-0 hidden lg:block">
           <h1 className="text-[22px] font-semibold tracking-tight text-white">Tela de Vendas</h1>
         </div>

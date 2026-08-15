@@ -41,7 +41,7 @@ export default function Settings() {
 
   return (
     <AppShell>
-      <header className="glass-chrome px-6 py-4">
+      <header className="glass-chrome h-[60px] min-h-[60px] lg:h-[88px] lg:min-h-[88px] px-6 py-0 flex items-center">
         <h1 className="hidden lg:block text-[22px] font-semibold text-white">Configurações</h1>
       </header>
       <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-2">
