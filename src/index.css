@@ -193,6 +193,11 @@
       backdrop-filter: none;
       box-shadow: none;
     }
+
+    .surface-card::after {
+      opacity: 0.11;
+      background-size: 168px 168px;
+    }
   }
 
   .surface-inset {
