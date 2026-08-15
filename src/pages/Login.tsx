@@ -43,14 +43,8 @@ export default function Login() {
 
       <div className="relative z-10 m-auto w-full max-w-lg px-4 sm:px-6 py-12">
         <div className="mb-8">
-          <div className="h-12 w-12 rounded-2xl bg-primary grid place-items-center text-primary-foreground font-extrabold text-lg">
-            M
-          </div>
-          <div className="mt-6 label-xs">Monaco · acesso interno</div>
-          <h1 className="mt-2 text-4xl sm:text-5xl font-bold tracking-tight leading-[1.05]">
-            Concierge<span className="text-primary">.</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-3 max-w-sm">
+          <img src="/brand/monaco-logo.png" alt="Mônaco" className="w-64 sm:w-72 h-auto object-contain" />
+          <p className="text-sm text-muted-foreground mt-6 max-w-sm">
             Operação, fila e faturamento em um único painel. Acesso restrito a contas operacionais.
           </p>
         </div>

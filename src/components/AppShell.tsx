@@ -14,7 +14,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Menu,
-  Crown,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -55,15 +54,12 @@ const STORAGE_KEY = "monaco:sidebar:collapsed";
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <>
-      <div className="h-10 w-10 rounded-2xl bg-primary grid place-items-center text-primary-foreground shrink-0">
-        <Crown className="h-5 w-5" aria-hidden="true" />
-      </div>
-      {!compact && (
-        <div className="leading-tight min-w-0">
-          <div className="font-semibold tracking-[0.06em] text-sidebar-foreground truncate">MONACO SYSTEM</div>
-        </div>
-      )}
-      <span className="sr-only">Monaco System</span>
+      <img
+        src={compact ? "/brand/monaco-icon.png" : "/brand/monaco-logo.png"}
+        alt=""
+        className={cn(compact ? "h-11 w-11" : "h-12 w-auto max-w-[190px]", "object-contain shrink-0")}
+      />
+      <span className="sr-only">Mônaco</span>
     </>
   );
 }
@@ -184,6 +180,41 @@ export function AppShell({
               )}
             </Button>
 
+            {session &&
+              (collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      tabIndex={0}
+                      className="mx-auto h-10 w-10 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      aria-label={`${session.login} · ${ROLE_LABEL[session.role]}`}
+                    >
+                      {session.login.slice(0, 1).toUpperCase()}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {session.login} · {ROLE_LABEL[session.role]}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <div className="w-full flex items-center gap-2 px-2 py-2 rounded-xl border border-border bg-muted/25">
+                  <div className="h-8 w-8 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold shrink-0">
+                    {session.login.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 leading-tight">
+                    <div className="text-xs font-medium truncate">{session.login}</div>
+                    <div className="text-[10px] text-muted-foreground">{ROLE_LABEL[session.role]}</div>
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          <div
+            className={cn(
+              "h-[136px] min-h-[136px] border-t border-sidebar-border p-3 flex items-center",
+              collapsed ? "justify-center" : "justify-stretch",
+            )}
+          >
             {collapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -210,41 +241,6 @@ export function AppShell({
                 Sair
               </Button>
             )}
-          </div>
-
-          <div
-            className={cn(
-              "h-[136px] min-h-[136px] border-t border-sidebar-border p-3 flex items-center",
-              collapsed ? "justify-center" : "justify-stretch",
-            )}
-          >
-            {session &&
-              (collapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      tabIndex={0}
-                      className="h-10 w-10 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      aria-label={`${session.login} · ${ROLE_LABEL[session.role]}`}
-                    >
-                      {session.login.slice(0, 1).toUpperCase()}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    {session.login} · {ROLE_LABEL[session.role]}
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <div className="w-full flex items-center gap-2 px-2 py-2 rounded-xl border border-border bg-muted/25">
-                  <div className="h-8 w-8 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold shrink-0">
-                    {session.login.slice(0, 1).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 leading-tight">
-                    <div className="text-xs font-medium truncate">{session.login}</div>
-                    <div className="text-[10px] text-muted-foreground">{ROLE_LABEL[session.role]}</div>
-                  </div>
-                </div>
-              ))}
           </div>
         </aside>
 
@@ -295,15 +291,6 @@ export function AppShell({
                   })}
                 </nav>
                 <div className="p-3">
-                  <Button
-                    variant="ghost"
-                    onClick={doLogout}
-                    className="w-full justify-start gap-2 min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <LogOut className="h-4 w-4" /> Sair
-                  </Button>
-                </div>
-                <div className="h-[136px] min-h-[136px] border-t border-sidebar-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center">
                   {session && (
                     <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-muted/25">
                       <div className="h-9 w-9 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold">
@@ -315,6 +302,15 @@ export function AppShell({
                       </div>
                     </div>
                   )}
+                </div>
+                <div className="h-[136px] min-h-[136px] border-t border-sidebar-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center">
+                  <Button
+                    variant="ghost"
+                    onClick={doLogout}
+                    className="w-full justify-start gap-2 min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" /> Sair
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
@@ -329,7 +325,7 @@ export function AppShell({
             )}
 
             <Link to={homeTo} className="ml-auto shrink-0 flex items-center" aria-label="Início">
-              <Crown className="h-6 w-6 text-primary" />
+              <img src="/brand/monaco-icon.png" alt="" className="h-8 w-8 object-contain" />
             </Link>
           </div>
 
