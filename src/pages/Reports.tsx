@@ -58,7 +58,7 @@ function formatCount(value: number) {
 }
 
 function PaymentLegend() {
-  const items: PaymentMethod[] = ["Pix", "Débito", "Crédito"];
+  const items: PaymentMethod[] = ["Crédito", "Débito", "Pix"];
 
   return (
     <div className="flex items-center justify-center gap-5 text-xs text-muted-foreground">
@@ -422,24 +422,22 @@ export default function Reports() {
 
       <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 min-[1200px]:grid-cols-[repeat(16,minmax(0,1fr))] gap-2">
-          <Stat className="min-[1200px]:col-span-3" label="Receita bruta" value={brl(revenue)} highlight />
-          <Stat className="min-[1200px]:col-span-3" label="Despesas" value={brl(totalExpenses)} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 min-[1200px]:grid-cols-8 gap-2">
+          <Stat label="Receita bruta" value={brl(revenue)} highlight />
+          <Stat label="Despesas" value={brl(totalExpenses)} />
           <Stat
-            className="min-[1200px]:col-span-3"
             label="Resultado líquido"
             value={brl(netResult)}
             accent={netResult >= 0}
           />
           <Stat
-            className="min-[1200px]:col-span-3"
             label="Ticket médio"
             value={brl(rangeOrders.length ? revenue / rangeOrders.length : 0)}
           />
-          <Stat compact label="Vendas" value={formatCount(rangeOrders.length)} />
-          <Stat compact label="Descontos" value={brl(discounts)} />
-          <Stat compact label="Atendidos" value={formatCount(attendedInPeriod)} />
-          <Stat compact label="Cadastrados" value={formatCount(registeredInPeriod)} />
+          <Stat label="Vendas" value={formatCount(rangeOrders.length)} />
+          <Stat label="Descontos" value={brl(discounts)} />
+          <Stat label="Atendidos" value={formatCount(attendedInPeriod)} />
+          <Stat label="Cadastrados" value={formatCount(registeredInPeriod)} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -854,29 +852,18 @@ function Stat({
   value,
   accent,
   highlight,
-  compact,
-  className,
 }: {
   label: string;
   value: string;
   accent?: boolean;
   highlight?: boolean;
-  compact?: boolean;
-  className?: string;
 }) {
-  const cardClassName = cn(
-    "surface-card border-0 shadow-none p-4",
-    compact && "min-[1200px]:p-2 min-[1400px]:p-3",
-    className,
-  );
-  const labelClassName = cn(
-    "text-[11px] uppercase tracking-wider",
-    compact && "min-[1200px]:text-[8px] min-[1400px]:text-[10px]",
-  );
-  const valueClassName = cn(
-    "text-2xl font-bold tabular-nums",
-    compact && "min-[1200px]:text-base min-[1400px]:text-xl",
-  );
+  const cardClassName =
+    "surface-card border-0 shadow-none p-4 min-[1200px]:p-2 min-[1400px]:p-3 min-[1600px]:p-4";
+  const labelClassName =
+    "text-[11px] min-[1200px]:text-[9px] min-[1400px]:text-[10px] min-[1600px]:text-[11px] uppercase tracking-wider";
+  const valueClassName =
+    "text-2xl min-[1200px]:text-base min-[1400px]:text-xl min-[1600px]:text-2xl font-bold tabular-nums whitespace-nowrap";
 
   if (highlight) {
     return (
