@@ -44,11 +44,19 @@ float softBlob(vec2 point, vec2 center, vec2 radius, float aspect) {
 vec3 gradientColor(vec2 fragment) {
   vec2 uv = fragment / uResolution;
   float aspect = uResolution.x / uResolution.y;
-  float time = uTime * 0.10;
+  float time = uTime * 0.13;
+
+  // Deriva autonoma: mantem todo o campo em movimento lento mesmo quando o
+  // mouse esta parado. Duas frequencias longas evitam um ciclo mecanico curto.
+  vec2 idleDrift = vec2(
+    sin(time * 1.07) + sin(time * 0.43 + 1.4) * 0.46,
+    cos(time * 0.89) + cos(time * 0.47 + 2.1) * 0.42
+  ) * vec2(0.034, 0.028);
+  float idleBreath = 0.5 + 0.5 * sin(time * 0.71 + 0.6);
 
   // O campo acompanha o cursor com atraso. A area de influencia e ampla para
   // que os dois pocos escuros sejam arrastados como partes da mesma superficie.
-  vec2 point = uv - (uMouse - 0.5) * vec2(0.095, 0.075);
+  vec2 point = uv + idleDrift - (uMouse - 0.5) * vec2(0.095, 0.075);
   vec2 mouseDelta = (point - uMouse) * vec2(aspect, 1.0);
   float dragInfluence = exp(-dot(mouseDelta, mouseDelta) / 0.18);
   point -= uDrag * dragInfluence * 4.2;
@@ -86,8 +94,8 @@ vec3 gradientColor(vec2 fragment) {
     0.24 + sin(time * 0.61 + 1.7) * 0.075,
     0.74 + cos(time * 0.49 + 0.4) * 0.065
   );
-  float holeA = softBlob(point, blackHoleA, vec2(0.34, 0.28), aspect);
-  float holeB = softBlob(point, blackHoleB, vec2(0.30, 0.25), aspect);
+  float holeA = softBlob(point, blackHoleA, vec2(0.34, 0.28) * (0.96 + idleBreath * 0.08), aspect);
+  float holeB = softBlob(point, blackHoleB, vec2(0.30, 0.25) * (1.04 - idleBreath * 0.08), aspect);
   float blackHoleMix = clamp(1.08 * (1.0 - (1.0 - holeA) * (1.0 - holeB)), 0.0, 1.0);
 
   // Compressao exponencial preserva uma derivada suave em todo o intervalo.
