@@ -39,6 +39,10 @@ float softBlob(vec2 point, vec2 center, vec2 radius, float aspect) {
   return exp(-dot(delta, delta));
 }
 
+float focusedBlob(vec2 point, vec2 center, vec2 radius, float aspect, float focus) {
+  return pow(softBlob(point, center, radius, aspect), focus);
+}
+
 // Mesh gradient analitico: pontos de cor de queda gaussiana formam uma unica
 // superficie continua. Nao ha linhas, celulas, thresholds ou faixas no desenho.
 vec3 gradientColor(vec2 fragment) {
@@ -79,14 +83,14 @@ vec3 gradientColor(vec2 fragment) {
   vec2 grayC = vec2(0.50 + cos(time * 0.31) * 0.15, 0.54 + sin(time * 0.44 + 2.7) * 0.12);
 
   float warmField =
-    softBlob(point, warmA, vec2(0.54, 0.43), aspect) * 0.92 +
-    softBlob(point, warmB, vec2(0.60, 0.50), aspect) * 0.86 +
-    softBlob(point, warmC, vec2(0.72, 0.58), aspect) * 0.42;
+    focusedBlob(point, warmA, vec2(0.54, 0.43), aspect, 1.42) * 0.92 +
+    focusedBlob(point, warmB, vec2(0.60, 0.50), aspect, 1.42) * 0.86 +
+    focusedBlob(point, warmC, vec2(0.72, 0.58), aspect, 1.42) * 0.42;
 
   float grayField =
-    softBlob(point, grayA, vec2(0.70, 0.52), aspect) * 0.95 +
-    softBlob(point, grayB, vec2(0.66, 0.56), aspect) * 0.90 +
-    softBlob(point, grayC, vec2(0.88, 0.70), aspect) * 0.72;
+    focusedBlob(point, grayA, vec2(0.70, 0.52), aspect, 1.55) * 0.95 +
+    focusedBlob(point, grayB, vec2(0.66, 0.56), aspect, 1.55) * 0.90 +
+    focusedBlob(point, grayC, vec2(0.88, 0.70), aspect, 1.55) * 0.72;
 
   // O primeiro poco fica no centro. O segundo percorre outra regiao do campo,
   // evitando que a interacao dependa de um unico ponto escuro.
@@ -99,8 +103,20 @@ vec3 gradientColor(vec2 fragment) {
     0.74 + cos(time * 0.49 + 0.4) * 0.09
   );
   // O poco principal usa exatamente o dobro dos raios anteriores (0.34/0.28).
-  float holeA = softBlob(point, blackHoleA, vec2(0.68, 0.56) * (0.96 + idleBreath * 0.08), aspect);
-  float holeB = softBlob(point, blackHoleB, vec2(0.30, 0.25) * (1.04 - idleBreath * 0.08), aspect);
+  float holeA = focusedBlob(
+    point,
+    blackHoleA,
+    vec2(0.68, 0.56) * (0.96 + idleBreath * 0.08),
+    aspect,
+    1.28
+  );
+  float holeB = focusedBlob(
+    point,
+    blackHoleB,
+    vec2(0.30, 0.25) * (1.04 - idleBreath * 0.08),
+    aspect,
+    1.28
+  );
   float blackHoleMix = clamp(1.08 * (1.0 - (1.0 - holeA) * (1.0 - holeB)), 0.0, 1.0);
 
   // Compressao exponencial preserva uma derivada suave em todo o intervalo.
@@ -113,8 +129,8 @@ vec3 gradientColor(vec2 fragment) {
 
   // O tom #312D22 ocupa a massa luminosa em opacidade total; os pocos sao
   // aplicados por ultimo para que o centro seja preto, como um buraco negro.
-  vec3 color = mix(darkGray, warm, 0.58 + warmMix * 0.42);
-  color = mix(color, darkGray, grayMix * 0.28);
+  vec3 color = mix(darkGray, warm, 0.38 + warmMix * 0.62);
+  color = mix(color, darkGray, grayMix * 0.42);
   color = mix(color, black, blackHoleMix);
 
   // Vinheta larga, sem borda perceptivel, mantem o centro util e as extremidades escuras.
