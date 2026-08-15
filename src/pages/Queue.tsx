@@ -273,7 +273,7 @@ export default function Queue() {
           </Badge>
         }
       >
-        <header className="glass-chrome px-4 md:px-6 py-4 hidden lg:flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20 ">
+        <header className="glass-chrome h-[88px] min-h-[88px] px-4 md:px-6 py-0 hidden lg:flex flex-wrap items-center gap-3 md:gap-4 sticky top-0 z-20">
           <div className="hidden lg:block">
             <h1 className="text-[22px] font-semibold tracking-tight text-white flex items-center gap-2">
               <ListOrdered className="h-5 w-5 text-primary" /> Fila de Lavagem
@@ -297,7 +297,7 @@ export default function Queue() {
   return (
     <div className="relative isolate min-h-screen flex flex-col bg-transparent">
       <AmbientGlow />
-      <header className="glass-chrome sticky top-0 z-20 px-4 py-3 flex items-center gap-3">
+      <header className="glass-chrome h-[60px] min-h-[60px] lg:h-[88px] lg:min-h-[88px] sticky top-0 z-20 px-4 py-0 flex items-center gap-3">
         <div className="h-9 w-9 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">M</div>
         <div className="leading-tight min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Monaco</div>

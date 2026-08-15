@@ -328,7 +328,7 @@ export default function Reports() {
 
   return (
     <AppShell>
-      <header className="glass-chrome px-6 py-4 hidden lg:flex flex-wrap items-center gap-4">
+      <header className="glass-chrome h-[88px] min-h-[88px] px-6 py-0 hidden lg:flex flex-wrap items-center gap-4">
         <div>
           <h1 className="text-[22px] font-semibold text-white">Relatórios</h1>
         </div>

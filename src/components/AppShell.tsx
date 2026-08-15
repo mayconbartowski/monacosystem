@@ -123,8 +123,8 @@ export function AppShell({
         >
           <div
             className={cn(
-              "flex items-center border-b border-sidebar-border",
-              collapsed ? "justify-center px-3 py-5" : "px-5 py-5 gap-3",
+              "h-[88px] min-h-[88px] flex items-center border-b border-sidebar-border",
+              collapsed ? "justify-center px-3" : "px-5 gap-3",
             )}
           >
             <Link to={homeTo} className="flex items-center gap-3 min-w-0">
@@ -164,7 +164,7 @@ export function AppShell({
             })}
           </nav>
 
-          <div className="border-t border-sidebar-border p-3 space-y-2">
+          <div className="px-3 pb-3 space-y-2">
             <Button
               variant="ghost"
               size="sm"
@@ -184,17 +184,6 @@ export function AppShell({
               )}
             </Button>
 
-            {session && !collapsed && (
-              <div className="flex items-center gap-2 px-2 py-2 rounded-xl border border-border bg-muted/25">
-                <div className="h-8 w-8 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold shrink-0">
-                  {session.login.slice(0, 1).toUpperCase()}
-                </div>
-                <div className="min-w-0 leading-tight">
-                  <div className="text-xs font-medium truncate">{session.login}</div>
-                  <div className="text-[10px] text-muted-foreground">{ROLE_LABEL[session.role]}</div>
-                </div>
-              </div>
-            )}
             {collapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -221,9 +210,41 @@ export function AppShell({
                 Sair
               </Button>
             )}
-            {!collapsed && (
-              <div className="text-[11px] text-muted-foreground/70 text-center">v1.2 · Premium Auto Care</div>
+          </div>
+
+          <div
+            className={cn(
+              "h-[136px] min-h-[136px] border-t border-sidebar-border p-3 flex items-center",
+              collapsed ? "justify-center" : "justify-stretch",
             )}
+          >
+            {session &&
+              (collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      tabIndex={0}
+                      className="h-10 w-10 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      aria-label={`${session.login} · ${ROLE_LABEL[session.role]}`}
+                    >
+                      {session.login.slice(0, 1).toUpperCase()}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {session.login} · {ROLE_LABEL[session.role]}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <div className="w-full flex items-center gap-2 px-2 py-2 rounded-xl border border-border bg-muted/25">
+                  <div className="h-8 w-8 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold shrink-0">
+                    {session.login.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 leading-tight">
+                    <div className="text-xs font-medium truncate">{session.login}</div>
+                    <div className="text-[10px] text-muted-foreground">{ROLE_LABEL[session.role]}</div>
+                  </div>
+                </div>
+              ))}
           </div>
         </aside>
 
@@ -246,7 +267,7 @@ export function AppShell({
                 className="w-[86vw] max-w-xs border-0 bg-[hsl(var(--surface-1))] p-0 flex flex-col"
               >
                 <SheetTitle className="sr-only">Navegação</SheetTitle>
-                <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
+                <div className="h-[60px] min-h-[60px] flex items-center gap-3 px-5 border-b border-sidebar-border">
                   <Brand />
                 </div>
                 <nav className="flex-1 overflow-y-auto p-3 space-y-1">
@@ -273,9 +294,18 @@ export function AppShell({
                     );
                   })}
                 </nav>
-                <div className="border-t border-sidebar-border p-3 space-y-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <div className="p-3">
+                  <Button
+                    variant="ghost"
+                    onClick={doLogout}
+                    className="w-full justify-start gap-2 min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" /> Sair
+                  </Button>
+                </div>
+                <div className="h-[136px] min-h-[136px] border-t border-sidebar-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center">
                   {session && (
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-muted/25">
+                    <div className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-muted/25">
                       <div className="h-9 w-9 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold">
                         {session.login.slice(0, 1).toUpperCase()}
                       </div>
@@ -285,13 +315,6 @@ export function AppShell({
                       </div>
                     </div>
                   )}
-                  <Button
-                    variant="ghost"
-                    onClick={doLogout}
-                    className="w-full justify-start gap-2 min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <LogOut className="h-4 w-4" /> Sair
-                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
