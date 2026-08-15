@@ -53,6 +53,58 @@ const DONUT_COLORS = [
   "hsl(15 40% 52%)", // terracota
 ];
 
+function formatCount(value: number) {
+  return Number.isInteger(value) && value >= 1 && value <= 9 ? `0${value}` : String(value);
+}
+
+function PaymentLegend() {
+  const items: PaymentMethod[] = ["Pix", "Débito", "Crédito"];
+
+  return (
+    <div className="flex items-center justify-center gap-5 text-xs text-muted-foreground">
+      {items.map((item) => (
+        <div key={item} className="flex items-center gap-1.5">
+          <svg className="h-3 w-8 shrink-0" viewBox="0 0 32 12" aria-hidden="true">
+            {item === "Pix" ? (
+              <>
+                <line
+                  x1="1"
+                  x2="31"
+                  y1="3.5"
+                  y2="3.5"
+                  stroke={PAYMENT_COLORS[item]}
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="1"
+                  x2="31"
+                  y1="8.5"
+                  y2="8.5"
+                  stroke={PAYMENT_COLORS[item]}
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                />
+              </>
+            ) : (
+              <line
+                x1="1"
+                x2="31"
+                y1="6"
+                y2="6"
+                stroke={PAYMENT_COLORS[item]}
+                strokeWidth="2.25"
+                strokeLinecap="round"
+              />
+            )}
+          </svg>
+          <span>{item}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 type PixEqualizerProps = {
   data: Array<Record<string, number | string>>;
 };
@@ -370,15 +422,24 @@ export default function Reports() {
 
       <div className="p-4 md:p-6 bg-surface-sunken flex-1 overflow-auto space-y-12">
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-          <Stat label="Receita bruta" value={brl(revenue)} highlight />
-          <Stat label="Despesas" value={brl(totalExpenses)} />
-          <Stat label="Resultado líquido" value={brl(netResult)} accent={netResult >= 0} />
-          <Stat label="Ticket médio" value={brl(rangeOrders.length ? revenue / rangeOrders.length : 0)} />
-          <Stat label="Vendas" value={String(rangeOrders.length)} />
-          <Stat label="Descontos" value={brl(discounts)} />
-          <Stat label="Clientes atendidos no período" value={String(attendedInPeriod)} />
-          <Stat label="Clientes cadastrados no período" value={String(registeredInPeriod)} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 min-[1200px]:grid-cols-[repeat(16,minmax(0,1fr))] gap-2">
+          <Stat className="min-[1200px]:col-span-3" label="Receita bruta" value={brl(revenue)} highlight />
+          <Stat className="min-[1200px]:col-span-3" label="Despesas" value={brl(totalExpenses)} />
+          <Stat
+            className="min-[1200px]:col-span-3"
+            label="Resultado líquido"
+            value={brl(netResult)}
+            accent={netResult >= 0}
+          />
+          <Stat
+            className="min-[1200px]:col-span-3"
+            label="Ticket médio"
+            value={brl(rangeOrders.length ? revenue / rangeOrders.length : 0)}
+          />
+          <Stat compact label="Vendas" value={formatCount(rangeOrders.length)} />
+          <Stat compact label="Descontos" value={brl(discounts)} />
+          <Stat compact label="Atendidos" value={formatCount(attendedInPeriod)} />
+          <Stat compact label="Cadastrados" value={formatCount(registeredInPeriod)} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -407,7 +468,7 @@ export default function Reports() {
                         fontSize: 12,
                       }}
                     />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Legend content={() => <PaymentLegend />} />
                     <Bar
                       dataKey="Pix"
                       name="Pix"
@@ -479,7 +540,7 @@ export default function Reports() {
             </div>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
               {serviceData.map((s) => (
-                <Row key={s.label} label={`${s.label} (${s.qty})`} value={brl(s.total)} />
+                <Row key={s.label} label={`${s.label} (${formatCount(s.qty)})`} value={brl(s.total)} />
               ))}
             </div>
           </Card>
@@ -490,12 +551,14 @@ export default function Reports() {
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
             {categoryStats.map((c) => (
               <div key={c.label as string} className="rounded-card bg-surface-3 p-4">
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{c.label}</div>
+                <div className="flex items-center justify-between gap-2 whitespace-nowrap">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{c.label}</div>
+                  <div className="text-[9px] text-muted-foreground">veículos atendidos · faturamento</div>
+                </div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <div className="text-2xl font-bold">{c.qty}</div>
+                  <div className="text-2xl font-bold">{formatCount(c.qty)}</div>
                   <div className="text-sm font-semibold text-primary">{brl(c.total)}</div>
                 </div>
-                <div className="text-[11px] text-muted-foreground">veículos atendidos · faturamento</div>
               </div>
             ))}
           </div>
@@ -510,7 +573,7 @@ export default function Reports() {
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             <Stat label="Total de despesas" value={brl(totalExpenses)} />
-            <Stat label="Lançamentos" value={String(rangeExpenses.length)} />
+            <Stat label="Lançamentos" value={formatCount(rangeExpenses.length)} />
             <Stat label="Ticket médio" value={brl(rangeExpenses.length ? totalExpenses / rangeExpenses.length : 0)} />
             <Stat label="Saldo (receita − despesas)" value={brl(netResult)} accent={netResult >= 0} />
           </div>
@@ -731,10 +794,13 @@ export default function Reports() {
               return (
                 <>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                    <Stat label="Atendimentos (período)" value={String(totalPartnerAttendances)} />
-                    <Stat label="Contratos ativos" value={String(partnerContracts.filter((c) => c.active).length)} />
+                    <Stat label="Atendimentos (período)" value={formatCount(totalPartnerAttendances)} />
+                    <Stat
+                      label="Contratos ativos"
+                      value={formatCount(partnerContracts.filter((c) => c.active).length)}
+                    />
                     <Stat label="Valor mensal contratado" value={brl(totalContractValue)} accent />
-                    <Stat label="Contratos totais" value={String(partnerContracts.length)} />
+                    <Stat label="Contratos totais" value={formatCount(partnerContracts.length)} />
                   </div>
 
                   <Card className="surface-card border-0 shadow-none p-5 mt-2">
@@ -755,7 +821,8 @@ export default function Reports() {
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium truncate">{c.companyName}</div>
                               <div className="text-xs text-muted-foreground">
-                                {periodUsage} no período · {monthUsage}/{c.monthlyVehicleLimit} este mês
+                                {formatCount(periodUsage)} no período · {formatCount(monthUsage)}/
+                                {formatCount(c.monthlyVehicleLimit)} este mês
                               </div>
                               <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
                                 <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
@@ -787,24 +854,42 @@ function Stat({
   value,
   accent,
   highlight,
+  compact,
+  className,
 }: {
   label: string;
   value: string;
   accent?: boolean;
   highlight?: boolean;
+  compact?: boolean;
+  className?: string;
 }) {
+  const cardClassName = cn(
+    "surface-card border-0 shadow-none p-4",
+    compact && "min-[1200px]:p-2 min-[1400px]:p-3",
+    className,
+  );
+  const labelClassName = cn(
+    "text-[11px] uppercase tracking-wider",
+    compact && "min-[1200px]:text-[8px] min-[1400px]:text-[10px]",
+  );
+  const valueClassName = cn(
+    "text-2xl font-bold tabular-nums",
+    compact && "min-[1200px]:text-base min-[1400px]:text-xl",
+  );
+
   if (highlight) {
     return (
-      <Card className="surface-card border-0 shadow-none p-4 bg-primary text-primary-foreground">
-        <div className="text-[11px] uppercase tracking-wider text-primary-foreground/80 font-medium">{label}</div>
-        <div className="text-2xl font-bold text-primary-foreground tabular-nums">{value}</div>
+      <Card className={cn(cardClassName, "bg-primary text-primary-foreground")}>
+        <div className={cn(labelClassName, "text-primary-foreground/80 font-medium")}>{label}</div>
+        <div className={cn(valueClassName, "text-primary-foreground")}>{value}</div>
       </Card>
     );
   }
   return (
-    <Card className="surface-card border-0 shadow-none p-4">
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`text-2xl font-bold ${accent ? "gold-text" : ""}`}>{value}</div>
+    <Card className={cardClassName}>
+      <div className={cn(labelClassName, "text-muted-foreground")}>{label}</div>
+      <div className={cn(valueClassName, accent && "gold-text")}>{value}</div>
     </Card>
   );
 }
