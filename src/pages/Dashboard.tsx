@@ -320,7 +320,7 @@ function GoalCardView({ g }: { g: ReturnType<typeof computeGoals>["day"] }) {
       <div className="text-base font-semibold">
         {brl(g.earned)} <span className="text-xs text-muted-foreground font-normal">de {brl(g.goal)}</span>
       </div>
-      <Progress value={g.progress * 100} className="h-2 mt-2" />
+      <Progress value={g.progress * 100} className="h-2 mt-2 bg-[#101010]" />
       <div className="mt-2 text-xs">
         {surpassed
           ? <span className="text-primary font-medium">Meta superada em {brl(g.surpassedBy)}</span>
