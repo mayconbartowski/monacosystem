@@ -824,7 +824,7 @@ export default function Sales() {
                       {existingVehicle ? formatPlate(existingVehicle.plate) : "—"}
                     </span>
                   </div>
-                  <Progress value={(loyalty.washCount / 10) * 100} className="h-2" />
+                  <Progress value={(loyalty.washCount / 10) * 100} className="h-2 bg-[#101010]" />
                   <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
                     <span>
                       Lavagens: <span className="text-foreground font-medium">{loyalty.washCount}/10</span>
@@ -895,7 +895,7 @@ export default function Sales() {
                     }}
                     placeholder="0"
                     aria-label="Percentual de desconto"
-                    className="h-8 w-14 px-2 border-0 bg-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-primary-foreground/40 text-xs"
+                    className="h-8 w-14 px-2 border-0 bg-primary-foreground/20 text-white caret-white placeholder:text-white/60 focus-visible:ring-white/40 text-xs"
                   />
                   <span className="text-xs text-primary-foreground">%</span>
                   <span className="hidden md:inline text-xs text-primary-foreground/80 whitespace-nowrap">
@@ -947,7 +947,7 @@ export default function Sales() {
                     onChange={(e) => setFeeStr(formatMoneyInput(e.target.value))}
                     placeholder="R$ 0,00"
                     aria-label="Valor da taxa"
-                    className="h-8 w-[84px] md:w-24 px-2 border-0 bg-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-primary-foreground/40 text-xs"
+                    className="h-8 w-[84px] md:w-24 px-2 border-0 bg-primary-foreground/20 text-white caret-white placeholder:text-white/60 focus-visible:ring-white/40 text-xs"
                   />
                   <Input
                     value={feeNote}
@@ -955,7 +955,7 @@ export default function Sales() {
                     placeholder="Descrição"
                     aria-label="Descrição da taxa"
                     maxLength={120}
-                    className="h-8 flex-1 md:flex-none md:w-32 min-w-0 px-2 border-0 bg-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-primary-foreground/40 text-xs"
+                    className="h-8 flex-1 md:flex-none md:w-32 min-w-0 px-2 border-0 bg-primary-foreground/20 text-white caret-white placeholder:text-white/60 focus-visible:ring-white/40 text-xs"
                   />
                   <Button
                     type="button"
